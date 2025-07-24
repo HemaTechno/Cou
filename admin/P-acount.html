@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة طلبات التسجيل | لوحة الإدارة</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Tajawal', sans-serif;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-4 md:p-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <h1 class="text-3xl md:text-4xl font-bold text-indigo-800 mb-2">طلبات التسجيل في انتظار الموافقة</h1>
+      <p class="text-gray-600">إدارة طلبات التسجيل الجديدة للنظام</p>
+      <div class="w-24 h-1 bg-indigo-500 mx-auto mt-4 rounded-full"></div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-indigo-500">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-gray-500 text-sm">إجمالي الطلبات</p>
+            <h3 id="totalRequests" class="text-2xl font-bold text-gray-800">0</h3>
+          </div>
+          <div class="bg-indigo-100 p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-gray-500 text-sm">طلبات جديدة اليوم</p>
+            <h3 id="todayRequests" class="text-2xl font-bold text-gray-800">0</h3>
+          </div>
+          <div class="bg-blue-100 p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-gray-500 text-sm">طلبات قيد الانتظار</p>
+            <h3 id="pendingRequests" class="text-2xl font-bold text-gray-800">0</h3>
+          </div>
+          <div class="bg-green-100 p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Students List -->
+    <div id="studentsList" class="grid gap-6"></div>
+    
+    <!-- Loading State -->
+    <div id="loading" class="text-center py-10">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
+      <p class="text-gray-600">جاري تحميل البيانات...</p>
+    </div>
+    
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden text-center py-16 bg-white rounded-xl shadow-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h3 class="text-xl font-medium text-gray-700 mb-2">لا توجد طلبات في انتظار الموافقة</h3>
+      <p class="text-gray-500 max-w-md mx-auto">جميع طلبات التسجيل تمت معالجتها أو لا توجد طلبات جديدة حالياً.</p>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const studentsList = document.getElementById("studentsList");
+    const loadingElement = document.getElementById("loading");
+    const emptyStateElement = document.getElementById("emptyState");
+    
+    // Stats Elements
+    const totalRequestsElement = document.getElementById("totalRequests");
+    const todayRequestsElement = document.getElementById("todayRequests");
+    const pendingRequestsElement = document.getElementById("pendingRequests");
+
+    // Format Date
+    const formatDate = (dateString) => {
+      const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      return new Date(dateString).toLocaleDateString('ar-EG', options);
+    };
+
+    // Fetch all students data
+    async function fetchStudentsData() {
+      try {
+        const snapshot = await db.collection("students").get();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let total = 0;
+        let todayCount = 0;
+        let pendingCount = 0;
+        
+        snapshot.forEach(doc => {
+          total++;
+          const data = doc.data();
+          const createdAt = new Date(data.createdAt);
+          
+          if (createdAt >= today) {
+            todayCount++;
+          }
+          
+          if (data.status === "في انتظار الموافقة") {
+            pendingCount++;
+          }
+        });
+        
+        totalRequestsElement.textContent = total;
+        todayRequestsElement.textContent = todayCount;
+        pendingRequestsElement.textContent = pendingCount;
+        
+        if (pendingCount === 0) {
+          loadingElement.classList.add("hidden");
+          emptyStateElement.classList.remove("hidden");
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    }
+
+    // Fetch pending students
+    async function fetchPendingStudents() {
+      try {
+        const snapshot = await db.collection("students")
+          .where("status", "==", "في انتظار الموافقة")
+          .orderBy("createdAt", "desc")
+          .get();
+
+        if (snapshot.empty) {
+          loadingElement.classList.add("hidden");
+          emptyStateElement.classList.remove("hidden");
+          return;
+        }
+
+        studentsList.innerHTML = "";
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className = "bg-white p-6 rounded-xl shadow-md card-hover transition-all duration-300 border-t-4 border-indigo-500";
+          
+          div.innerHTML = `
+            <div class="flex flex-col md:flex-row gap-6">
+              <!-- Student Photo -->
+              <div class="flex-shrink-0 mx-auto md:mx-0">
+                <div class="relative group">
+                  <img src="${data.selfieURL}" alt="صورة الطالب" 
+                    class="w-32 h-32 rounded-lg object-cover border-2 border-white shadow-md group-hover:border-indigo-300 transition-all duration-300">
+                  <div class="absolute inset-0 bg-indigo-500 bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all duration-300"></div>
+                </div>
+              </div>
+              
+              <!-- Student Info -->
+              <div class="flex-grow text-right">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="text-xl font-bold text-indigo-800">${data.fullName}</h3>
+                  <span class="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full">في انتظار الموافقة</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p class="text-sm text-gray-500">رقم الطالب</p>
+                    <p class="font-medium">${data.studentNumber || 'غير متوفر'}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500">تاريخ التقديم</p>
+                    <p class="font-medium">${formatDate(data.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500">رقم الأب</p>
+                    <p class="font-medium">${data.fatherNumber || 'غير متوفر'}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500">رقم الأم</p>
+                    <p class="font-medium">${data.motherNumber || 'غير متوفر'}</p>
+                  </div>
+                </div>
+                
+                <div class="mb-4">
+                  <label for="note-${doc.id}" class="block text-sm text-gray-500 mb-1">ملاحظات إضافية</label>
+                  <textarea id="note-${doc.id}" 
+                    class="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all duration-300"
+                    placeholder="اكتب ملاحظاتك هنا (اختياري)"></textarea>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
+              <button onclick="rejectStudent('${doc.id}', 'note-${doc.id}')" 
+                class="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-6 py-3 rounded-lg font-medium transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                رفض الطلب
+              </button>
+              <button onclick="approveStudent('${doc.id}', 'note-${doc.id}')" 
+                class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                الموافقة على الطلب
+              </button>
+            </div>
+          `;
+
+          studentsList.appendChild(div);
+        });
+        
+        loadingElement.classList.add("hidden");
+        fetchStudentsData();
+      } catch (error) {
+        console.error("Error fetching students:", error);
+        loadingElement.innerHTML = `
+          <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg max-w-md mx-auto">
+            <p>حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Approve Student
+    async function approveStudent(id, noteId) {
+      const note = document.getElementById(noteId).value;
+      
+      try {
+        await Swal.fire({
+          title: 'تأكيد الموافقة',
+          text: 'هل أنت متأكد من الموافقة على هذا الطلب؟',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'نعم، الموافقة',
+          cancelButtonText: 'إلغاء',
+          confirmButtonColor: '#4f46e5',
+          cancelButtonColor: '#ef4444',
+          reverseButtons: true
+        });
+        
+        await db.collection("students").doc(id).update({
+          status: "تمت الموافقة",
+          note,
+          updatedAt: new Date().toISOString()
+        });
+        
+        await Swal.fire({
+          title: 'تمت الموافقة!',
+          text: 'تمت الموافقة على الطلب بنجاح.',
+          icon: 'success',
+          confirmButtonText: 'حسناً',
+          confirmButtonColor: '#4f46e5'
+        });
+        
+        location.reload();
+      } catch (error) {
+        if (error !== 'cancel') {
+          Swal.fire({
+            title: 'خطأ!',
+            text: 'حدث خطأ أثناء محاولة الموافقة على الطلب.',
+            icon: 'error',
+            confirmButtonText: 'حسناً'
+          });
+        }
+      }
+    }
+
+    // Reject Student
+    async function rejectStudent(id, noteId) {
+      const noteInput = document.getElementById(noteId);
+      const note = noteInput.value;
+      
+      if (!note.trim()) {
+        noteInput.focus();
+        return Swal.fire({
+          title: 'ملاحظة مطلوبة',
+          text: 'يرجى إدخال سبب الرفض للمتابعة',
+          icon: 'warning',
+          confirmButtonText: 'حسناً',
+          confirmButtonColor: '#4f46e5'
+        });
+      }
+      
+      try {
+        await Swal.fire({
+          title: 'تأكيد الرفض',
+          text: 'هل أنت متأكد من رفض هذا الطلب؟',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'نعم، رفض',
+          cancelButtonText: 'إلغاء',
+          confirmButtonColor: '#ef4444',
+          cancelButtonColor: '#4f46e5',
+          reverseButtons: true
+        });
+        
+        await db.collection("students").doc(id).update({
+          status: "مرفوض",
+          note,
+          updatedAt: new Date().toISOString()
+        });
+        
+        await Swal.fire({
+          title: 'تم الرفض!',
+          text: 'تم رفض الطلب بنجاح.',
+          icon: 'success',
+          confirmButtonText: 'حسناً',
+          confirmButtonColor: '#4f46e5'
+        });
+        
+        location.reload();
+      } catch (error) {
+        if (error !== 'cancel') {
+          Swal.fire({
+            title: 'خطأ!',
+            text: 'حدث خطأ أثناء محاولة رفض الطلب.',
+            icon: 'error',
+            confirmButtonText: 'حسناً'
+          });
+        }
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchPendingStudents();
+    });
+  </script>
+</body>
+</html>
