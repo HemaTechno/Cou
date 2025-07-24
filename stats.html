@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حالة تسجيل الدخول</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md text-center">
+    <h2 class="text-xl font-bold text-indigo-700 mb-4">التحقق من حالة تسجيل الدخول</h2>
+    <p id="status" class="text-lg font-medium"></p>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const student = JSON.parse(localStorage.getItem("student"));
+    const session = localStorage.getItem("session_id");
+    const statusElement = document.getElementById("status");
+
+    async function checkLoginStatus() {
+      if (!student || !session) {
+        statusElement.textContent = "🚫 أنت غير مسجل الدخول";
+        statusElement.classList.add("text-red-600");
+        return;
+      }
+
+      const doc = await db.collection("students").doc(student.id).get();
+
+      if (!doc.exists || doc.data().session_id !== session) {
+        statusElement.textContent = "🚫 أنت غير مسجل الدخول (تم تسجيل دخول من جهاز آخر)";
+        statusElement.classList.add("text-red-600");
+        return;
+      }
+
+      statusElement.textContent = `✅ مرحبًا ${student.fullName}، أنت مسجل الدخول.`;
+      statusElement.classList.add("text-green-600");
+    }
+
+    checkLoginStatus();
+  </script>
+</body>
+</html>
