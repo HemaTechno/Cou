@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>كورسات الصف الأول | منصة عبدالرحمن السقا</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -13,27 +16,91 @@
   <script type="module" src="auth-check.js"></script>
 
   <style>
-    body { font-family: 'Tajawal', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&display=swap');
+    body { 
+      font-family: 'Tajawal', sans-serif;
+      background: linear-gradient(135deg, #f9f9ff 0%, #f0f4ff 100%);
+    }
+    .course-card {
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    }
+    .course-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(79, 70, 229, 0.1);
+    }
+    .coin-badge {
+      background: linear-gradient(135deg, #f6e05e 0%, #d69e2e 100%);
+      box-shadow: 0 4px 6px rgba(214, 158, 46, 0.1);
+    }
+    .premium-badge {
+      background: linear-gradient(135deg, #9f7aea 0%, #6b46c1 100%);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      box-shadow: 0 4px 6px rgba(79, 70, 229, 0.1);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 6px rgba(16, 185, 129, 0.1);
+    }
+    .btn-success:hover {
+      background: linear-gradient(135deg, #0d9b6c 0%, #047857 100%);
+    }
+    .header-gradient {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen text-gray-800">
+<body class="min-h-screen text-gray-800">
 
-  <!-- ✅ الهيدر -->
-  <header class="bg-white shadow p-4 flex justify-between items-center">
-    <div class="flex items-center gap-4">
-      <img src="logo.png" alt="شعار الأستاذ" class="h-10 rounded-full" />
-      <h1 class="text-xl font-bold text-indigo-700">كورسات الصف الأول</h1>
-    </div>
-    <div class="flex items-center gap-4 text-sm">
-      <span id="student-name" class="font-bold text-gray-700"></span>
-      <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full" id="wallet">0 🪙</span>
+  <!-- ✅ الهيدر المطور -->
+  <header class="header-gradient text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-4">
+        <div class="flex items-center gap-4">
+          <img src="logo.png" alt="شعار الأستاذ" class="h-12 w-12 rounded-full border-2 border-white shadow-md" />
+          <div>
+            <h1 class="text-xl md:text-2xl font-bold">كورسات الصف الأول</h1>
+            <p class="text-xs md:text-sm opacity-80">منصة عبدالرحمن السقا التعليمية</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-3">
+            <span id="student-name" class="font-bold hidden md:block"></span>
+            <div class="coin-badge flex items-center gap-1 px-3 py-1 rounded-full font-bold text-yellow-900">
+              <span id="wallet">0</span>
+              <i data-feather="award" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <button onclick="auth.signOut()" class="p-2 rounded-full hover:bg-white/10 transition">
+            <i data-feather="log-out" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- ✅ المحتوى -->
-  <main class="max-w-5xl mx-auto py-8 px-4">
-    <div id="courses" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <!-- ✅ المحتوى الرئيسي -->
+  <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="mb-8 text-center">
+      <h2 class="text-3xl font-bold text-indigo-900 mb-2">كورسات الصف الأول المتاحة</h2>
+      <p class="text-lg text-gray-600 max-w-3xl mx-auto">اختر من بين أفضل الكورسات التعليمية المصممة خصيصاً لطلاب الصف الأول</p>
+    </div>
+
+    <div id="courses" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       <!-- الكورسات تظهر هنا -->
+      <div class="text-center py-12" id="loading">
+        <div class="animate-pulse flex flex-col items-center">
+          <div class="w-16 h-16 bg-indigo-200 rounded-full mb-4"></div>
+          <div class="h-4 bg-indigo-200 rounded w-3/4 mb-2"></div>
+          <div class="h-4 bg-indigo-200 rounded w-1/2 mb-6"></div>
+          <div class="h-10 bg-indigo-200 rounded w-full"></div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -52,8 +119,18 @@
     const auth = firebase.auth();
   </script>
 
-  <!-- ✅ المنطق -->
+  <!-- ✅ المنطق المطور -->
   <script>
+    // تهيئة مكتبات التأثيرات
+    document.addEventListener('DOMContentLoaded', () => {
+      AOS.init({
+        duration: 800,
+        easing: 'ease-in-out',
+        once: true
+      });
+      feather.replace();
+    });
+
     let currentUser = null;
     let userCoins = 0;
     let userId = "";
@@ -68,78 +145,190 @@
       currentUser = user;
 
       // تحميل بيانات الطالب
-      const doc = await db.collection("students").doc(userId).get();
-      if (!doc.exists || doc.data().status !== "تمت الموافقة") {
-        alert("🚫 حسابك غير مفعل حتى الآن.");
-        auth.signOut();
-        return;
+      try {
+        const doc = await db.collection("students").doc(userId).get();
+        if (!doc.exists || doc.data().status !== "تمت الموافقة") {
+          showErrorModal("حسابك غير مفعل", "حسابك غير مفعل حتى الآن، يرجى الانتظار حتى يتم تفعيله من قبل الإدارة.");
+          await auth.signOut();
+          return;
+        }
+
+        const data = doc.data();
+        document.getElementById("student-name").textContent = `أهلاً ${data.fullName}`;
+        userCoins = data.coins || 0;
+        updateWalletUI();
+
+        await loadCourses();
+      } catch (error) {
+        showErrorModal("حدث خطأ", "حدث خطأ أثناء تحميل البيانات، يرجى المحاولة مرة أخرى.");
+        console.error("Error loading user data:", error);
       }
-
-      const data = doc.data();
-      document.getElementById("student-name").textContent = `أهلاً ${data.fullName}`;
-      userCoins = data.coins || 0;
-      updateWalletUI();
-
-      loadCourses();
     });
 
     function updateWalletUI() {
-      document.getElementById("wallet").textContent = `${userCoins} 🪙`;
+      document.getElementById("wallet").textContent = userCoins;
+      feather.replace();
     }
 
     async function loadCourses() {
-      const res = await db.collection("courses").where("stage", "==", "الصف الأول").get();
-      const container = document.getElementById("courses");
-      container.innerHTML = "";
+      try {
+        const res = await db.collection("courses").where("stage", "==", "الصف الأول").get();
+        const container = document.getElementById("courses");
+        container.innerHTML = "";
 
-      const userDoc = await db.collection("students").doc(userId).get();
-      const enrolled = userDoc.data().enrolledCourses || [];
+        const userDoc = await db.collection("students").doc(userId).get();
+        const enrolled = userDoc.data().enrolledCourses || [];
 
-      res.forEach(doc => {
-        const course = doc.data();
-        const isEnrolled = enrolled.includes(course.id);
+        res.forEach((doc, index) => {
+          const course = doc.data();
+          const isEnrolled = enrolled.includes(course.id);
 
-        const card = document.createElement("div");
-        card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
+          const card = document.createElement("div");
+          card.className = "course-card bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col";
+          card.setAttribute('data-aos', 'fade-up');
+          card.setAttribute('data-aos-delay', index * 100);
 
-        card.innerHTML = `
-          <img src="${course.imageURL}" alt="${course.name}" class="h-40 w-full object-cover rounded-lg mb-4">
-          <h3 class="text-lg font-bold mb-1 text-indigo-700">${course.name}</h3>
-          <p class="text-sm text-gray-600 mb-3">${course.description}</p>
-          <div class="mt-auto">
-            ${course.isFree || isEnrolled
-              ? `<a href="course.html?id=${course.id}" class="block bg-green-500 text-white text-center py-2 rounded-lg hover:bg-green-600 transition">🎓 الدخول للكورس</a>`
-              : `<button onclick="subscribeCourse('${course.id}', ${course.price})"
-                  class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">
-                  اشترك مقابل ${course.price} 🪙
-                </button>`
-            }
+          card.innerHTML = `
+            <div class="relative">
+              <img src="${course.imageURL || 'https://source.unsplash.com/random/600x400?education'}" 
+                   alt="${course.name}" 
+                   class="h-48 w-full object-cover">
+              ${course.isFree ? `
+                <span class="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  مجاني
+                </span>
+              ` : `
+                <span class="absolute top-3 left-3 premium-badge text-white text-xs font-bold px-2 py-1 rounded-full">
+                  مميز
+                </span>
+              `}
+            </div>
+            
+            <div class="p-6 flex flex-col flex-grow">
+              <h3 class="text-xl font-bold mb-2 text-indigo-900">${course.name}</h3>
+              <p class="text-gray-600 mb-4 flex-grow">${course.description}</p>
+              
+              <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                  <span class="text-sm text-gray-500">
+                    <i data-feather="clock" class="inline mr-1 w-4 h-4"></i>
+                    ${course.duration || 'غير محدد'}
+                  </span>
+                  ${!course.isFree ? `
+                    <span class="text-sm font-bold text-yellow-700">
+                      <i data-feather="award" class="inline mr-1 w-4 h-4"></i>
+                      ${course.price} كوين
+                    </span>
+                  ` : ''}
+                </div>
+                
+                ${course.isFree || isEnrolled
+                  ? `<a href="course.html?id=${course.id}" 
+                      class="btn-success block text-white text-center py-3 px-4 rounded-xl hover:shadow-md transition flex items-center justify-center gap-2">
+                      <i data-feather="book-open"></i>
+                      ${isEnrolled ? 'استمر في التعلم' : 'ابدأ الكورس'}
+                    </a>`
+                  : `<button onclick="subscribeCourse('${course.id}', ${course.price})"
+                      class="btn-primary w-full text-white py-3 px-4 rounded-xl hover:shadow-md transition flex items-center justify-center gap-2">
+                      <i data-feather="shopping-cart"></i>
+                      اشترك الآن
+                    </button>`
+                }
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+          feather.replace();
+        });
+
+        if (res.empty) {
+          container.innerHTML = `
+            <div class="col-span-full text-center py-12" data-aos="fade-up">
+              <div class="bg-white p-8 rounded-2xl shadow-md inline-block">
+                <i data-feather="frown" class="w-12 h-12 text-indigo-400 mx-auto mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">لا توجد كورسات متاحة حالياً</h3>
+                <p class="text-gray-600">سيتم إضافة كورسات جديدة قريباً، نرجو متابعتنا</p>
+              </div>
+            </div>
+          `;
+          feather.replace();
+        }
+      } catch (error) {
+        document.getElementById("courses").innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <div class="bg-white p-8 rounded-2xl shadow-md inline-block">
+              <i data-feather="alert-circle" class="w-12 h-12 text-red-400 mx-auto mb-4"></i>
+              <h3 class="text-xl font-bold text-gray-800 mb-2">حدث خطأ في تحميل الكورسات</h3>
+              <p class="text-gray-600 mb-4">تعذر تحميل الكورسات، يرجى المحاولة مرة أخرى</p>
+              <button onclick="location.reload()" class="btn-primary text-white py-2 px-6 rounded-lg">
+                <i data-feather="refresh-cw" class="mr-2"></i> إعادة المحاولة
+              </button>
+            </div>
           </div>
         `;
-        container.appendChild(card);
-      });
+        feather.replace();
+        console.error("Error loading courses:", error);
+      }
     }
 
     async function subscribeCourse(courseId, price) {
       if (userCoins < price) {
-        alert("❌ لا يوجد كوينات كافية");
+        showErrorModal("رصيد غير كافي", `ليس لديك رصيد كافٍ من الكوينات للاشتراك في هذا الكورس. تحتاج إلى ${price} كوين بينما لديك ${userCoins} كوين فقط.`);
         return;
       }
 
-      const confirmSub = confirm(`هل تريد الاشتراك في هذا الكورس مقابل ${price} كوين؟`);
-      if (!confirmSub) return;
-
-      const studentRef = db.collection("students").doc(userId);
-
-      await studentRef.update({
-        coins: firebase.firestore.FieldValue.increment(-price),
-        enrolledCourses: firebase.firestore.FieldValue.arrayUnion(courseId)
+      const { value: accept } = await Swal.fire({
+        title: 'تأكيد الاشتراك',
+        html: `هل تريد الاشتراك في هذا الكورس مقابل <b>${price}</b> كوين؟`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، اشترك',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
       });
 
-      alert("✅ تم الاشتراك بنجاح!");
-      location.reload();
+      if (!accept) return;
+
+      try {
+        const studentRef = db.collection("students").doc(userId);
+
+        await studentRef.update({
+          coins: firebase.firestore.FieldValue.increment(-price),
+          enrolledCourses: firebase.firestore.FieldValue.arrayUnion(courseId)
+        });
+
+        userCoins -= price;
+        updateWalletUI();
+
+        await Swal.fire({
+          title: 'تم الاشتراك بنجاح!',
+          text: 'يمكنك الآن الوصول إلى محتوى الكورس بالكامل',
+          icon: 'success',
+          confirmButtonText: 'حسناً',
+          confirmButtonColor: '#4f46e5'
+        });
+
+        loadCourses();
+      } catch (error) {
+        showErrorModal("خطأ في الاشتراك", "حدث خطأ أثناء محاولة الاشتراك، يرجى المحاولة مرة أخرى.");
+        console.error("Error subscribing to course:", error);
+      }
+    }
+
+    function showErrorModal(title, text) {
+      Swal.fire({
+        title: title,
+        text: text,
+        icon: 'error',
+        confirmButtonText: 'حسناً',
+        confirmButtonColor: '#4f46e5'
+      });
     }
   </script>
 
+  <!-- SweetAlert for beautiful alerts -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>
