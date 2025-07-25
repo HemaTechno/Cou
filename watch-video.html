@@ -8,12 +8,6 @@
   <style>
     body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
 
-    .disable-select, .disable-select * {
-      user-select: none;
-      -webkit-user-drag: none;
-      pointer-events: none;
-    }
-
     .watermark {
       position: absolute;
       font-size: 12px;
@@ -21,7 +15,7 @@
       background: rgba(0,0,0,0.6);
       color: #fff;
       border-radius: 5px;
-      z-index: 9999;
+      z-index: 99;
       animation: moveWatermark 15s linear infinite;
     }
 
@@ -32,45 +26,90 @@
       75%  { bottom: 5%; left: 5%; }
       100% { top: 5%; left: 5%; }
     }
+
+    /* حماية ضد السكريم شوت */
+    .screenshot-black-frame::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 90;
+      background: rgba(0, 0, 0, 0.01); /* شفاف، لكنه يظهر أسود في السكريم شوت */
+      pointer-events: none;
+    }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-6">
 
   <div class="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden relative">
-    <!-- ✅ الفيديو داخل إطار نسبي -->
-    <div style="position: relative; width: 100%; padding-top: 56.25%;">
+    <!-- ✅ إطار الفيديو مع الحماية -->
+    <div id="videoWrapper" class="relative screenshot-black-frame" style="padding-top: 56.25%;">
 
-      <!-- ✅ YouTube embed مع autoplay -->
-      <iframe
-        src="https://www.youtube.com/embed/GwduwHxu6aU?autoplay=1&mute=1&modestbranding=1&rel=0&controls=1&disablekb=1"
+      <!-- ✅ YouTube iframe -->
+      <iframe id="player"
+        src="https://www.youtube.com/embed/GwduwHxu6aU?enablejsapi=1&autoplay=1&mute=0&modestbranding=1&rel=0&controls=1"
         frameborder="0"
         allow="autoplay; encrypted-media"
         allowfullscreen
         style="position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1;">
       </iframe>
 
-      <!-- ✅ طبقة شفافة فوق الفيديو لمنع التفاعل -->
-      <div style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;background:transparent;"></div>
-
-      <!-- ✅ العلامة المائية المتحركة -->
+      <!-- ✅ العلامة المائية -->
       <div class="watermark">#1234 - الطالب: أحمد علي</div>
+    </div>
+
+    <!-- ✅ أزرار التحكم -->
+    <div class="mt-4 flex justify-center gap-4">
+      <button onclick="playVideo()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">▶️ تشغيل</button>
+      <button onclick="pauseVideo()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">⏸️ إيقاف</button>
+      <button onclick="changeSpeed(0.25)" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">🔻 أبطئ</button>
+      <button onclick="changeSpeed(-0.25)" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">🔺 أسرع</button>
     </div>
   </div>
 
-  <p class="mt-6 text-sm text-gray-500 text-center">⚠️ هذا الفيديو مخصص لك فقط، لا تشاركه مع أحد.</p>
+  <p class="mt-6 text-sm text-gray-500 text-center">⚠️ هذا الفيديو خاص بك، لا تشاركه أو تصوره.</p>
 
-  <!-- ✅ تعطيل أدوات المطور والنسخ -->
+  <!-- ✅ تعطيل أدوات المطور -->
   <script>
     document.addEventListener("contextmenu", e => e.preventDefault());
 
     document.onkeydown = function(e) {
-      if (e.key === "F12" ||
-          (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) ||
+      if (e.key === "F12" || 
+          (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) || 
           (e.ctrlKey && e.key === "U") ||
           (e.ctrlKey && e.key === "S")) {
         return false;
       }
     };
+  </script>
+
+  <!-- ✅ YouTube API -->
+  <script>
+    let player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player');
+    }
+
+    function playVideo() {
+      if (player) player.playVideo();
+    }
+
+    function pauseVideo() {
+      if (player) player.pauseVideo();
+    }
+
+    function changeSpeed(delta) {
+      if (player) {
+        let current = player.getPlaybackRate();
+        let newSpeed = Math.max(0.25, Math.min(2, current + delta));
+        player.setPlaybackRate(newSpeed);
+      }
+    }
+
+    // تحميل API يوتيوب
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
   </script>
 </body>
 </html>
