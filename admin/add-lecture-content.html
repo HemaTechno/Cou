@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>إضافة محتوى لمحاضرة</title>
+  <title>إدارة المحاضرات والمحتوى</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -12,23 +12,40 @@
     body { font-family: 'Tajawal', sans-serif; }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
-  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-xl">
-    <h2 class="text-2xl font-bold text-center text-indigo-700 mb-6">➕ إضافة محتوى لمحاضرة</h2>
+<body class="bg-gray-100 min-h-screen p-6">
 
-    <form id="contentForm" class="space-y-4">
-      <select id="courseSelect" required class="w-full border px-4 py-3 rounded-lg">
-        <option value="" disabled selected>اختر الكورس</option>
+  <div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow space-y-8">
+    <h1 class="text-2xl font-bold text-indigo-700 text-center">📚 إدارة المحاضرات والمحتوى</h1>
+
+    <!-- اختيار الصف والكورس -->
+    <div class="space-y-4">
+      <select id="stage" class="w-full border px-4 py-3 rounded-lg">
+        <option value="" disabled selected>اختر الصف الدراسي</option>
+        <option value="الصف الأول">الصف الأول</option>
+        <option value="الصف الثاني">الصف الثاني</option>
+        <option value="الصف الثالث">الصف الثالث</option>
       </select>
 
-      <div class="flex gap-4 items-center">
-        <select id="lectureSelect" required class="w-full border px-4 py-3 rounded-lg">
-          <option value="" disabled selected>اختر المحاضرة</option>
-        </select>
-        <button type="button" id="addLectureBtn" class="bg-green-100 text-green-700 px-3 py-2 rounded hover:bg-green-200">➕ محاضرة</button>
-      </div>
+      <select id="course" class="w-full border px-4 py-3 rounded-lg" disabled>
+        <option value="" disabled selected>اختر الكورس</option>
+      </select>
+    </div>
 
-      <input type="text" id="title" placeholder="عنوان المحتوى" required class="w-full border px-4 py-3 rounded-lg text-right" />
+    <!-- إضافة محاضرة جديدة -->
+    <form id="addLectureForm" class="space-y-4">
+      <input type="text" id="lectureTitle" placeholder="عنوان المحاضرة" class="w-full border px-4 py-3 rounded-lg" required>
+      <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg">➕ إضافة المحاضرة</button>
+    </form>
+
+    <hr>
+
+    <!-- إضافة محتوى لمحاضرة -->
+    <form id="addContentForm" class="space-y-4">
+      <select id="lectureSelect" class="w-full border px-4 py-3 rounded-lg">
+        <option value="" disabled selected>اختر المحاضرة</option>
+      </select>
+
+      <input type="text" id="contentTitle" placeholder="عنوان المحتوى" class="w-full border px-4 py-3 rounded-lg" required>
 
       <div class="flex gap-4">
         <label><input type="radio" name="type" value="video" checked> فيديو</label>
@@ -36,18 +53,18 @@
         <label><input type="radio" name="type" value="quiz"> اختبار</label>
       </div>
 
-      <input type="url" id="videoUrl" placeholder="رابط الفيديو" class="w-full border px-4 py-3 rounded-lg text-right" />
-      <input type="file" id="pdfFile" accept="application/pdf" class="w-full border px-4 py-3 rounded-lg hidden bg-gray-50" />
-      <input type="text" id="quizLink" placeholder="رابط الاختبار (مثلاً Google Form)" class="w-full border px-4 py-3 rounded-lg hidden" />
+      <input type="url" id="videoUrl" placeholder="رابط فيديو يوتيوب" class="w-full border px-4 py-3 rounded-lg">
+      <input type="file" id="pdfFile" accept="application/pdf" class="w-full border px-4 py-3 rounded-lg hidden">
+      <input type="text" id="quizId" placeholder="ID الاختبار" class="w-full border px-4 py-3 rounded-lg hidden">
 
-      <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">إضافة المحتوى</button>
+      <button type="submit" class="w-full bg-green-600 text-white py-3 rounded-lg">💾 إضافة المحتوى</button>
     </form>
 
-    <p id="successMsg" class="text-center text-green-600 mt-4 hidden">✅ تم إضافة المحتوى بنجاح!</p>
+    <p id="statusMsg" class="text-center font-medium mt-4 text-green-600 hidden">✅ تم الحفظ بنجاح</p>
   </div>
 
   <script>
-    // Firebase config
+    // Firebase init
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -58,93 +75,99 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    const courseSelect = document.getElementById("courseSelect");
+    const stageSelect = document.getElementById("stage");
+    const courseSelect = document.getElementById("course");
     const lectureSelect = document.getElementById("lectureSelect");
-    const form = document.getElementById("contentForm");
-    const successMsg = document.getElementById("successMsg");
+    const statusMsg = document.getElementById("statusMsg");
 
-    // تحميل الكورسات
-    db.collection("courses").get().then(snapshot => {
+    // تحميل الكورسات حسب الصف
+    stageSelect.addEventListener("change", async () => {
+      const stage = stageSelect.value;
+      courseSelect.innerHTML = '<option value="" disabled selected>جاري التحميل...</option>';
+      courseSelect.disabled = true;
+
+      const snapshot = await db.collection("courses").where("stage", "==", stage).get();
+      courseSelect.innerHTML = '<option value="" disabled selected>اختر الكورس</option>';
+
       snapshot.forEach(doc => {
-        const data = doc.data();
-        const option = document.createElement("option");
-        option.value = data.id;
-        option.textContent = data.name;
-        courseSelect.appendChild(option);
+        const c = doc.data();
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        courseSelect.appendChild(opt);
       });
+
+      courseSelect.disabled = false;
     });
 
-    // تحميل المحاضرات بعد اختيار الكورس
+    // تحميل المحاضرات
     courseSelect.addEventListener("change", async () => {
       const courseId = courseSelect.value;
-      lectureSelect.innerHTML = `<option disabled selected>اختر المحاضرة</option>`;
+      const snapshot = await db.collection("lectures").where("courseId", "==", courseId).get();
+      lectureSelect.innerHTML = '<option value="" disabled selected>اختر المحاضرة</option>';
 
-      const lectures = await db.collection("lectures").where("courseId", "==", courseId).get();
-      lectures.forEach(doc => {
+      snapshot.forEach(doc => {
         const data = doc.data();
-        const option = document.createElement("option");
-        option.value = data.id;
-        option.textContent = data.lectureTitle;
-        lectureSelect.appendChild(option);
+        const opt = document.createElement("option");
+        opt.value = data.id;
+        opt.textContent = data.lectureTitle;
+        lectureSelect.appendChild(opt);
       });
     });
 
-    // زر إضافة محاضرة
-    document.getElementById("addLectureBtn").addEventListener("click", async () => {
+    // إضافة محاضرة
+    document.getElementById("addLectureForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("lectureTitle").value.trim();
       const courseId = courseSelect.value;
-      const title = prompt("أدخل عنوان المحاضرة:");
-      if (!title) return;
+      if (!courseId || !title) return;
 
-      const lectureId = "LECTURE_" + Date.now();
-      await db.collection("lectures").doc(lectureId).set({
-        id: lectureId,
+      const id = "LECTURE_" + Date.now();
+      await db.collection("lectures").doc(id).set({
+        id,
+        lectureTitle: title,
         courseId,
-        lectureTitle: title
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      const option = document.createElement("option");
-      option.value = lectureId;
-      option.textContent = title;
-      option.selected = true;
-      lectureSelect.appendChild(option);
+      document.getElementById("lectureTitle").value = "";
+      statusMsg.classList.remove("hidden");
+      setTimeout(() => statusMsg.classList.add("hidden"), 3000);
     });
 
-    // تغيير النوع
-    document.querySelectorAll('input[name="type"]').forEach(radio => {
-      radio.addEventListener("change", () => {
-        const type = radio.value;
+    // التحكم في الحقول حسب نوع المحتوى
+    document.querySelectorAll('input[name="type"]').forEach(r => {
+      r.addEventListener("change", () => {
+        const type = r.value;
         document.getElementById("videoUrl").classList.toggle("hidden", type !== "video");
         document.getElementById("pdfFile").classList.toggle("hidden", type !== "pdf");
-        document.getElementById("quizLink").classList.toggle("hidden", type !== "quiz");
+        document.getElementById("quizId").classList.toggle("hidden", type !== "quiz");
       });
     });
 
-    // حفظ المحتوى
-    form.addEventListener("submit", async (e) => {
+    // إضافة محتوى
+    document.getElementById("addContentForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const courseId = courseSelect.value;
       const lectureId = lectureSelect.value;
-      const title = document.getElementById("title").value.trim();
+      const title = document.getElementById("contentTitle").value.trim();
       const type = document.querySelector('input[name="type"]:checked').value;
 
       let url = "";
-
       if (type === "video") {
         url = document.getElementById("videoUrl").value.trim();
-        if (!url) return alert("يرجى إدخال رابط الفيديو");
+        if (!url) return alert("أدخل رابط الفيديو");
       } else if (type === "pdf") {
         const file = document.getElementById("pdfFile").files[0];
-        if (!file) return alert("يرجى اختيار ملف PDF");
-        const fileRef = storage.ref(`pdfs/${Date.now()}_${file.name}`);
-        await fileRef.put(file);
-        url = await fileRef.getDownloadURL();
+        if (!file) return alert("اختر ملف PDF");
+        const ref = storage.ref("pdfs/" + Date.now() + "_" + file.name);
+        await ref.put(file);
+        url = await ref.getDownloadURL();
       } else if (type === "quiz") {
-        url = document.getElementById("quizLink").value.trim();
-        if (!url) return alert("يرجى إدخال رابط الاختبار");
+        url = document.getElementById("quizId").value.trim();
+        if (!url) return alert("أدخل ID الاختبار");
       }
 
       await db.collection("lectureContent").add({
-        courseId,
         lectureId,
         title,
         type,
@@ -152,9 +175,14 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      form.reset();
-      successMsg.classList.remove("hidden");
-      setTimeout(() => successMsg.classList.add("hidden"), 3000);
+      document.getElementById("addContentForm").reset();
+      document.getElementById("videoUrl").classList.remove("hidden");
+      document.getElementById("pdfFile").classList.add("hidden");
+      document.getElementById("quizId").classList.add("hidden");
+
+      statusMsg.textContent = "✅ تم إضافة المحتوى";
+      statusMsg.classList.remove("hidden");
+      setTimeout(() => statusMsg.classList.add("hidden"), 3000);
     });
   </script>
 </body>
