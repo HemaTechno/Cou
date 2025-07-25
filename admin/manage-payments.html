@@ -5,18 +5,167 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مراجعة طلبات الشحن | الإدارة</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: #f8fafc;
+    }
+    .status-tab {
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .status-tab.active {
+      border-bottom-color: currentColor;
+      font-weight: bold;
+    }
+    .payment-card {
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    .payment-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    .pending-card {
+      border-left: 4px solid #f59e0b;
+    }
+    .approved-card {
+      border-left: 4px solid #10b981;
+    }
+    .rejected-card {
+      border-left: 4px solid #ef4444;
+    }
+    .btn-approve {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .btn-reject {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    .btn-details {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    .gold-badge {
+      background: linear-gradient(135deg, #f5d78e 0%, #e8b74c 50%, #d9a439 100%);
+    }
+    .receipt-container {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-6">
+<body class="min-h-screen p-4 md:p-6">
 
-  <h1 class="text-3xl font-bold mb-6 text-center text-indigo-700">مراجعة طلبات شحن الكوينات</h1>
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+          <i class="fas fa-coins text-yellow-500 mr-2"></i>
+          مراجعة طلبات شحن الكوينات
+        </h1>
+        <p class="text-gray-600 mt-1">إدارة طلبات شحن الرصيد من الطلاب</p>
+      </div>
+      <div class="gold-badge px-4 py-2 rounded-full text-gray-800 font-bold shadow-sm">
+        <i class="fas fa-crown mr-2"></i>
+        لوحة التحكم الإدارية
+      </div>
+    </div>
 
-  <div id="paymentsList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+    <!-- Tabs -->
+    <div class="flex space-x-4 md:space-x-8 mb-6 overflow-x-auto pb-2">
+      <button onclick="loadPayments('معلق')" class="status-tab text-orange-500 active px-4 py-2">
+        <i class="fas fa-clock mr-2"></i>
+        المعلقة
+        <span id="pendingCount" class="bg-orange-100 text-orange-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded-full">0</span>
+      </button>
+      <button onclick="loadPayments('تمت الموافقة')" class="status-tab text-green-600 px-4 py-2">
+        <i class="fas fa-check-circle mr-2"></i>
+        الموافق عليها
+        <span id="approvedCount" class="bg-green-100 text-green-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded-full">0</span>
+      </button>
+      <button onclick="loadPayments('مرفوض')" class="status-tab text-red-600 px-4 py-2">
+        <i class="fas fa-times-circle mr-2"></i>
+        المرفوضة
+        <span id="rejectedCount" class="bg-red-100 text-red-800 text-xs font-medium ml-2 px-2.5 py-0.5 rounded-full">0</span>
+      </button>
+    </div>
 
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-gray-500">الطلبات المعلقة</p>
+            <h3 id="statsPending" class="text-2xl font-bold text-orange-500">0</h3>
+          </div>
+          <div class="bg-orange-100 p-3 rounded-full">
+            <i class="fas fa-clock text-orange-500 text-xl"></i>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-gray-500">الطلبات المقبولة</p>
+            <h3 id="statsApproved" class="text-2xl font-bold text-green-600">0</h3>
+          </div>
+          <div class="bg-green-100 p-3 rounded-full">
+            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-gray-500">الطلبات المرفوضة</p>
+            <h3 id="statsRejected" class="text-2xl font-bold text-red-600">0</h3>
+          </div>
+          <div class="bg-red-100 p-3 rounded-full">
+            <i class="fas fa-times-circle text-red-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payments List -->
+    <div id="paymentsList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden col-span-full text-center py-12">
+      <div class="mx-auto max-w-md">
+        <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-700">لا توجد طلبات</h3>
+        <p class="text-gray-500 mt-1">لا يوجد أي طلبات لعرضها في هذا القسم حالياً</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Details Modal -->
+  <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-gray-800">تفاصيل الطلب</h3>
+          <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div id="modalContent" class="space-y-4">
+          <!-- Content will be loaded here -->
+        </div>
+        
+        <div id="modalActions" class="mt-6 flex gap-2">
+          <!-- Actions will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
@@ -28,40 +177,230 @@
     });
 
     const db = firebase.firestore();
-    const paymentsList = document.getElementById("paymentsList");
+    let currentStatus = "معلق";
+    let allPayments = [];
 
-    async function loadPayments() {
-      const snapshot = await db.collection("payments").where("status", "==", "معلق").get();
+    // Load all payments and update counts
+    async function loadAllPayments() {
+      const snapshot = await db.collection("payments").orderBy("createdAt", "desc").get();
+      allPayments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      updateStats();
+      loadPayments(currentStatus);
+    }
+
+    // Update statistics counters
+    function updateStats() {
+      const pending = allPayments.filter(p => p.status === "معلق").length;
+      const approved = allPayments.filter(p => p.status === "تمت الموافقة").length;
+      const rejected = allPayments.filter(p => p.status === "مرفوض").length;
+      
+      document.getElementById("pendingCount").textContent = pending;
+      document.getElementById("approvedCount").textContent = approved;
+      document.getElementById("rejectedCount").textContent = rejected;
+      
+      document.getElementById("statsPending").textContent = pending;
+      document.getElementById("statsApproved").textContent = approved;
+      document.getElementById("statsRejected").textContent = rejected;
+    }
+
+    // Load payments by status
+    async function loadPayments(status) {
+      currentStatus = status;
+      
+      // Update active tab
+      document.querySelectorAll(".status-tab").forEach(tab => {
+        tab.classList.remove("active");
+      });
+      event.target.classList.add("active");
+      
+      const filteredPayments = allPayments.filter(p => p.status === status);
+      const paymentsList = document.getElementById("paymentsList");
+      const emptyState = document.getElementById("emptyState");
+      
       paymentsList.innerHTML = "";
-
-      if (snapshot.empty) {
-        paymentsList.innerHTML = `<p class="text-center col-span-full text-gray-600">لا توجد طلبات حالياً</p>`;
+      
+      if (filteredPayments.length === 0) {
+        emptyState.classList.remove("hidden");
         return;
       }
-
-      snapshot.forEach(doc => {
-        const p = doc.data();
+      
+      emptyState.classList.add("hidden");
+      
+      filteredPayments.forEach(p => {
         const card = document.createElement("div");
-        card.className = "bg-white p-4 rounded-xl shadow-md border";
-
+        let statusClass = "";
+        let statusIcon = "";
+        
+        if (p.status === "معلق") {
+          statusClass = "pending-card";
+          statusIcon = "fas fa-clock text-orange-500";
+        } else if (p.status === "تمت الموافقة") {
+          statusClass = "approved-card";
+          statusIcon = "fas fa-check-circle text-green-600";
+        } else {
+          statusClass = "rejected-card";
+          statusIcon = "fas fa-times-circle text-red-600";
+        }
+        
+        card.className = `payment-card bg-white rounded-xl overflow-hidden ${statusClass}`;
+        
         card.innerHTML = `
-          <h2 class="text-lg font-bold text-indigo-700 mb-2">📌 ${p.fullName}</h2>
-          <p class="text-gray-700 mb-1">ID: ${p.studentId}</p>
-          <p class="text-gray-700 mb-1">العدد المطلوب: <strong>${p.coinsRequested}</strong> كوين</p>
-          <p class="text-gray-700 mb-2">المبلغ: ${p.amountEGP} جنيه</p>
-          <img src="${p.receiptURL}" class="rounded-lg border mb-3 w-full h-40 object-contain bg-gray-50" alt="إيصال" />
-          <div class="flex justify-between gap-2">
-            <button onclick="approve('${p.id}', '${p.studentId}', ${p.coinsRequested})" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">✅ موافقة</button>
-            <button onclick="reject('${p.id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">❌ رفض</button>
+          <div class="p-5">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <h2 class="text-lg font-bold text-gray-800">
+                  <i class="fas fa-user-circle mr-2 text-gray-400"></i>
+                  ${p.fullName}
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">ID: ${p.studentId}</p>
+              </div>
+              <div class="flex items-center">
+                <i class="${statusIcon} mr-1"></i>
+                <span class="text-sm">${p.status}</span>
+              </div>
+            </div>
+            
+            <div class="bg-gray-50 p-3 rounded-lg mb-4">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-gray-600">عدد الكوينات:</span>
+                <span class="font-bold text-indigo-600">${p.coinsRequested}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">المبلغ:</span>
+                <span class="font-bold text-indigo-600">${p.amountEGP} جنيه</span>
+              </div>
+            </div>
+            
+            <div class="receipt-container rounded-lg mb-4 overflow-hidden">
+              <img src="${p.receiptURL}" class="w-full h-40 object-contain" alt="إيصال الدفع" />
+            </div>
+            
+            <div class="flex justify-between gap-2">
+              <button onclick="showDetails('${p.id}')" class="btn-details text-white py-2 px-3 rounded-lg flex-1">
+                <i class="fas fa-info-circle mr-2"></i> التفاصيل
+              </button>
+            </div>
           </div>
         `;
-
+        
         paymentsList.appendChild(card);
       });
     }
 
-    async function approve(paymentId, studentId, coins) {
+    // Show payment details modal
+    async function showDetails(paymentId) {
+      const payment = allPayments.find(p => p.id === paymentId);
+      if (!payment) return;
+      
+      const modalContent = document.getElementById("modalContent");
+      const modalActions = document.getElementById("modalActions");
+      
+      modalContent.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex justify-between">
+            <span class="text-gray-600">الطالب:</span>
+            <span class="font-medium">${payment.fullName}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">رقم الطالب:</span>
+            <span class="font-medium">${payment.studentId}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">حالة الطلب:</span>
+            <span class="font-medium ${payment.status === 'تمت الموافقة' ? 'text-green-600' : 
+                                  payment.status === 'مرفوض' ? 'text-red-600' : 'text-orange-500'}">
+              ${payment.status}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">عدد الكوينات:</span>
+            <span class="font-medium">${payment.coinsRequested}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">المبلغ:</span>
+            <span class="font-medium">${payment.amountEGP} جنيه</span>
+          </div>
+          ${payment.note ? `
+          <div class="flex justify-between">
+            <span class="text-gray-600">ملاحظات:</span>
+            <span class="font-medium text-red-600">${payment.note}</span>
+          </div>
+          ` : ''}
+          <div class="flex justify-between">
+            <span class="text-gray-600">تاريخ الطلب:</span>
+            <span class="font-medium">${formatDate(payment.createdAt?.toDate())}</span>
+          </div>
+          ${payment.reviewedAt ? `
+          <div class="flex justify-between">
+            <span class="text-gray-600">تاريخ المراجعة:</span>
+            <span class="font-medium">${formatDate(payment.reviewedAt?.toDate())}</span>
+          </div>
+          ` : ''}
+        </div>
+        
+        <div class="mt-4">
+          <p class="text-gray-600 mb-2">إيصال الدفع:</p>
+          <img src="${payment.receiptURL}" class="rounded-lg border w-full max-h-60 object-contain" alt="إيصال الدفع" />
+        </div>
+      `;
+      
+      modalActions.innerHTML = '';
+      
+      if (payment.status === "معلق") {
+        modalActions.innerHTML = `
+          <button onclick="approvePayment('${payment.id}', '${payment.studentId}', ${payment.coinsRequested})" 
+            class="btn-approve text-white py-2 px-4 rounded-lg flex-1">
+            <i class="fas fa-check mr-2"></i> موافقة
+          </button>
+          <button onclick="rejectPayment('${payment.id}')" 
+            class="btn-reject text-white py-2 px-4 rounded-lg flex-1">
+            <i class="fas fa-times mr-2"></i> رفض
+          </button>
+        `;
+      } else {
+        modalActions.innerHTML = `
+          <button onclick="closeModal()" 
+            class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg flex-1">
+            <i class="fas fa-times mr-2"></i> إغلاق
+          </button>
+        `;
+      }
+      
+      document.getElementById("paymentModal").classList.remove("hidden");
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById("paymentModal").classList.add("hidden");
+    }
+
+    // Format date
+    function formatDate(date) {
+      if (!date) return "غير محدد";
+      return date.toLocaleString("ar-EG");
+    }
+
+    // Approve payment
+    async function approvePayment(paymentId, studentId, coins) {
       try {
+        const { value: note } = await Swal.fire({
+          title: 'إضافة ملاحظة (اختياري)',
+          input: 'text',
+          inputPlaceholder: 'اكتب ملاحظة إذا أردت...',
+          showCancelButton: true,
+          confirmButtonText: 'تأكيد الموافقة',
+          cancelButtonText: 'إلغاء',
+          confirmButtonColor: '#10b981',
+          inputValidator: (value) => {
+            return new Promise((resolve) => {
+              resolve();
+            });
+          }
+        });
+        
+        if (note === undefined) return; // User clicked cancel
+        
         const studentRef = db.collection("students").doc(studentId);
         const studentDoc = await studentRef.get();
         const currentCoins = studentDoc.exists ? (studentDoc.data().coins || 0) : 0;
@@ -72,29 +411,69 @@
 
         await db.collection("payments").doc(paymentId).update({
           status: "تمت الموافقة",
+          note: note || null,
           reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        alert("✅ تمت الموافقة وإضافة الكوينات");
-        loadPayments();
+        Swal.fire({
+          icon: 'success',
+          title: 'تمت الموافقة',
+          text: 'تمت الموافقة على الطلب وإضافة الكوينات للطالب',
+          confirmButtonColor: '#10b981',
+        });
+        
+        closeModal();
+        loadAllPayments();
       } catch (err) {
-        alert("❌ حدث خطأ: " + err.message);
+        Swal.fire({
+          icon: 'error',
+          title: 'حدث خطأ',
+          text: err.message,
+          confirmButtonColor: '#ef4444',
+        });
       }
     }
 
-    async function reject(paymentId) {
-      const note = prompt("اكتب سبب الرفض (اختياري):");
+    // Reject payment
+    async function rejectPayment(paymentId) {
+      const { value: note } = await Swal.fire({
+        title: 'سبب الرفض',
+        input: 'text',
+        inputPlaceholder: 'اكتب سبب الرفض...',
+        showCancelButton: true,
+        confirmButtonText: 'تأكيد الرفض',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#ef4444',
+        inputValidator: (value) => {
+          if (!value) {
+            return 'يجب كتابة سبب الرفض';
+          }
+        }
+      });
+      
+      if (!note) return; // User clicked cancel or didn't enter note
+      
       await db.collection("payments").doc(paymentId).update({
         status: "مرفوض",
-        note: note || "",
+        note: note,
         reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      alert("❌ تم رفض الطلب");
-      loadPayments();
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'تم الرفض',
+        text: 'تم رفض الطلب بنجاح',
+        confirmButtonColor: '#ef4444',
+      });
+      
+      closeModal();
+      loadAllPayments();
     }
 
-    loadPayments();
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllPayments();
+    });
   </script>
 </body>
 </html>
-
