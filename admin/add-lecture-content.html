@@ -85,7 +85,7 @@
       snapshot.forEach(doc => {
         const c = doc.data();
         const option = document.createElement("option");
-        option.value = c.id;
+        option.value = doc.id;
         option.textContent = c.name;
         courseSelect.appendChild(option);
       });
@@ -104,7 +104,7 @@
       snapshot.forEach(doc => {
         const l = doc.data();
         const option = document.createElement("option");
-        option.value = l.id;
+        option.value = doc.id;
         option.textContent = l.lectureTitle;
         lectureSelect.appendChild(option);
       });
@@ -113,12 +113,12 @@
     });
 
     // تغيير نوع المحتوى
-    document.querySelectorAll('input[name="type"]').forEach(r => {
-      r.addEventListener("change", () => {
-        const type = r.value;
-        videoUrl.classList.toggle("hidden", type !== "video");
-        pdfInput.classList.toggle("hidden", type !== "pdf");
-        quizInput.classList.toggle("hidden", type !== "quiz");
+    document.querySelectorAll('input[name="type"]').forEach(radio => {
+      radio.addEventListener("change", () => {
+        const selectedType = document.querySelector('input[name="type"]:checked').value;
+        videoUrl.classList.toggle("hidden", selectedType !== "video");
+        pdfInput.classList.toggle("hidden", selectedType !== "pdf");
+        quizInput.classList.toggle("hidden", selectedType !== "quiz");
       });
     });
 
@@ -141,9 +141,11 @@
         } else if (type === "pdf") {
           const file = pdfInput.files[0];
           if (!file) return alert("يرجى اختيار ملف PDF");
-          const fileRef = storage.ref(`pdfs/${Date.now()}_${file.name}`);
-          await fileRef.put(file);
-          url = await fileRef.getDownloadURL();
+
+          const cleanName = file.name.replace(/\s+/g, "_");
+          const fileRef = firebase.storage().ref(`pdfs/${Date.now()}_${cleanName}`);
+          const snapshot = await fileRef.put(file);
+          url = await snapshot.ref.getDownloadURL();
         } else if (type === "quiz") {
           url = quizInput.value.trim();
           if (!url) return alert("يرجى إدخال ID الاختبار");
@@ -164,8 +166,8 @@
         successMsg.classList.remove("hidden");
         setTimeout(() => successMsg.classList.add("hidden"), 3000);
       } catch (err) {
-        console.error(err);
-        alert("❌ حدث خطأ أثناء الحفظ");
+        console.error("خطأ في رفع المحتوى:", err);
+        alert("❌ حدث خطأ أثناء الحفظ: " + err.message);
       }
     });
   </script>
