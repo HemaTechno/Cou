@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>إضافة كورس | منصة عبدالرحمن السقا</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+
+  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-xl">
+    <h2 class="text-2xl font-bold text-center text-indigo-700 mb-6">➕ إضافة كورس جديد</h2>
+
+    <form id="courseForm" class="space-y-4">
+      <input type="text" id="courseName" placeholder="اسم الكورس" required class="w-full border px-4 py-3 rounded-lg text-right" />
+      
+      <textarea id="courseDescription" placeholder="وصف الكورس" rows="4" required class="w-full border px-4 py-3 rounded-lg text-right"></textarea>
+      
+      <select id="stage" required class="w-full border px-4 py-3 rounded-lg">
+        <option value="" disabled selected>اختر المرحلة الدراسية</option>
+        <option value="الصف الأول">الصف الأول</option>
+        <option value="الصف الثاني">الصف الثاني</option>
+        <option value="الصف الثالث">الصف الثالث</option>
+      </select>
+
+      <label class="block text-right font-medium">صورة الكورس:</label>
+      <input type="file" id="courseImage" accept="image/*" required class="w-full border px-4 py-2 bg-gray-50 rounded-lg"/>
+
+      <div class="flex items-center gap-4">
+        <label class="flex items-center gap-2">
+          <input type="radio" name="isFree" value="true" checked> مجاني
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="radio" name="isFree" value="false"> مدفوع
+        </label>
+      </div>
+
+      <input type="number" id="price" placeholder="عدد الكوينات" min="1" class="w-full border px-4 py-3 rounded-lg text-right hidden" />
+
+      <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">
+        حفظ الكورس
+      </button>
+    </form>
+
+    <p id="successMsg" class="text-center text-green-600 mt-4 hidden">✅ تم حفظ الكورس بنجاح!</p>
+  </div>
+
+  <script>
+    // Firebase init
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f"
+    });
+
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+    const form = document.getElementById("courseForm");
+    const priceInput = document.getElementById("price");
+    const successMsg = document.getElementById("successMsg");
+
+    // Show/hide price field based on radio
+    document.querySelectorAll('input[name="isFree"]').forEach(radio => {
+      radio.addEventListener("change", () => {
+        priceInput.classList.toggle("hidden", radio.value === "true" && radio.checked);
+      });
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("courseName").value.trim();
+      const description = document.getElementById("courseDescription").value.trim();
+      const stage = document.getElementById("stage").value;
+      const imageFile = document.getElementById("courseImage").files[0];
+      const isFree = document.querySelector('input[name="isFree"]:checked').value === "true";
+      const price = isFree ? 0 : parseInt(document.getElementById("price").value);
+
+      if (!name || !description || !stage || !imageFile || (!isFree && (!price || price <= 0))) {
+        alert("يرجى تعبئة كل الحقول المطلوبة");
+        return;
+      }
+
+      const courseId = "COURSE_" + Date.now();
+
+      try {
+        // Upload image
+        const imageRef = storage.ref(`courses/${courseId}.jpg`);
+        await imageRef.put(imageFile);
+        const imageURL = await imageRef.getDownloadURL();
+
+        // Save course to DB
+        await db.collection("courses").doc(courseId).set({
+          id: courseId,
+          name,
+          description,
+          stage,
+          isFree,
+          price,
+          imageURL,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        form.reset();
+        priceInput.classList.add("hidden");
+        successMsg.classList.remove("hidden");
+        setTimeout(() => successMsg.classList.add("hidden"), 4000);
+
+      } catch (err) {
+        console.error(err);
+        alert("❌ حدث خطأ أثناء الحفظ");
+      }
+    });
+  </script>
+</body>
+</html>
