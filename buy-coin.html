@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>شحن الكوينات | منصة عبدالرحمن السقا</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase + auth-check -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <script src="js/auth-check.js"></script>
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-blue-50 min-h-screen flex items-center justify-center p-4">
+
+  <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+    <h2 class="text-2xl font-bold text-indigo-600 mb-4">شحن الكوينات</h2>
+    
+    <div id="step1">
+      <p class="mb-4 text-gray-700">سعر الكوين = <strong>1 جنيه</strong> (الحد الأدنى 10 كوينات)</p>
+      <input type="number" id="coinsInput" placeholder="أدخل عدد الكوينات" min="10" class="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 text-center" />
+      <button onclick="continueToPayment()" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-semibold">استمرار</button>
+    </div>
+
+    <div id="step2" class="hidden">
+      <p class="mb-2 text-gray-800">📱 قم بتحويل <span id="amountToPay" class="font-bold text-green-600"></span> جنيه إلى الرقم التالي:</p>
+      <div class="bg-gray-100 p-3 rounded-lg mb-4 flex justify-between items-center">
+        <span id="paymentNumber" class="font-mono text-lg">01012345678</span>
+        <button onclick="copyNumber()" class="text-blue-600 hover:underline text-sm">نسخ</button>
+      </div>
+      
+      <label class="block mb-2 text-gray-700 font-medium">📸 صورة إثبات التحويل:</label>
+      <input type="file" id="receiptImage" accept="image/*" class="mb-4 w-full" />
+      
+      <button onclick="submitPayment()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition font-semibold">
+        تأكيد التحويل
+      </button>
+      <p id="statusMsg" class="mt-4 text-sm text-gray-600 hidden">جاري إرسال الطلب...</p>
+    </div>
+  </div>
+
+  <script>
+    // Firebase config
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f"
+    });
+
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    const student = JSON.parse(localStorage.getItem("student"));
+
+    function continueToPayment() {
+      const coins = parseInt(document.getElementById("coinsInput").value);
+      if (isNaN(coins) || coins < 10) {
+        alert("⚠️ الحد الأدنى للشحن هو 10 كوينات");
+        return;
+      }
+      document.getElementById("step1").classList.add("hidden");
+      document.getElementById("step2").classList.remove("hidden");
+      document.getElementById("amountToPay").textContent = coins + " جنيه";
+    }
+
+    function copyNumber() {
+      const number = document.getElementById("paymentNumber").textContent;
+      navigator.clipboard.writeText(number).then(() => {
+        alert("✅ تم نسخ الرقم");
+      });
+    }
+
+    async function submitPayment() {
+      const coins = parseInt(document.getElementById("coinsInput").value);
+      const file = document.getElementById("receiptImage").files[0];
+      const statusMsg = document.getElementById("statusMsg");
+
+      if (!file) {
+        alert("يرجى رفع صورة التحويل");
+        return;
+      }
+
+      statusMsg.classList.remove("hidden");
+
+      const id = "PAY-" + Date.now();
+      const storageRef = storage.ref().child(`payments/${id}/receipt.jpg`);
+      await storageRef.put(file);
+      const receiptURL = await storageRef.getDownloadURL();
+
+      await db.collection("payments").doc(id).set({
+        id,
+        studentId: student.id,
+        fullName: student.fullName || "غير محدد",
+        coinsRequested: coins,
+        amountEGP: coins,
+        receiptURL,
+        status: "معلق",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      statusMsg.textContent = "✅ تم إرسال طلب الشحن بنجاح! سيتم مراجعته قريبًا.";
+    }
+  </script>
+</body>
+</html>
