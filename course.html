@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>محتوى الكورس</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>محتوى الكورس | منصة عبدالرحمن السقا</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <style>
-    body { font-family: 'Tajawal', sans-serif; }
-    iframe { width: 100%; height: 300px; }
-  </style>
+  <style>body { font-family: 'Tajawal', sans-serif; }</style>
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6 text-indigo-700">📚 محتوى الكورس</h1>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow">
+    <h2 class="text-3xl font-bold text-indigo-700 mb-6 text-center" id="courseTitle">📘 محتوى الكورس</h2>
+
     <div id="contentContainer" class="space-y-8"></div>
   </div>
 
@@ -25,70 +24,86 @@
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8"
     });
+
     const db = firebase.firestore();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const courseId = urlParams.get('id');
-    const container = document.getElementById("contentContainer");
+    // جلب ID الكورس من رابط الصفحة مثل: view-course-content.html?id=COURSE_123
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get("id");
 
     if (!courseId) {
-      container.innerHTML = "<p class='text-red-600'>❌ لم يتم تحديد الكورس.</p>";
-      throw new Error("No courseId in URL");
+      alert("❌ لا يوجد معرف للكورس");
+      location.href = "index.html";
     }
 
-    // Get lectures by courseId
-    db.collection("lectures").where("courseId", "==", courseId).get()
-      .then(snapshot => {
+    async function loadCourseContent() {
+      const contentContainer = document.getElementById("contentContainer");
+
+      try {
+        // جلب بيانات الكورس
+        const courseDoc = await db.collection("courses").doc(courseId).get();
+        if (!courseDoc.exists) return alert("❌ الكورس غير موجود");
+
+        const course = courseDoc.data();
+        document.getElementById("courseTitle").textContent = `📘 ${course.name}`;
+
+        // جلب المحتويات المرتبطة بالكورس
+        const snapshot = await db.collection("lectureContent")
+          .where("courseId", "==", courseId)
+          .orderBy("lecture")
+          .get();
+
         if (snapshot.empty) {
-          container.innerHTML = "<p class='text-gray-500'>لا توجد محاضرات لهذا الكورس حتى الآن.</p>";
+          contentContainer.innerHTML = "<p class='text-center text-gray-500'>لا يوجد محتوى مضاف حتى الآن.</p>";
           return;
         }
 
-        snapshot.forEach(async (doc) => {
-          const lecture = doc.data();
-          const lectureBox = document.createElement("div");
-          lectureBox.className = "bg-white p-4 rounded-xl shadow";
+        // تنظيم المحتويات حسب المحاضرة
+        const lectures = {};
 
-          const title = document.createElement("h2");
-          title.className = "text-xl font-bold mb-4 text-indigo-600";
-          title.textContent = "📖 " + lecture.lectureTitle;
-          lectureBox.appendChild(title);
-
-          const contentList = document.createElement("div");
-          contentList.className = "space-y-4";
-
-          // Fetch content inside this lecture
-          const contents = await db.collection("lectureContent")
-            .where("lectureId", "==", lecture.id)
-            .get();
-
-          contents.forEach(contentDoc => {
-            const content = contentDoc.data();
-
-            if (content.type === "video") {
-              const iframe = document.createElement("iframe");
-              iframe.src = content.url;
-              iframe.allowFullscreen = true;
-              iframe.className = "rounded-md border border-gray-300";
-              contentList.appendChild(iframe);
-            } else if (content.type === "pdf") {
-              const link = document.createElement("a");
-              link.href = content.url;
-              link.textContent = "📄 تحميل: " + content.title;
-              link.className = "block text-blue-600 hover:underline";
-              link.target = "_blank";
-              contentList.appendChild(link);
-            }
-          });
-
-          lectureBox.appendChild(contentList);
-          container.appendChild(lectureBox);
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (!lectures[data.lecture]) lectures[data.lecture] = [];
+          lectures[data.lecture].push(data);
         });
-      })
-      .catch(err => {
+
+        // إنشاء عرض المحتوى
+        for (let lectureName in lectures) {
+          const section = document.createElement("div");
+          section.className = "border-t pt-6";
+
+          const title = `<h3 class="text-xl font-bold text-indigo-600 mb-4">${lectureName}</h3>`;
+          const contents = lectures[lectureName].map(item => {
+            if (item.type === "video") {
+              return `
+                <div class="mb-4">
+                  <p class="font-semibold text-right mb-1">${item.title}</p>
+                  <div class="aspect-video rounded overflow-hidden shadow">
+                    <iframe class="w-full h-full" src="${item.url}" frameborder="0" allowfullscreen></iframe>
+                  </div>
+                </div>
+              `;
+            } else {
+              return `
+                <div class="mb-4 text-right">
+                  <p class="font-semibold mb-1">${item.title}</p>
+                  <a href="${item.url}" target="_blank" class="text-blue-600 underline hover:text-blue-800">📄 تحميل الملف</a>
+                </div>
+              `;
+            }
+          }).join("");
+
+          section.innerHTML = title + contents;
+          contentContainer.appendChild(section);
+        }
+
+      } catch (err) {
         console.error(err);
-        container.innerHTML = "<p class='text-red-600'>حدث خطأ أثناء تحميل المحتوى.</p>";
-      });
+        alert("❌ حدث خطأ أثناء تحميل المحتوى");
+      }
+    }
+
+    loadCourseContent();
   </script>
 </body>
 </html>
