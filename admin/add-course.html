@@ -187,40 +187,43 @@
     });
 
     // Handle file upload display
-    document.getElementById("courseImage").addEventListener("change", (e) => {
-      const uploadLabel = document.getElementById("uploadLabel");
-      const fileName = document.getElementById("fileName");
-      
-      if (e.target.files.length > 0) {
-        const file = e.target.files[0];
-        uploadLabel.classList.add("file-selected");
-        fileName.textContent = file.name;
-        fileName.classList.remove("hidden");
+    const courseImageInput = document.getElementById("courseImage");
+    if (courseImageInput) {
+      courseImageInput.addEventListener("change", (e) => {
+        const uploadLabel = document.getElementById("uploadLabel");
+        const fileName = document.getElementById("fileName");
         
-        // Show preview if image
-        if (file.type.startsWith("image/")) {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            uploadLabel.innerHTML = `
-              <img src="${event.target.result}" class="h-32 object-cover rounded-lg mb-2">
-              <span class="text-indigo-600 text-sm">${file.name}</span>
-            `;
-          };
-          reader.readAsDataURL(file);
+        if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          uploadLabel.classList.add("file-selected");
+          fileName.textContent = file.name;
+          fileName.classList.remove("hidden");
+          
+          // Show preview if image
+          if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              uploadLabel.innerHTML = `
+                <img src="${event.target.result}" class="h-32 object-cover rounded-lg mb-2">
+                <span class="text-indigo-600 text-sm">${file.name}</span>
+              `;
+            };
+            reader.readAsDataURL(file);
+          }
+        } else {
+          uploadLabel.classList.remove("file-selected");
+          fileName.classList.add("hidden");
+          uploadLabel.innerHTML = `
+            <i data-feather="upload" class="w-10 h-10 text-gray-400 mb-3"></i>
+            <span class="text-gray-600 text-center">
+              <span class="font-medium text-indigo-600">اضغط لرفع صورة</span> أو اسحبها هنا<br>
+              <span class="text-sm text-gray-500">(JPEG, PNG بحد أقصى 5MB)</span>
+            </span>
+          `;
+          feather.replace();
         }
-      } else {
-        uploadLabel.classList.remove("file-selected");
-        fileName.classList.add("hidden");
-        uploadLabel.innerHTML = `
-          <i data-feather="upload" class="w-10 h-10 text-gray-400 mb-3"></i>
-          <span class="text-gray-600 text-center">
-            <span class="font-medium text-indigo-600">اضغط لرفع صورة</span> أو اسحبها هنا<br>
-            <span class="text-sm text-gray-500">(JPEG, PNG بحد أقصى 5MB)</span>
-          </span>
-        `;
-        feather.replace();
-      }
-    });
+      });
+    }
 
     // Handle form submission
     document.getElementById("courseForm").addEventListener("submit", async (e) => {
@@ -234,15 +237,17 @@
       const name = document.getElementById("courseName").value.trim();
       const description = document.getElementById("courseDescription").value.trim();
       const stage = document.getElementById("stage").value;
-      const imageFile = document.getElementById("courseImage").files[0];
+      const imageInput = document.getElementById("courseImage");
       const isFree = document.querySelector('input[name="isFree"]:checked').value === "true";
       const price = isFree ? 0 : parseInt(document.getElementById("price").value);
 
       // Validation
-      if (!name || !description || !stage || !imageFile || (!isFree && (!price || price <= 0))) {
+      if (!name || !description || !stage || !imageInput || !imageInput.files || imageInput.files.length === 0 || (!isFree && (!price || price <= 0))) {
         alert("⚠️ يرجى تعبئة كل الحقول المطلوبة بشكل صحيح");
         return;
       }
+
+      const imageFile = imageInput.files[0];
 
       // Disable submit button and show loading
       submitBtn.disabled = true;
