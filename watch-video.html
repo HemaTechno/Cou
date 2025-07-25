@@ -6,7 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; background: #000; color: #fff; }
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: #000;
+      color: #fff;
+    }
 
     #video-container {
       position: relative;
@@ -20,7 +24,7 @@
       height: 100%;
       border: none;
       z-index: 1;
-      pointer-events: none; /* ❗️ تعطيل التفاعل */
+      pointer-events: none; /* يمنع التفاعل */
     }
 
     .overlay-block {
@@ -33,19 +37,11 @@
 
     .watermark {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(255, 255, 255, 0.1);
       padding: 6px 12px;
-      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
       font-weight: bold;
-      animation: float 3s infinite ease-in-out;
+      border-radius: 10px;
       z-index: 3;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
     }
 
     .blackout {
@@ -55,59 +51,103 @@
       z-index: 9999;
       display: none;
     }
+
+    .controls {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
 
-  <div class="max-w-4xl mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-4 text-center text-indigo-400">🎬 مشاهدة الفيديو التعليمي</h1>
+<div class="max-w-4xl mx-auto p-4">
+  <h1 class="text-2xl font-bold mb-4 text-center text-indigo-400">🎬 مشاهدة الفيديو التعليمي</h1>
 
-    <div id="video-container">
-      <div class="overlay-block"></div> <!-- تمنع أي تفاعل -->
-      <div class="watermark">منصة السقا</div>
-      <iframe id="player"
-        src="https://www.youtube.com/embed/GwduwHxu6aU?autoplay=1&rel=0&modestbranding=1&controls=0&showinfo=0&enablejsapi=1"
-        allow="autoplay"
-        allowfullscreen
-      ></iframe>
-    </div>
+  <div id="video-container">
+    <div class="overlay-block"></div>
+    <div id="watermark" class="watermark">منصة السقا</div>
+    <iframe id="player"
+            src="https://www.youtube.com/embed/GwduwHxu6aU?enablejsapi=1&autoplay=1&rel=0&controls=0&modestbranding=1"
+            allow="autoplay"
+            allowfullscreen></iframe>
   </div>
 
-  <!-- طبقة الحماية ضد السكرين شوت -->
-  <div id="blackout" class="blackout"></div>
+  <!-- أزرار التحكم -->
+  <div class="controls flex justify-center gap-4 mt-6">
+    <button onclick="togglePlay()" class="bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700">⏯ تشغيل/إيقاف</button>
+    <button onclick="goFullscreen()" class="bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-800">🔳 ملء الشاشة</button>
+  </div>
+</div>
 
-  <script>
-    // YouTube API
-    let player;
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        events: {
-          'onReady': () => player.playVideo()
-        }
-      });
+<!-- طبقة حماية سوداء -->
+<div id="blackout" class="blackout"></div>
+
+<!-- YouTube API -->
+<script>
+  let player;
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player');
+  }
+
+  // تحميل YouTube API
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
+
+  // زر تشغيل/إيقاف
+  function togglePlay() {
+    if (player.getPlayerState() === 1) {
+      player.pauseVideo();
+    } else {
+      player.playVideo();
     }
+  }
 
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
+  // زر ملء الشاشة
+  function goFullscreen() {
+    const iframe = document.getElementById("player");
+    if (iframe.requestFullscreen) {
+      iframe.requestFullscreen();
+    } else if (iframe.webkitRequestFullscreen) {
+      iframe.webkitRequestFullscreen();
+    } else if (iframe.msRequestFullscreen) {
+      iframe.msRequestFullscreen();
+    }
+  }
 
-    // منع أدوات المطور
-    document.addEventListener("keydown", function(e) {
-      if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
-        e.preventDefault();
-      }
+  // watermark حركة عشوائية
+  const watermark = document.getElementById("watermark");
+  function moveWatermark() {
+    const container = document.getElementById("video-container");
+    const maxX = container.offsetWidth - watermark.offsetWidth;
+    const maxY = container.offsetHeight - watermark.offsetHeight;
+    const x = Math.random() * maxX;
+    const y = Math.random() * maxY;
+    watermark.style.transform = `translate(${x}px, ${y}px)`;
+  }
+  setInterval(moveWatermark, 2000);
+
+  // حماية ضد أدوات المطور
+  document.addEventListener("keydown", function (e) {
+    if (
+      e.key === "F12" ||
+      (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key))
+    ) {
+      e.preventDefault();
+    }
+  });
+
+  // طبقة سوداء عند السكرين (وهمية)
+  setInterval(() => {
+    const img = new Image();
+    img.__defineGetter__('id', function () {
+      document.getElementById("blackout").style.display = "block";
+      setTimeout(() => {
+        document.getElementById("blackout").style.display = "none";
+      }, 2000);
     });
+    console.log(img);
+  }, 2000);
+</script>
 
-    // طبقة سوداء عند محاولة تصوير الشاشة (حيلة وهمية بسيطة)
-    let lastTimestamp = 0;
-    setInterval(() => {
-      const img = new Image();
-      img.__defineGetter__('id', function () {
-        document.getElementById("blackout").style.display = "block";
-        setTimeout(() => document.getElementById("blackout").style.display = "none", 2000);
-      });
-      console.log(img);
-    }, 2000);
-  </script>
 </body>
 </html>
