@@ -7,41 +7,67 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
-    .disable-select, .disable-select * { user-select: none; -webkit-user-drag: none; }
+
+    .disable-select, .disable-select * {
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .watermark {
+      position: absolute;
+      font-size: 12px;
+      padding: 5px 10px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border-radius: 5px;
+      z-index: 9999;
+      animation: moveWatermark 15s linear infinite;
+    }
+
+    @keyframes moveWatermark {
+      0%   { top: 5%; left: 5%; }
+      25%  { top: 5%; right: 5%; }
+      50%  { bottom: 5%; right: 5%; }
+      75%  { bottom: 5%; left: 5%; }
+      100% { top: 5%; left: 5%; }
+    }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-6">
 
-  <div class="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden relative disable-select">
+  <div class="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden relative">
     <!-- ✅ الفيديو داخل إطار نسبي -->
     <div style="position: relative; width: 100%; padding-top: 56.25%;">
+
+      <!-- ✅ YouTube embed مع autoplay -->
       <iframe
-        src="https://www.youtube.com/embed/GwduwHxu6aU?modestbranding=1&rel=0&controls=1&disablekb=1"
+        src="https://www.youtube.com/embed/GwduwHxu6aU?autoplay=1&mute=1&modestbranding=1&rel=0&controls=1&disablekb=1"
         frameborder="0"
+        allow="autoplay; encrypted-media"
         allowfullscreen
         style="position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1;">
       </iframe>
 
-      <!-- ✅ طبقة شفافة لمنع التفاعل -->
+      <!-- ✅ طبقة شفافة فوق الفيديو لمنع التفاعل -->
       <div style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;background:transparent;"></div>
 
-      <!-- ✅ وسم الطالب watermark -->
-      <div class="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-3 py-1 rounded z-10">
-        الطالب: #1234 - أحمد علي
-      </div>
+      <!-- ✅ العلامة المائية المتحركة -->
+      <div class="watermark">#1234 - الطالب: أحمد علي</div>
     </div>
   </div>
 
-  <p class="mt-6 text-sm text-gray-500">يرجى عدم مشاركة هذا الرابط مع الآخرين.</p>
+  <p class="mt-6 text-sm text-gray-500 text-center">⚠️ هذا الفيديو مخصص لك فقط، لا تشاركه مع أحد.</p>
 
-  <!-- ✅ تعطيل أدوات المطور -->
+  <!-- ✅ تعطيل أدوات المطور والنسخ -->
   <script>
     document.addEventListener("contextmenu", e => e.preventDefault());
+
     document.onkeydown = function(e) {
-      if (e.key === "F12" || 
-          (e.ctrlKey && e.shiftKey && e.key === "I") || 
-          (e.ctrlKey && e.key === "u") || 
-          (e.ctrlKey && e.key === "s")) {
+      if (e.key === "F12" ||
+          (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) ||
+          (e.ctrlKey && e.key === "U") ||
+          (e.ctrlKey && e.key === "S")) {
         return false;
       }
     };
