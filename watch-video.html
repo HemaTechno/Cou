@@ -4,18 +4,17 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HEMA TECH | مشغل الفيديو المميز</title>
+  <title>HEMA TECH | مشغل الفيديو</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --primary-color: #0f0e17;
-      --secondary-color: #1f1b2e;
+      --secondary-color: #1a1a2e;
       --accent-color: #e53170;
       --text-color: #fffffe;
-      --shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-      --glow: 0 0 30px rgba(229, 49, 112, 0.4);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
     * {
@@ -38,20 +37,17 @@
       align-items: center;
       min-height: 100vh;
       overflow: hidden;
-      touch-action: none;
     }
 
     .video-container {
       position: relative;
       width: 90%;
-      max-width: 1200px;
+      max-width: 1100px;
       aspect-ratio: 16/9;
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: var(--shadow), var(--glow);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: var(--shadow);
       transition: transform 0.3s ease;
-      z-index: 10;
     }
 
     .video-wrapper {
@@ -78,63 +74,50 @@
       cursor: not-allowed;
     }
 
-    /* العلامة المائية المتحركة */
+    /* العلامة المائية الصغيرة */
     .watermark {
       position: absolute;
-      font-size: 4rem;
-      font-weight: 900;
-      color: rgba(255, 255, 255, 0.15);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.25);
       z-index: 15;
       pointer-events: none;
-      text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
       font-family: 'Tajawal', sans-serif;
       animation: watermarkFlow 20s infinite linear;
       white-space: nowrap;
-      -webkit-text-stroke: 1px rgba(255, 255, 255, 0.1);
     }
 
     @keyframes watermarkFlow {
       0% {
-        transform: translateX(-30%) translateY(-20%) rotate(-15deg);
+        transform: translateX(-20%) translateY(10%) rotate(-5deg);
         opacity: 0.6;
       }
       25% {
-        transform: translateX(130%) translateY(30%) rotate(5deg);
+        transform: translateX(120%) translateY(50%) rotate(3deg);
         opacity: 0.8;
       }
       50% {
-        transform: translateX(80%) translateY(80%) rotate(20deg);
+        transform: translateX(80%) translateY(80%) rotate(8deg);
         opacity: 0.5;
       }
       75% {
-        transform: translateX(-20%) translateY(60%) rotate(-10deg);
-        opacity: 0.9;
+        transform: translateX(-20%) translateY(40%) rotate(-3deg);
+        opacity: 0.7;
       }
       100% {
-        transform: translateX(-30%) translateY(-20%) rotate(-15deg);
+        transform: translateX(-20%) translateY(10%) rotate(-5deg);
         opacity: 0.6;
       }
     }
 
-    .watermark:nth-child(2) {
-      animation-delay: 5s;
-      font-size: 5rem;
-      color: rgba(255, 255, 255, 0.1);
-    }
-
-    .watermark:nth-child(3) {
-      animation-delay: 10s;
-      font-size: 3.5rem;
-      color: rgba(255, 255, 255, 0.08);
-    }
-
-    /* أزرار التحكم */
+    /* أزرار التحكم الشفافة */
     .controls {
       position: absolute;
-      bottom: 25px;
-      right: 25px;
+      bottom: 20px;
+      right: 20px;
       display: flex;
-      gap: 15px;
+      gap: 12px;
       z-index: 30;
       opacity: 0;
       transition: opacity 0.3s ease;
@@ -145,53 +128,46 @@
     }
 
     .controls button {
-      background: rgba(15, 25, 45, 0.9);
+      background: rgba(30, 30, 50, 0.5);
       color: white;
       border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
+      padding: 10px 15px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 500;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(8px);
       transition: all 0.3s ease;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
       align-items: center;
-      gap: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      gap: 6px;
     }
 
     .controls button:hover {
-      background: rgba(25, 35, 55, 1);
-      transform: translateY(-2px);
-      box-shadow: 0 7px 20px rgba(0, 0, 0, 0.4);
-    }
-
-    .controls button:active {
-      transform: translateY(0);
+      background: rgba(50, 50, 70, 0.7);
     }
 
     /* شعار التطبيق */
     .brand-logo {
       position: absolute;
-      top: 30px;
-      right: 30px;
-      font-size: 1.8rem;
+      top: 20px;
+      right: 20px;
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--text-color);
       z-index: 5;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .brand-logo::before {
       content: '';
-      width: 10px;
-      height: 40px;
+      width: 6px;
+      height: 25px;
       background: var(--accent-color);
-      border-radius: 5px;
+      border-radius: 3px;
     }
 
     /* شاشة التحميل */
@@ -211,27 +187,13 @@
     }
 
     .loader {
-      width: 80px;
-      height: 80px;
-      border: 8px solid rgba(255, 255, 255, 0.1);
+      width: 60px;
+      height: 60px;
+      border: 5px solid rgba(255, 255, 255, 0.1);
       border-radius: 50%;
       border-top-color: var(--accent-color);
       animation: spin 1.5s linear infinite;
-      margin-bottom: 30px;
-      position: relative;
-    }
-
-    .loader::after {
-      content: '';
-      position: absolute;
-      top: -8px;
-      left: -8px;
-      right: -8px;
-      bottom: -8px;
-      border: 8px solid transparent;
-      border-radius: 50%;
-      border-top-color: rgba(229, 49, 112, 0.5);
-      animation: spin 3s linear infinite;
+      margin-bottom: 20px;
     }
 
     @keyframes spin {
@@ -239,8 +201,8 @@
     }
 
     .loading-text {
-      font-size: 1.5rem;
-      color: rgba(255, 255, 255, 0.8);
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.7);
       text-align: center;
     }
   </style>
@@ -252,16 +214,14 @@
 
   <div class="loading-screen" id="loadingScreen">
     <div class="loader"></div>
-    <div class="loading-text">جاري تحميل المحتوى المميز...</div>
+    <div class="loading-text">جاري تحميل المحتوى...</div>
   </div>
 
   <div class="video-container" id="videoContainer">
     <!-- طبقة الحماية لمنع اللمس -->
     <div class="protection-layer"></div>
     
-    <!-- علامات مائية متعددة -->
-    <div class="watermark">HEMA TECH</div>
-    <div class="watermark">HEMA TECH</div>
+    <!-- علامة مائية صغيرة -->
     <div class="watermark">HEMA TECH</div>
     
     <div class="video-wrapper">
