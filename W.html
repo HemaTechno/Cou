@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>محفظتي | منصة عبدالرحمن السقا</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase + Auth Check -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="js/auth-check.js"></script> <!-- يتحقق من تسجيل الدخول -->
+
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 to-blue-50 min-h-screen flex items-center justify-center p-6">
+
+  <div class="bg-white shadow-2xl rounded-2xl p-8 max-w-sm w-full text-center">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-4">💰 محفظتك</h2>
+
+    <p class="text-gray-700 mb-2">رصيدك الحالي من الكوينات هو:</p>
+
+    <div class="bg-indigo-100 text-indigo-800 text-4xl font-bold py-6 rounded-xl shadow-inner" id="coinsDisplay">
+      جاري التحميل...
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f"
+    });
+
+    const db = firebase.firestore();
+    const student = JSON.parse(localStorage.getItem("student"));
+    const display = document.getElementById("coinsDisplay");
+
+    if (!student || !student.id) {
+      display.textContent = "❌ لم يتم العثور على الحساب";
+    } else {
+      db.collection("students").doc(student.id).get().then(doc => {
+        const coins = doc.exists ? (doc.data().coins || 0) : 0;
+        display.textContent = coins + " 🪙";
+      }).catch(err => {
+        display.textContent = "⚠️ حدث خطأ في التحميل";
+        console.error(err);
+      });
+    }
+  </script>
+</body>
+</html>
