@@ -3,160 +3,276 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>محتوى الكورس</title>
+  <title>محتوى الكورس | منصة التعلم</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <style> 
-    body { font-family: 'Tajawal', sans-serif; }
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    }
+    .course-card {
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    .course-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
     .loader {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #6366f1;
       border-radius: 50%;
       width: 40px;
       height: 40px;
       animation: spin 1s linear infinite;
-      margin: 20px auto;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .content-item {
+      transition: all 0.2s ease;
+    }
+    .content-item:hover {
+      background-color: #f8fafc;
+    }
   </style>
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-5xl mx-auto">
-    <div id="loader" class="loader"></div>
-    <div id="courseInfo" class="bg-white p-6 rounded-xl shadow mb-6 hidden"></div>
-    <div id="contentContainer" class="space-y-6"></div>
-    <p id="statusMsg" class="text-center text-red-600 font-semibold hidden mt-10"></p>
-    <div id="debugInfo" class="mt-6 p-4 bg-gray-200 rounded-lg hidden"></div>
+<body class="min-h-screen p-4 md:p-6">
+  <!-- شريط التحميل -->
+  <div id="loader" class="fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50">
+    <div class="loader"></div>
+    <p class="mr-3 text-indigo-600 font-medium">جاري تحميل المحتوى...</p>
   </div>
 
+  <!-- الهيدر -->
+  <header class="max-w-6xl mx-auto mb-8">
+    <div class="flex justify-between items-center">
+      <a href="index.html" class="text-indigo-600 font-bold text-xl flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        منصتي التعليمية
+      </a>
+      <button onclick="logout()" class="text-gray-600 hover:text-indigo-600 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        تسجيل خروج
+      </button>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <main class="max-w-6xl mx-auto">
+    <!-- معلومات الكورس -->
+    <div id="courseInfo" class="bg-white rounded-xl shadow-md overflow-hidden mb-8 hidden">
+      <div class="md:flex">
+        <div class="md:w-1/3">
+          <img id="courseImage" src="https://via.placeholder.com/600x400?text=صورة+الكورس" class="w-full h-48 md:h-full object-cover">
+        </div>
+        <div class="p-6 md:w-2/3">
+          <div class="flex justify-between items-start">
+            <div>
+              <h1 id="courseTitle" class="text-2xl md:text-3xl font-bold text-gray-800 mb-2"></h1>
+              <div class="flex items-center text-sm text-gray-500 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="courseDuration"></span>
+                <span class="mx-2">•</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="courseLevel"></span>
+              </div>
+            </div>
+            <span id="courseBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800"></span>
+          </div>
+          <p id="courseDescription" class="text-gray-600 mb-4"></p>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">#تعليمي</span>
+            <span id="courseTags" class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- رسائل الحالة -->
+    <div id="statusMsg" class="hidden p-4 mb-6 rounded-lg text-center"></div>
+
+    <!-- محتوى الكورس -->
+    <div id="contentContainer" class="grid gap-6"></div>
+
+    <!-- إذا لم يكن هناك محتوى -->
+    <div id="emptyState" class="hidden text-center py-12">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-700">لا يوجد محتوى متاح حالياً</h3>
+      <p class="mt-2 text-gray-500">سيتم إضافة المحتوى قريباً بإذن الله</p>
+      <a href="courses.html" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+        تصفح الكورسات الأخرى
+      </a>
+    </div>
+  </main>
+
+  <!-- الفوتر -->
+  <footer class="max-w-6xl mx-auto mt-12 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+    <p>© 2023 منصتي التعليمية. جميع الحقوق محفوظة.</p>
+  </footer>
+
   <script>
-    // Firebase Init
-    firebase.initializeApp({
+    // التهيئة الأساسية
+    const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8"
-    });
+    };
 
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
 
+    // عناصر DOM
+    const loader = document.getElementById("loader");
+    const courseInfo = document.getElementById("courseInfo");
     const contentDiv = document.getElementById("contentContainer");
     const statusMsg = document.getElementById("statusMsg");
-    const courseInfo = document.getElementById("courseInfo");
-    const loader = document.getElementById("loader");
-    const debugInfo = document.getElementById("debugInfo");
-    const courseId = new URLSearchParams(window.location.search).get("courseId");
+    const emptyState = document.getElementById("emptyState");
 
-    // إظهار معلومات التصحيح للمطور
-    function showDebugInfo(info) {
-      debugInfo.classList.remove("hidden");
-      debugInfo.innerHTML = `<h3 class="font-bold mb-2">معلومات التصحيح:</h3><pre>${JSON.stringify(info, null, 2)}</pre>`;
+    // استخراج معرف الكورس من الرابط (يدعم كلا الخيارين id أو courseId)
+    const urlParams = new URLSearchParams(window.location.search);
+    const courseId = urlParams.get("id") || urlParams.get("courseId");
+
+    // تسجيل الخروج
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "index.html";
+      });
     }
 
+    // متابعة حالة المصادقة
     auth.onAuthStateChanged(async (user) => {
-      try {
-        if (!user) {
-          console.log("No user found, redirecting...");
-          window.location.href = "index.html";
-          return;
-        }
+      if (!user) {
+        window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.pathname + window.location.search);
+        return;
+      }
 
-        console.log("User authenticated:", user.uid);
-        
+      try {
+        // جلب بيانات الطالب
         const userDoc = await db.collection("students").doc(user.uid).get();
         
         if (!userDoc.exists) {
-          console.log("Student document not found");
-          statusMsg.textContent = "❌ حساب الطالب غير موجود!";
-          statusMsg.classList.remove("hidden");
-          loader.classList.add("hidden");
+          showError("حساب الطالب غير موجود في النظام");
           return;
         }
 
         const student = userDoc.data();
-        console.log("Student data:", student);
         
-        // عرض معلومات التصحيح
-        showDebugInfo({
-          userId: user.uid,
-          courseId: courseId,
-          enrolledCourses: student.enrolledCourses,
-          isEnrolled: student.enrolledCourses && student.enrolledCourses.includes(courseId)
-        });
-
-        if (!student.enrolledCourses || !student.enrolledCourses.includes(courseId)) {
-          console.log("Student not enrolled in this course");
-          statusMsg.textContent = "❌ أنت غير مسجل في هذا الكورس!";
-          statusMsg.classList.remove("hidden");
-          loader.classList.add("hidden");
+        // التحقق من اشتراك الطالب في الكورس
+        if (!courseId || !student.enrolledCourses || !student.enrolledCourses.includes(courseId)) {
+          showError("أنت غير مسجل في هذا الكورس أو الرابط غير صحيح", true);
           return;
         }
 
-        // كل شيء جيد، تحميل المحتوى
-        await showCourseInfo();
-        await loadLectures();
-        loader.classList.add("hidden");
+        // جلب بيانات الكورس
+        await loadCourseInfo(courseId);
+        
+        // جلب محتوى الكورس
+        await loadCourseContent(courseId);
         
       } catch (error) {
-        console.error("Authentication error:", error);
-        statusMsg.textContent = "❌ حدث خطأ أثناء تحميل البيانات. الرجاء المحاولة لاحقًا.";
-        statusMsg.classList.remove("hidden");
+        console.error("Error:", error);
+        showError("حدث خطأ أثناء تحميل البيانات. الرجاء المحاولة لاحقاً");
+      } finally {
         loader.classList.add("hidden");
       }
     });
 
-    async function showCourseInfo() {
+    // عرض رسالة خطأ
+    function showError(message, showReturnLink = false) {
+      statusMsg.innerHTML = `
+        <div class="bg-red-50 border-l-4 border-red-500 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="mr-3">
+              <p class="text-sm text-red-700">${message}</p>
+            </div>
+          </div>
+          ${showReturnLink ? `
+          <div class="mt-3">
+            <a href="courses.html" class="inline-flex items-center text-sm font-medium text-red-700 hover:text-red-600">
+              العودة إلى قائمة الكورسات
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </a>
+          </div>
+          ` : ''}
+        </div>
+      `;
+      statusMsg.classList.remove("hidden");
+    }
+
+    // جلب معلومات الكورس
+    async function loadCourseInfo(courseId) {
       try {
         const courseDoc = await db.collection("courses").doc(courseId).get();
         
         if (!courseDoc.exists) {
-          console.log("Course not found");
-          statusMsg.textContent = "❌ الكورس المطلوب غير موجود!";
-          statusMsg.classList.remove("hidden");
+          showError("الكورس المطلوب غير موجود في النظام", true);
           return;
         }
 
         const course = courseDoc.data();
+        
+        // عرض معلومات الكورس
+        document.getElementById("courseTitle").textContent = course.name || "كورس بدون عنوان";
+        document.getElementById("courseDescription").textContent = course.description || "لا يوجد وصف متاح لهذا الكورس";
+        document.getElementById("courseImage").src = course.imageURL || "https://via.placeholder.com/600x400?text=صورة+الكورس";
+        document.getElementById("courseDuration").textContent = course.duration || "غير محدد";
+        document.getElementById("courseLevel").textContent = course.level || "جميع المستويات";
+        document.getElementById("courseBadge").textContent = course.category || "عام";
+        document.getElementById("courseTags").textContent = course.tags?.join(", ") || "لا يوجد تاجات";
+
+        // تغيير لون البادج حسب التصنيف
+        const badge = document.getElementById("courseBadge");
+        if (course.category === "متقدم") {
+          badge.classList.add("bg-red-100", "text-red-800");
+        } else if (course.category === "متوسط") {
+          badge.classList.add("bg-yellow-100", "text-yellow-800");
+        } else {
+          badge.classList.add("bg-indigo-100", "text-indigo-800");
+        }
+
         courseInfo.classList.remove("hidden");
-        courseInfo.innerHTML = `
-          <div class="flex items-center gap-6">
-            <img src="${course.imageURL || 'https://via.placeholder.com/160x112'}" 
-                 class="w-40 h-28 object-cover rounded-xl border" />
-            <div>
-              <h1 class="text-2xl font-bold text-indigo-700">${course.name}</h1>
-              <p class="text-gray-700 mt-2">${course.description || 'لا يوجد وصف متاح'}</p>
-              <p class="text-sm text-gray-500 mt-2">معرف الكورس: ${courseId}</p>
-            </div>
-          </div>
-        `;
+        
       } catch (error) {
         console.error("Error loading course info:", error);
-        statusMsg.textContent = "❌ حدث خطأ أثناء تحميل معلومات الكورس.";
-        statusMsg.classList.remove("hidden");
+        showError("حدث خطأ أثناء تحميل معلومات الكورس");
       }
     }
 
-    async function loadLectures() {
+    // جلب محتوى الكورس
+    async function loadCourseContent(courseId) {
       try {
         const lecturesSnapshot = await db.collection("lectures")
           .where("courseId", "==", courseId)
           .orderBy("createdAt")
           .get();
 
-        console.log(`Found ${lecturesSnapshot.size} lectures for course ${courseId}`);
-
         if (lecturesSnapshot.empty) {
-          contentDiv.innerHTML = `
-            <div class="bg-white p-6 rounded-xl shadow text-center">
-              <p class="text-gray-500">لا يوجد محاضرات متاحة بعد.</p>
-              <p class="text-sm text-gray-400 mt-2">سيتم إضافة المحاضرات قريبًا</p>
-            </div>
-          `;
+          emptyState.classList.remove("hidden");
           return;
         }
 
@@ -165,16 +281,27 @@
         for (const doc of lecturesSnapshot.docs) {
           const lecture = doc.data();
           const section = document.createElement("div");
-          section.className = "bg-white p-4 rounded-xl shadow";
+          section.className = "bg-white rounded-xl shadow-md overflow-hidden course-card";
 
           const toggleId = `toggle_${lecture.id}`;
           section.innerHTML = `
-            <button class="w-full text-right font-bold text-lg text-indigo-700 flex justify-between items-center" 
-                    onclick="toggleContent('${toggleId}')">
-              <span>📘 ${lecture.lectureTitle || 'محاضرة بدون عنوان'}</span>
-              <span class="text-gray-500 text-sm">${new Date(lecture.createdAt?.toDate()).toLocaleDateString()}</span>
+            <button class="w-full flex justify-between items-center p-6 text-right" onclick="toggleContent('${toggleId}')">
+              <div class="flex items-center">
+                <div class="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div class="mr-4">
+                  <h3 class="text-lg font-bold text-gray-800">${lecture.lectureTitle || "محاضرة بدون عنوان"}</h3>
+                  <p class="text-sm text-gray-500 mt-1">${lecture.description || ""}</p>
+                </div>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 transform transition-transform" id="icon_${toggleId}" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
             </button>
-            <div id="${toggleId}" class="mt-4 space-y-4 hidden"></div>
+            <div id="${toggleId}" class="hidden border-t border-gray-200 divide-y divide-gray-200"></div>
           `;
 
           contentDiv.appendChild(section);
@@ -187,32 +314,59 @@
           const inner = section.querySelector(`#${toggleId}`);
 
           if (contentsSnapshot.empty) {
-            inner.innerHTML = `<p class="text-gray-400 p-4">لا يوجد محتوى لهذه المحاضرة بعد.</p>`;
+            inner.innerHTML = `
+              <div class="p-6 text-center text-gray-500">
+                لا يوجد محتوى متاح لهذه المحاضرة بعد
+              </div>
+            `;
           } else {
             hasContent = true;
             contentsSnapshot.forEach(contentDoc => {
               const content = contentDoc.data();
               let button = "";
+              let icon = "";
+              let colorClass = "";
 
               if (content.type === "video") {
-                button = `<a href="watch-video.html?url=${encodeURIComponent(content.url)}"
-                            class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 inline-block">
-                            🎬 اضغط للمشاهدة</a>`;
+                icon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>`;
+                colorClass = "bg-indigo-100 text-indigo-700 hover:bg-indigo-200";
+                button = `<a href="watch-video.html?url=${encodeURIComponent(content.url)}&title=${encodeURIComponent(content.title)}" 
+                            class="inline-flex items-center px-4 py-2 rounded-md font-medium ${colorClass}">
+                            ${icon} مشاهدة الفيديو
+                          </a>`;
               } else if (content.type === "pdf") {
-                button = `<a href="${content.url}" target="_blank"
-                            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 inline-block">
-                            📄 تحميل PDF</a>`;
+                icon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>`;
+                colorClass = "bg-red-100 text-red-700 hover:bg-red-200";
+                button = `<a href="${content.url}" target="_blank" 
+                            class="inline-flex items-center px-4 py-2 rounded-md font-medium ${colorClass}">
+                            ${icon} تحميل الملف
+                          </a>`;
               } else if (content.type === "quiz") {
-                button = `<a href="start-quiz.html?id=${contentDoc.id}"
-                            class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 inline-block">
-                            📝 بدء الاختبار</a>`;
+                icon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>`;
+                colorClass = "bg-green-100 text-green-700 hover:bg-green-200";
+                button = `<a href="start-quiz.html?id=${contentDoc.id}" 
+                            class="inline-flex items-center px-4 py-2 rounded-md font-medium ${colorClass}">
+                            ${icon} بدء الاختبار
+                          </a>`;
               }
 
               inner.innerHTML += `
-                <div class="border p-4 bg-gray-50 rounded-lg">
-                  <h3 class="font-medium text-gray-800 mb-2">${content.title || 'عنوان غير محدد'}</h3>
-                  <p class="text-sm text-gray-500 mb-3">${content.description || ''}</p>
-                  ${button}
+                <div class="p-6 content-item">
+                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <h4 class="font-bold text-gray-800">${content.title || "عنوان غير محدد"}</h4>
+                      ${content.description ? `<p class="text-sm text-gray-600 mt-1">${content.description}</p>` : ''}
+                    </div>
+                    <div class="flex-shrink-0">
+                      ${button}
+                    </div>
+                  </div>
                 </div>
               `;
             });
@@ -220,20 +374,21 @@
         }
 
         if (!hasContent) {
-          statusMsg.textContent = "⚠️ تم تحميل العناوين ولكن لا يوجد محتوى متاح بعد.";
-          statusMsg.classList.remove("hidden");
+          emptyState.classList.remove("hidden");
         }
-
-      } catch (err) {
-        console.error("Error loading lectures:", err);
-        statusMsg.textContent = "❌ حدث خطأ أثناء تحميل المحاضرات. الرجاء تحديث الصفحة أو المحاولة لاحقًا.";
-        statusMsg.classList.remove("hidden");
+        
+      } catch (error) {
+        console.error("Error loading course content:", error);
+        showError("حدث خطأ أثناء تحميل محتوى الكورس");
       }
     }
 
+    // تبديل عرض/إخفاء المحتوى
     function toggleContent(id) {
       const section = document.getElementById(id);
+      const icon = document.getElementById(`icon_${id}`);
       section.classList.toggle("hidden");
+      icon.classList.toggle("rotate-180");
     }
   </script>
 </body>
