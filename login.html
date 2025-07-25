@@ -65,6 +65,13 @@
     .divider::after {
       margin-right: 10px;
     }
+    .animate-spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -83,6 +90,11 @@
       </div>
       <h1 class="text-3xl font-bold text-gray-800 mb-2">منصة عبدالرحمن السقا</h1>
       <p class="text-gray-600">سجل الدخول للوصول إلى حسابك</p>
+    </div>
+
+    <!-- Instructions -->
+    <div id="loginInstructions" class="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm mb-4 hidden">
+      <p>ⓘ بعد النقر على زر التسجيل، سيظهر لك نافذة من Google للمصادقة. يرجى عدم إغلاقها حتى تكمل عملية التسجيل.</p>
     </div>
 
     <!-- Login buttons -->
@@ -115,10 +127,11 @@
       ليس لديك حساب؟ <a href="#" class="text-indigo-600 font-medium hover:underline">سجل الآن</a>
     </p>
 
-    <p id="loginMessage" class="text-center mt-4 text-sm text-red-600 hidden animate-pulse"></p>
+    <p id="loginMessage" class="text-center mt-4 text-sm text-red-600 hidden"></p>
   </div>
 
   <script>
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -128,23 +141,31 @@
       appId: "1:24512338206:web:dfe045db59bd3434a2110f"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // DOM elements
     const loginMessage = document.getElementById("loginMessage");
+    const loginInstructions = document.getElementById("loginInstructions");
+    let isLoading = false;
 
+    // Show message with animation
     function showMessage(msg) {
       loginMessage.textContent = msg;
       loginMessage.classList.remove("hidden");
+      
       anime({
         targets: '#loginMessage',
-        scale: [1, 1.05, 1],
-        duration: 600,
-        easing: 'easeInOutQuad'
+        opacity: [0, 1],
+        scale: [0.9, 1],
+        duration: 500,
+        easing: 'easeOutExpo'
       });
     }
 
+    // Handle login result
     async function handleLoginResult(user) {
       try {
         const docRef = db.collection("students").doc(user.uid);
@@ -162,49 +183,90 @@
           return;
         }
 
-        // ✅ توليد session_id جديد
+        // Generate new session ID
         const sessionId = "S-" + Math.random().toString(36).substring(2);
 
-        // تخزينه في قاعدة البيانات
+        // Update database with new session ID
         await docRef.update({ session_id: sessionId });
 
-        // حفظ البيانات في localStorage
+        // Save data to localStorage
         localStorage.setItem("student", JSON.stringify({
           id: user.uid,
           fullName: data.fullName
         }));
         localStorage.setItem("session_id", sessionId);
 
-        // التوجيه للوحة الطالب
+        // Redirect to dashboard
         window.location.href = "dashboard.html";
       } catch (err) {
         showMessage("❌ حدث خطأ: " + err.message);
       }
     }
 
-    // Google Login
-    document.getElementById("googleLogin").addEventListener("click", async () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
+    // Handle login with loading state
+    async function handleLogin(provider, type) {
+      if (isLoading) return;
+      
+      isLoading = true;
+      const btn = document.getElementById(`${type}Login`);
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `
+        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        جاري تسجيل الدخول...
+      `;
+      btn.disabled = true;
+
       try {
         const result = await auth.signInWithPopup(provider);
         await handleLoginResult(result.user);
       } catch (err) {
-        showMessage("❌ فشل تسجيل الدخول بـ Google: " + err.message);
+        if (err.code !== 'auth/popup-closed-by-user') {
+          showMessage("❌ فشل تسجيل الدخول: " + err.message);
+        }
+      } finally {
+        isLoading = false;
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        loginInstructions.classList.add("hidden");
       }
+    }
+
+    // Google Login
+    document.getElementById("googleLogin").addEventListener("click", () => {
+      loginInstructions.classList.remove("hidden");
+      const provider = new firebase.auth.GoogleAuthProvider();
+      handleLogin(provider, 'google');
     });
 
     // Apple Login
-    document.getElementById("appleLogin").addEventListener("click", async () => {
+    document.getElementById("appleLogin").addEventListener("click", () => {
+      loginInstructions.classList.remove("hidden");
       const provider = new firebase.auth.OAuthProvider('apple.com');
-      try {
-        const result = await auth.signInWithPopup(provider);
-        await handleLoginResult(result.user);
-      } catch (err) {
-        showMessage("❌ فشل تسجيل الدخول بـ Apple: " + err.message);
+      handleLogin(provider, 'apple');
+    });
+
+    // Alternative: Redirect method for popup blockers
+    document.getElementById("googleLogin").addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      if (confirm("هل تواجه مشكلة في نافذة التسجيل؟ هل تريد تجربة طريقة بديلة؟")) {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithRedirect(provider);
       }
     });
 
-    // Animation on load
+    // Handle redirect result when page loads
+    auth.getRedirectResult().then((result) => {
+      if (result.user) {
+        handleLoginResult(result.user);
+      }
+    }).catch((err) => {
+      showMessage("❌ فشل تسجيل الدخول: " + err.message);
+    });
+
+    // Animation on page load
     document.addEventListener('DOMContentLoaded', () => {
       anime({
         targets: '.login-card',
