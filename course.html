@@ -6,19 +6,19 @@
   <title>محتوى الكورس</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <style> body { font-family: 'Tajawal', sans-serif; } </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-6">
-
-  <div class="max-w-5xl mx-auto">
-    <h1 class="text-3xl font-bold text-indigo-700 mb-6">📘 محتوى الكورس</h1>
-    <div id="contentArea" class="space-y-6"></div>
+<body class="bg-gray-50 p-6">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-indigo-700 mb-6 text-center">📚 محتوى الكورس</h1>
+    <div id="contentContainer" class="space-y-6"></div>
+    <p id="statusMsg" class="text-center text-red-600 font-semibold hidden"></p>
   </div>
 
   <script>
-    // Firebase config
+    // Firebase init
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -28,71 +28,90 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const courseId = urlParams.get("id");
-    const contentArea = document.getElementById("contentArea");
+    const contentDiv = document.getElementById("contentContainer");
+    const statusMsg = document.getElementById("statusMsg");
 
-    if (!courseId) {
-      contentArea.innerHTML = "<p class='text-red-600 font-bold'>❌ لم يتم تحديد الكورس.</p>";
-      throw new Error("No course ID");
-    }
+    const courseId = new URLSearchParams(window.location.search).get("courseId");
 
-    auth.onAuthStateChanged(async user => {
-      if (!user) return window.location.href = "login.html";
+    // تحقق من الدخول والاشتراك
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
 
-      const studentRef = db.collection("students").doc(user.uid);
-      const studentSnap = await studentRef.get();
-      const student = studentSnap.data();
+      const userDoc = await db.collection("students").doc(user.uid).get();
+      const student = userDoc.data();
 
       if (!student || !student.enrolledCourses || !student.enrolledCourses.includes(courseId)) {
-        contentArea.innerHTML = "<p class='text-red-600 font-bold'>🚫 لا يمكنك عرض هذا الكورس. لم تقم بالاشتراك.</p>";
+        statusMsg.textContent = "🚫 لا يمكنك عرض هذا الكورس. تأكد أنك مشترك فيه.";
+        statusMsg.classList.remove("hidden");
         return;
       }
 
-      loadLecturesAndContent();
+      loadContent();
     });
 
-    async function loadLecturesAndContent() {
-      const lecturesSnap = await db.collection("lectures").where("courseId", "==", courseId).orderBy("createdAt").get();
+    async function loadContent() {
+      try {
+        const lecturesSnapshot = await db.collection("lectures")
+          .where("courseId", "==", courseId)
+          .orderBy("createdAt")
+          .get();
 
-      if (lecturesSnap.empty) {
-        contentArea.innerHTML = "<p class='text-gray-500'>لا توجد محاضرات بعد.</p>";
-        return;
-      }
-
-      for (const doc of lecturesSnap.docs) {
-        const lecture = doc.data();
-        const section = document.createElement("div");
-        section.className = "bg-white p-6 rounded-xl shadow-md";
-
-        section.innerHTML = `<h2 class="text-xl font-bold mb-4 text-indigo-700">${lecture.lectureTitle}</h2>`;
-
-        const contentsSnap = await db.collection("lectureContent").where("lectureId", "==", lecture.id).get();
-        if (contentsSnap.empty) {
-          section.innerHTML += `<p class="text-gray-500">لا يوجد محتوى بعد لهذه المحاضرة.</p>`;
-        } else {
-          contentsSnap.forEach(c => {
-            const content = c.data();
-            let buttonHTML = "";
-
-            if (content.type === "video") {
-              buttonHTML = `<a href="${content.url}" target="_blank" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">📺 اضغط للمشاهدة</a>`;
-            } else if (content.type === "pdf") {
-              buttonHTML = `<a href="${content.url}" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">📄 تحميل PDF</a>`;
-            } else if (content.type === "quiz") {
-              buttonHTML = `<a href="${content.url}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">🧪 بدء الاختبار</a>`;
-            }
-
-            section.innerHTML += `
-              <div class="mb-4">
-                <p class="font-medium text-gray-700 mb-2">🔹 ${content.title}</p>
-                ${buttonHTML}
-              </div>
-            `;
-          });
+        if (lecturesSnapshot.empty) {
+          contentDiv.innerHTML = `<p class="text-center text-gray-500">لا يوجد محاضرات بعد.</p>`;
+          return;
         }
 
-        contentArea.appendChild(section);
+        for (const doc of lecturesSnapshot.docs) {
+          const lecture = doc.data();
+          const section = document.createElement("div");
+          section.className = "bg-white p-6 rounded-xl shadow space-y-4";
+
+          section.innerHTML = `<h2 class="text-xl font-bold text-indigo-600 mb-2">${lecture.lectureTitle}</h2>`;
+
+          const contentsSnapshot = await db.collection("lectureContent")
+            .where("lectureId", "==", lecture.id)
+            .orderBy("createdAt")
+            .get();
+
+          if (contentsSnapshot.empty) {
+            section.innerHTML += `<p class="text-gray-400">لا يوجد محتوى بعد.</p>`;
+          } else {
+            contentsSnapshot.forEach(contentDoc => {
+              const content = contentDoc.data();
+              let button;
+
+              if (content.type === "video") {
+                button = `<a href="watch-video.html?url=${encodeURIComponent(content.url)}"
+                          class="inline-block bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                          🎬 اضغط للمشاهدة</a>`;
+              } else if (content.type === "pdf") {
+                button = `<a href="${content.url}" target="_blank"
+                          class="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                          📄 تحميل PDF</a>`;
+              } else if (content.type === "quiz") {
+                button = `<a href="start-quiz.html?id=${contentDoc.id}"
+                          class="inline-block bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+                          📝 بدء الاختبار</a>`;
+              }
+
+              section.innerHTML += `
+                <div class="border p-4 rounded-lg shadow-sm bg-gray-50">
+                  <h3 class="font-semibold text-gray-800 mb-2">${content.title}</h3>
+                  ${button}
+                </div>
+              `;
+            });
+          }
+
+          contentDiv.appendChild(section);
+        }
+      } catch (err) {
+        console.error(err);
+        statusMsg.textContent = "❌ حدث خطأ أثناء تحميل المحتوى.";
+        statusMsg.classList.remove("hidden");
       }
     }
   </script>
