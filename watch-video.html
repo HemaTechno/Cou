@@ -2,92 +2,91 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🎬 مشاهدة الفيديو</title>
+  <title>مشاهدة الفيديو</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+    body { font-family: 'Tajawal', sans-serif; background: #000; color: #fff; }
+
+    #video-container {
+      position: relative;
+      padding-top: 56.25%;
+    }
+
+    #player {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      z-index: 1;
+    }
 
     .watermark {
       position: absolute;
-      font-size: 12px;
-      padding: 5px 10px;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      border-radius: 5px;
-      z-index: 99;
-      animation: moveWatermark 15s linear infinite;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-weight: bold;
+      animation: float 3s infinite ease-in-out;
+      z-index: 3;
     }
 
-    @keyframes moveWatermark {
-      0%   { top: 5%; left: 5%; }
-      25%  { top: 5%; right: 5%; }
-      50%  { bottom: 5%; right: 5%; }
-      75%  { bottom: 5%; left: 5%; }
-      100% { top: 5%; left: 5%; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
     }
 
-    /* حماية ضد السكريم شوت */
-    .screenshot-black-frame::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 90;
-      background: rgba(0, 0, 0, 0.01); /* شفاف، لكنه يظهر أسود في السكريم شوت */
-      pointer-events: none;
+    #controls {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .blackout {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 10000;
+      display: none;
     }
   </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-6">
+<body>
 
-  <div class="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden relative">
-    <!-- ✅ إطار الفيديو مع الحماية -->
-    <div id="videoWrapper" class="relative screenshot-black-frame" style="padding-top: 56.25%;">
+  <div class="max-w-4xl mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4 text-center text-indigo-400">🎬 مشاهدة الفيديو التعليمي</h1>
 
-      <!-- ✅ YouTube iframe -->
+    <div id="video-container">
+      <div class="watermark">منصة السقا</div>
       <iframe id="player"
-        src="https://www.youtube.com/embed/GwduwHxu6aU?enablejsapi=1&autoplay=1&mute=0&modestbranding=1&rel=0&controls=1"
-        frameborder="0"
-        allow="autoplay; encrypted-media"
+        src="https://www.youtube.com/embed/GwduwHxu6aU?autoplay=1&rel=0&modestbranding=1&controls=0&showinfo=0&enablejsapi=1"
+        allow="autoplay; fullscreen"
         allowfullscreen
-        style="position: absolute; top:0; left:0; width:100%; height:100%; z-index: 1;">
-      </iframe>
-
-      <!-- ✅ العلامة المائية -->
-      <div class="watermark">#1234 - الطالب: أحمد علي</div>
+      ></iframe>
     </div>
 
-    <!-- ✅ أزرار التحكم -->
-    <div class="mt-4 flex justify-center gap-4">
-      <button onclick="playVideo()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">▶️ تشغيل</button>
-      <button onclick="pauseVideo()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">⏸️ إيقاف</button>
-      <button onclick="changeSpeed(0.25)" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">🔻 أبطئ</button>
-      <button onclick="changeSpeed(-0.25)" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">🔺 أسرع</button>
+    <div id="controls" class="mt-6 space-x-2">
+      <button onclick="playVideo()" class="bg-green-600 text-white px-4 py-2 rounded">▶️ تشغيل</button>
+      <button onclick="pauseVideo()" class="bg-red-600 text-white px-4 py-2 rounded">⏸️ إيقاف</button>
+      <button onclick="changeSpeed(1.5)" class="bg-yellow-500 text-white px-4 py-2 rounded">⏩ سرعة ×1.5</button>
+      <button onclick="changeSpeed(0.75)" class="bg-yellow-700 text-white px-4 py-2 rounded">⏪ بطيء ×0.75</button>
+      <button onclick="fullscreen()" class="bg-blue-600 text-white px-4 py-2 rounded">🔳 ملء الشاشة</button>
     </div>
   </div>
 
-  <p class="mt-6 text-sm text-gray-500 text-center">⚠️ هذا الفيديو خاص بك، لا تشاركه أو تصوره.</p>
+  <!-- طبقة الحماية -->
+  <div id="blackout" class="blackout"></div>
 
-  <!-- ✅ تعطيل أدوات المطور -->
-  <script>
-    document.addEventListener("contextmenu", e => e.preventDefault());
-
-    document.onkeydown = function(e) {
-      if (e.key === "F12" || 
-          (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J")) || 
-          (e.ctrlKey && e.key === "U") ||
-          (e.ctrlKey && e.key === "S")) {
-        return false;
-      }
-    };
-  </script>
-
-  <!-- ✅ YouTube API -->
   <script>
     let player;
     function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player');
+      player = new YT.Player('player', {
+        events: {
+          'onReady': () => player.playVideo()
+        }
+      });
     }
 
     function playVideo() {
@@ -98,18 +97,39 @@
       if (player) player.pauseVideo();
     }
 
-    function changeSpeed(delta) {
-      if (player) {
-        let current = player.getPlaybackRate();
-        let newSpeed = Math.max(0.25, Math.min(2, current + delta));
-        player.setPlaybackRate(newSpeed);
-      }
+    function changeSpeed(rate) {
+      if (player) player.setPlaybackRate(rate);
     }
 
-    // تحميل API يوتيوب
+    function fullscreen() {
+      const iframe = document.getElementById("player");
+      if (iframe.requestFullscreen) iframe.requestFullscreen();
+      else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+      else if (iframe.msRequestFullscreen) iframe.msRequestFullscreen();
+    }
+
+    // YouTube API
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(tag);
+
+    // منع أدوات المطور
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+        e.preventDefault();
+      }
+    });
+
+    // طبقة سوداء عند محاولة تصوير الشاشة
+    let lastTimestamp = 0;
+    setInterval(() => {
+      const img = new Image();
+      img.__defineGetter__('id', function () {
+        document.getElementById("blackout").style.display = "block";
+        setTimeout(() => document.getElementById("blackout").style.display = "none", 2000);
+      });
+      console.log(img);
+    }, 2000);
   </script>
 </body>
 </html>
