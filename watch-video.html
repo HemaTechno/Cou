@@ -20,6 +20,15 @@
       height: 100%;
       border: none;
       z-index: 1;
+      pointer-events: none; /* ❗️ تعطيل التفاعل */
+    }
+
+    .overlay-block {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: transparent;
+      pointer-events: all;
     }
 
     .watermark {
@@ -39,16 +48,11 @@
       50% { transform: translateY(-8px); }
     }
 
-    #controls {
-      margin-top: 20px;
-      text-align: center;
-    }
-
     .blackout {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.8);
-      z-index: 10000;
+      z-index: 9999;
       display: none;
     }
   </style>
@@ -59,27 +63,21 @@
     <h1 class="text-2xl font-bold mb-4 text-center text-indigo-400">🎬 مشاهدة الفيديو التعليمي</h1>
 
     <div id="video-container">
+      <div class="overlay-block"></div> <!-- تمنع أي تفاعل -->
       <div class="watermark">منصة السقا</div>
       <iframe id="player"
         src="https://www.youtube.com/embed/GwduwHxu6aU?autoplay=1&rel=0&modestbranding=1&controls=0&showinfo=0&enablejsapi=1"
-        allow="autoplay; fullscreen"
+        allow="autoplay"
         allowfullscreen
       ></iframe>
     </div>
-
-    <div id="controls" class="mt-6 space-x-2">
-      <button onclick="playVideo()" class="bg-green-600 text-white px-4 py-2 rounded">▶️ تشغيل</button>
-      <button onclick="pauseVideo()" class="bg-red-600 text-white px-4 py-2 rounded">⏸️ إيقاف</button>
-      <button onclick="changeSpeed(1.5)" class="bg-yellow-500 text-white px-4 py-2 rounded">⏩ سرعة ×1.5</button>
-      <button onclick="changeSpeed(0.75)" class="bg-yellow-700 text-white px-4 py-2 rounded">⏪ بطيء ×0.75</button>
-      <button onclick="fullscreen()" class="bg-blue-600 text-white px-4 py-2 rounded">🔳 ملء الشاشة</button>
-    </div>
   </div>
 
-  <!-- طبقة الحماية -->
+  <!-- طبقة الحماية ضد السكرين شوت -->
   <div id="blackout" class="blackout"></div>
 
   <script>
+    // YouTube API
     let player;
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('player', {
@@ -89,26 +87,6 @@
       });
     }
 
-    function playVideo() {
-      if (player) player.playVideo();
-    }
-
-    function pauseVideo() {
-      if (player) player.pauseVideo();
-    }
-
-    function changeSpeed(rate) {
-      if (player) player.setPlaybackRate(rate);
-    }
-
-    function fullscreen() {
-      const iframe = document.getElementById("player");
-      if (iframe.requestFullscreen) iframe.requestFullscreen();
-      else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
-      else if (iframe.msRequestFullscreen) iframe.msRequestFullscreen();
-    }
-
-    // YouTube API
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(tag);
@@ -120,7 +98,7 @@
       }
     });
 
-    // طبقة سوداء عند محاولة تصوير الشاشة
+    // طبقة سوداء عند محاولة تصوير الشاشة (حيلة وهمية بسيطة)
     let lastTimestamp = 0;
     setInterval(() => {
       const img = new Image();
