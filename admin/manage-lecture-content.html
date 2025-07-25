@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>إدارة محتوى المحاضرات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <style>body { font-family: 'Tajawal', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow">
+    <h2 class="text-2xl font-bold mb-4 text-indigo-700 text-center">📚 إدارة محتوى المحاضرات</h2>
+    <div id="contentList" class="space-y-4"></div>
+  </div>
+
+  <script>
+    // Firebase init
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com"
+    });
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    const contentList = document.getElementById("contentList");
+
+    async function loadContent() {
+      const snapshot = await db.collection("lectureContent").orderBy("createdAt", "desc").get();
+      contentList.innerHTML = "";
+
+      if (snapshot.empty) {
+        contentList.innerHTML = "<p class='text-center text-gray-500'>لا يوجد محتوى بعد.</p>";
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const id = doc.id;
+
+        const item = document.createElement("div");
+        item.className = "border rounded-xl p-4 shadow flex flex-col md:flex-row md:items-center justify-between gap-4";
+
+        item.innerHTML = `
+          <div>
+            <h3 class="text-lg font-bold text-indigo-800">${data.title}</h3>
+            <p class="text-sm text-gray-600">نوع: ${data.type === "video" ? "فيديو" : "PDF"}</p>
+            <p class="text-sm text-gray-500 mt-1 truncate max-w-sm">الرابط: ${data.url}</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="editContent('${id}', '${data.title.replace(/'/g, "\\'")}', '${data.url.replace(/'/g, "\\'")}', '${data.type}')" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">تعديل</button>
+            <button onclick="deleteContent('${id}', '${data.type}', '${data.url.replace(/'/g, "\\'")}')" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">حذف</button>
+          </div>
+        `;
+
+        contentList.appendChild(item);
+      });
+    }
+
+    async function deleteContent(id, type, url) {
+      if (!confirm("هل أنت متأكد من حذف هذا المحتوى؟")) return;
+
+      try {
+        await db.collection("lectureContent").doc(id).delete();
+
+        // لو PDF نحذف الملف من التخزين
+        if (type === "pdf") {
+          const fileRef = storage.refFromURL(url);
+          await fileRef.delete();
+        }
+
+        alert("✅ تم الحذف بنجاح");
+        loadContent();
+      } catch (err) {
+        alert("❌ حدث خطأ أثناء الحذف");
+        console.error(err);
+      }
+    }
+
+    function editContent(id, title, url, type) {
+      const newTitle = prompt("تعديل العنوان:", title);
+      if (!newTitle) return;
+
+      if (type === "video") {
+        const newUrl = prompt("تعديل رابط الفيديو:", url);
+        if (!newUrl) return;
+
+        db.collection("lectureContent").doc(id).update({ title: newTitle, url: newUrl })
+          .then(() => {
+            alert("✅ تم التعديل");
+            loadContent();
+          });
+      } else {
+        db.collection("lectureContent").doc(id).update({ title: newTitle })
+          .then(() => {
+            alert("✅ تم تعديل العنوان فقط (لا يمكن تعديل رابط PDF)");
+            loadContent();
+          });
+      }
+    }
+
+    // أول تحميل
+    loadContent();
+  </script>
+</body>
+</html>
