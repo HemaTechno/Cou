@@ -8,14 +8,30 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <style> body { font-family: 'Tajawal', sans-serif; } </style>
+  <style> 
+    body { font-family: 'Tajawal', sans-serif; }
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
-<body class="bg-gray-50 p-6">
-
-  <div class="max-w-5xl mx-auto space-y-6">
-    <div id="courseInfo" class="bg-white shadow p-6 rounded-xl text-center"></div>
-    <div id="lecturesContainer" class="space-y-4"></div>
-    <p id="statusMsg" class="text-center text-red-600 font-semibold hidden"></p>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-5xl mx-auto">
+    <div id="loader" class="loader"></div>
+    <div id="courseInfo" class="bg-white p-6 rounded-xl shadow mb-6 hidden"></div>
+    <div id="contentContainer" class="space-y-6"></div>
+    <p id="statusMsg" class="text-center text-red-600 font-semibold hidden mt-10"></p>
+    <div id="debugInfo" class="mt-6 p-4 bg-gray-200 rounded-lg hidden"></div>
   </div>
 
   <script>
@@ -29,99 +45,195 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
 
-    const courseId = new URLSearchParams(window.location.search).get("courseId");
-    const courseInfo = document.getElementById("courseInfo");
-    const lecturesContainer = document.getElementById("lecturesContainer");
+    const contentDiv = document.getElementById("contentContainer");
     const statusMsg = document.getElementById("statusMsg");
+    const courseInfo = document.getElementById("courseInfo");
+    const loader = document.getElementById("loader");
+    const debugInfo = document.getElementById("debugInfo");
+    const courseId = new URLSearchParams(window.location.search).get("courseId");
+
+    // إظهار معلومات التصحيح للمطور
+    function showDebugInfo(info) {
+      debugInfo.classList.remove("hidden");
+      debugInfo.innerHTML = `<h3 class="font-bold mb-2">معلومات التصحيح:</h3><pre>${JSON.stringify(info, null, 2)}</pre>`;
+    }
 
     auth.onAuthStateChanged(async (user) => {
-      if (!user) return window.location.href = "index.html";
+      try {
+        if (!user) {
+          console.log("No user found, redirecting...");
+          window.location.href = "index.html";
+          return;
+        }
 
-      const userDoc = await db.collection("students").doc(user.uid).get();
-      const student = userDoc.data();
+        console.log("User authenticated:", user.uid);
+        
+        const userDoc = await db.collection("students").doc(user.uid).get();
+        
+        if (!userDoc.exists) {
+          console.log("Student document not found");
+          statusMsg.textContent = "❌ حساب الطالب غير موجود!";
+          statusMsg.classList.remove("hidden");
+          loader.classList.add("hidden");
+          return;
+        }
 
-      if (!student || !student.enrolledCourses?.includes(courseId)) {
-        window.location.href = "index.html";
-        return;
+        const student = userDoc.data();
+        console.log("Student data:", student);
+        
+        // عرض معلومات التصحيح
+        showDebugInfo({
+          userId: user.uid,
+          courseId: courseId,
+          enrolledCourses: student.enrolledCourses,
+          isEnrolled: student.enrolledCourses && student.enrolledCourses.includes(courseId)
+        });
+
+        if (!student.enrolledCourses || !student.enrolledCourses.includes(courseId)) {
+          console.log("Student not enrolled in this course");
+          statusMsg.textContent = "❌ أنت غير مسجل في هذا الكورس!";
+          statusMsg.classList.remove("hidden");
+          loader.classList.add("hidden");
+          return;
+        }
+
+        // كل شيء جيد، تحميل المحتوى
+        await showCourseInfo();
+        await loadLectures();
+        loader.classList.add("hidden");
+        
+      } catch (error) {
+        console.error("Authentication error:", error);
+        statusMsg.textContent = "❌ حدث خطأ أثناء تحميل البيانات. الرجاء المحاولة لاحقًا.";
+        statusMsg.classList.remove("hidden");
+        loader.classList.add("hidden");
       }
-
-      loadCourseInfo();
-      loadLectures();
     });
 
-    async function loadCourseInfo() {
-      const courseDoc = await db.collection("courses").doc(courseId).get();
-      const course = courseDoc.data();
-      courseInfo.innerHTML = `
-        <img src="${course.imageURL}" alt="${course.name}" class="w-full h-64 object-cover rounded-lg mb-4" />
-        <h1 class="text-3xl font-bold text-indigo-700">${course.name}</h1>
-        <p class="text-gray-600 mt-2">${course.description}</p>
-      `;
+    async function showCourseInfo() {
+      try {
+        const courseDoc = await db.collection("courses").doc(courseId).get();
+        
+        if (!courseDoc.exists) {
+          console.log("Course not found");
+          statusMsg.textContent = "❌ الكورس المطلوب غير موجود!";
+          statusMsg.classList.remove("hidden");
+          return;
+        }
+
+        const course = courseDoc.data();
+        courseInfo.classList.remove("hidden");
+        courseInfo.innerHTML = `
+          <div class="flex items-center gap-6">
+            <img src="${course.imageURL || 'https://via.placeholder.com/160x112'}" 
+                 class="w-40 h-28 object-cover rounded-xl border" />
+            <div>
+              <h1 class="text-2xl font-bold text-indigo-700">${course.name}</h1>
+              <p class="text-gray-700 mt-2">${course.description || 'لا يوجد وصف متاح'}</p>
+              <p class="text-sm text-gray-500 mt-2">معرف الكورس: ${courseId}</p>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        console.error("Error loading course info:", error);
+        statusMsg.textContent = "❌ حدث خطأ أثناء تحميل معلومات الكورس.";
+        statusMsg.classList.remove("hidden");
+      }
     }
 
     async function loadLectures() {
-      const lectures = await db.collection("lectures")
-        .where("courseId", "==", courseId)
-        .orderBy("createdAt")
-        .get();
-
-      if (lectures.empty) {
-        lecturesContainer.innerHTML = `<p class="text-center text-gray-500">لا توجد محاضرات حالياً.</p>`;
-        return;
-      }
-
-      lectures.forEach(async (lectureDoc) => {
-        const lecture = lectureDoc.data();
-        const section = document.createElement("div");
-        section.className = "bg-white rounded-xl shadow p-4";
-
-        const contentSnap = await db.collection("lectureContent")
-          .where("lectureId", "==", lecture.id)
+      try {
+        const lecturesSnapshot = await db.collection("lectures")
+          .where("courseId", "==", courseId)
           .orderBy("createdAt")
           .get();
 
-        let contentHTML = "";
-        if (contentSnap.empty) {
-          contentHTML = `<p class="text-gray-400 text-sm">لا يوجد محتوى بعد.</p>`;
-        } else {
-          contentSnap.forEach(doc => {
-            const content = doc.data();
-            let button = "";
-            if (content.type === "video") {
-              button = `<a href="watch-video.html?url=${encodeURIComponent(content.url)}" 
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">🎬 اضغط للمشاهدة</a>`;
-            } else if (content.type === "pdf") {
-              button = `<a href="${content.url}" target="_blank" 
-                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">📄 اضغط للتحميل</a>`;
-            } else if (content.type === "quiz") {
-              button = `<a href="start-quiz.html?id=${doc.id}" 
-                        class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">📝 بدء الاختبار</a>`;
-            }
+        console.log(`Found ${lecturesSnapshot.size} lectures for course ${courseId}`);
 
-            contentHTML += `
-              <div class="bg-gray-50 p-3 rounded-lg border mt-2">
-                <div class="flex justify-between items-center">
-                  <h3 class="text-sm font-medium">${content.title}</h3>
-                  ${button}
-                </div>
-              </div>
-            `;
-          });
+        if (lecturesSnapshot.empty) {
+          contentDiv.innerHTML = `
+            <div class="bg-white p-6 rounded-xl shadow text-center">
+              <p class="text-gray-500">لا يوجد محاضرات متاحة بعد.</p>
+              <p class="text-sm text-gray-400 mt-2">سيتم إضافة المحاضرات قريبًا</p>
+            </div>
+          `;
+          return;
         }
 
-        section.innerHTML = `
-          <button class="w-full text-right font-bold text-indigo-700 text-lg mb-2" onclick="toggleContent(this)">
-            📘 ${lecture.lectureTitle}
-          </button>
-          <div class="lecture-content hidden">${contentHTML}</div>
-        `;
-        lecturesContainer.appendChild(section);
-      });
+        let hasContent = false;
+
+        for (const doc of lecturesSnapshot.docs) {
+          const lecture = doc.data();
+          const section = document.createElement("div");
+          section.className = "bg-white p-4 rounded-xl shadow";
+
+          const toggleId = `toggle_${lecture.id}`;
+          section.innerHTML = `
+            <button class="w-full text-right font-bold text-lg text-indigo-700 flex justify-between items-center" 
+                    onclick="toggleContent('${toggleId}')">
+              <span>📘 ${lecture.lectureTitle || 'محاضرة بدون عنوان'}</span>
+              <span class="text-gray-500 text-sm">${new Date(lecture.createdAt?.toDate()).toLocaleDateString()}</span>
+            </button>
+            <div id="${toggleId}" class="mt-4 space-y-4 hidden"></div>
+          `;
+
+          contentDiv.appendChild(section);
+
+          const contentsSnapshot = await db.collection("lectureContent")
+            .where("lectureId", "==", lecture.id)
+            .orderBy("createdAt")
+            .get();
+
+          const inner = section.querySelector(`#${toggleId}`);
+
+          if (contentsSnapshot.empty) {
+            inner.innerHTML = `<p class="text-gray-400 p-4">لا يوجد محتوى لهذه المحاضرة بعد.</p>`;
+          } else {
+            hasContent = true;
+            contentsSnapshot.forEach(contentDoc => {
+              const content = contentDoc.data();
+              let button = "";
+
+              if (content.type === "video") {
+                button = `<a href="watch-video.html?url=${encodeURIComponent(content.url)}"
+                            class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 inline-block">
+                            🎬 اضغط للمشاهدة</a>`;
+              } else if (content.type === "pdf") {
+                button = `<a href="${content.url}" target="_blank"
+                            class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 inline-block">
+                            📄 تحميل PDF</a>`;
+              } else if (content.type === "quiz") {
+                button = `<a href="start-quiz.html?id=${contentDoc.id}"
+                            class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 inline-block">
+                            📝 بدء الاختبار</a>`;
+              }
+
+              inner.innerHTML += `
+                <div class="border p-4 bg-gray-50 rounded-lg">
+                  <h3 class="font-medium text-gray-800 mb-2">${content.title || 'عنوان غير محدد'}</h3>
+                  <p class="text-sm text-gray-500 mb-3">${content.description || ''}</p>
+                  ${button}
+                </div>
+              `;
+            });
+          }
+        }
+
+        if (!hasContent) {
+          statusMsg.textContent = "⚠️ تم تحميل العناوين ولكن لا يوجد محتوى متاح بعد.";
+          statusMsg.classList.remove("hidden");
+        }
+
+      } catch (err) {
+        console.error("Error loading lectures:", err);
+        statusMsg.textContent = "❌ حدث خطأ أثناء تحميل المحاضرات. الرجاء تحديث الصفحة أو المحاولة لاحقًا.";
+        statusMsg.classList.remove("hidden");
+      }
     }
 
-    function toggleContent(btn) {
-      const content = btn.nextElementSibling;
-      content.classList.toggle("hidden");
+    function toggleContent(id) {
+      const section = document.getElementById(id);
+      section.classList.toggle("hidden");
     }
   </script>
 </body>
