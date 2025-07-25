@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>تسجيل الدخول | منصة عبدالرحمن السقا</title>
+  
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <script src="https://kit.fontawesome.com/a2d9d5c1db.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -21,18 +22,6 @@
           },
           colors: {
             primary: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              200: '#bae6fd',
-              300: '#7dd3fc',
-              400: '#38bdf8',
-              500: '#0ea5e9',
-              600: '#0284c7',
-              700: '#0369a1',
-              800: '#075985',
-              900: '#0c4a6e',
-            },
-            secondary: {
               50: '#f5f3ff',
               100: '#ede9fe',
               200: '#ddd6fe',
@@ -43,6 +32,11 @@
               700: '#6d28d9',
               800: '#5b21b6',
               900: '#4c1d95',
+            },
+            dark: {
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
             }
           }
         }
@@ -58,51 +52,69 @@
   
   <!-- Custom Styles -->
   <style>
-    body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      background-attachment: fixed;
+    :root {
+      --primary-gradient: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+      --glass-effect: rgba(255, 255, 255, 0.1);
     }
     
-    .card {
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      background-color: rgba(255, 255, 255, 0.95);
-      border: 1px solid rgba(209, 213, 219, 0.3);
+    body {
+      background: url('https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80') no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-primary {
+      background: var(--primary-gradient);
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5);
+    }
+    
+    .btn-social {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-social:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
     
     .input-field {
       transition: all 0.3s ease;
-      border: 1px solid #e5e7eb;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.8);
     }
     
     .input-field:focus {
       border-color: #8b5cf6;
       box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
-    }
-    
-    .btn-primary {
-      background: linear-gradient(to right, #7c3aed, #6d28d9);
-      transition: all 0.3s ease;
-    }
-    
-    .btn-primary:hover {
-      background: linear-gradient(to right, #6d28d9, #5b21b6);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn-google {
-      transition: all 0.3s ease;
-    }
-    
-    .btn-google:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      background: white;
     }
     
     .file-upload {
       position: relative;
       overflow: hidden;
+      border: 2px dashed rgba(139, 92, 246, 0.3);
+      background: rgba(255, 255, 255, 0.6);
+    }
+    
+    .file-upload:hover {
+      border-color: #8b5cf6;
+      background: rgba(255, 255, 255, 0.8);
     }
     
     .file-upload-input {
@@ -114,144 +126,138 @@
       font-size: 20px;
       cursor: pointer;
       opacity: 0;
-      filter: alpha(opacity=0);
     }
     
-    .file-upload-label {
-      display: block;
-      padding: 0.75rem;
-      border: 1px dashed #d1d5db;
-      border-radius: 0.5rem;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s;
+    .animate-bounce-in {
+      animation: bounceIn 0.6s ease;
     }
     
-    .file-upload-label:hover {
-      border-color: #8b5cf6;
-      background-color: rgba(139, 92, 246, 0.05);
+    @keyframes bounceIn {
+      0% { transform: scale(0.9); opacity: 0; }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
     }
     
-    .animate-pulse {
+    .pulse-effect {
       animation: pulse 2s infinite;
     }
     
     @keyframes pulse {
-      0% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
-      100% {
-        transform: scale(1);
-      }
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center px-4 py-12 font-sans">
+<body class="min-h-screen flex items-center justify-center px-4 py-8 font-sans">
 
-  <div class="card shadow-2xl rounded-2xl p-8 max-w-xl w-full relative overflow-hidden">
-    <!-- Decorative Elements -->
-    <div class="absolute -top-20 -right-20 w-40 h-40 bg-purple-200 rounded-full opacity-20"></div>
-    <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-200 rounded-full opacity-20"></div>
-    
-    <!-- Logo & Heading -->
+  <div class="glass-card p-8 max-w-xl w-full animate-bounce-in">
+    <!-- Logo Header -->
     <div class="text-center mb-8">
-      <div class="w-20 h-20 bg-gradient-to-r from-secondary-600 to-primary-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+      <div class="w-24 h-24 bg-gradient-to-r from-primary-600 to-primary-800 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
         <i class="fas fa-user-graduate text-white text-3xl"></i>
       </div>
-      <h1 class="text-3xl font-bold text-gray-800 mb-2">مرحباً بك في منصة</h1>
-      <h2 class="text-4xl font-extrabold bg-gradient-to-r from-secondary-600 to-primary-600 bg-clip-text text-transparent">عبدالرحمن السقا</h2>
-      <p class="text-gray-600 mt-4">سجل دخولك لبدء رحلتك التعليمية</p>
+      <h1 class="text-4xl font-extrabold text-gray-900 mb-2">مرحباً بك في</h1>
+      <h2 class="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">منصة عبدالرحمن السقا</h2>
+      <p class="text-gray-600 mt-3">سجل دخولك لبدء رحلتك التعليمية</p>
     </div>
 
-    <!-- Google Login Button -->
-    <button id="googleLogin" class="btn-google w-full bg-white text-gray-800 font-semibold py-3 rounded-lg border border-gray-300 hover:border-gray-400 transition mb-6 flex items-center justify-center gap-3">
-      <i class="fab fa-google text-red-500 text-xl"></i>
-      <span>التسجيل بحساب جوجل</span>
-    </button>
+    <!-- Social Login Buttons -->
+    <div class="space-y-4 mb-6">
+      <button id="googleLogin" class="btn-social w-full bg-white text-gray-800 font-semibold py-3 rounded-xl flex items-center justify-center gap-3">
+        <i class="fab fa-google text-red-500 text-xl"></i>
+        <span>المتابعة بحساب جوجل</span>
+      </button>
+      
+      <button id="appleLogin" class="btn-social w-full bg-gray-900 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-3">
+        <i class="fab fa-apple text-white text-xl"></i>
+        <span>المتابعة بحساب Apple</span>
+      </button>
+    </div>
 
     <!-- Divider -->
-    <div class="relative flex items-center justify-center mb-6">
-      <div class="border-t border-gray-300 w-full"></div>
-      <span class="absolute bg-white px-4 text-gray-500">أو</span>
+    <div class="relative flex items-center justify-center my-6">
+      <div class="border-t border-gray-200 w-full"></div>
+      <span class="absolute bg-white px-4 text-gray-500 text-sm">أو</span>
     </div>
 
     <!-- Registration Form -->
     <form id="registerForm" class="space-y-5 hidden">
-      <div>
-        <label for="fullName" class="block text-right text-gray-700 mb-2 font-medium">الاسم الكامل</label>
-        <input type="text" id="fullName" required placeholder="أدخل اسمك الكامل" class="input-field w-full px-4 py-3 rounded-lg text-right focus:outline-none" />
-      </div>
-      
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="fullName" class="block text-right text-gray-700 mb-2 font-medium">الاسم الكامل</label>
+          <input type="text" id="fullName" required placeholder="أدخل اسمك الكامل" 
+                 class="input-field w-full px-4 py-3 rounded-xl text-right focus:outline-none" />
+        </div>
         <div>
           <label for="studentNumber" class="block text-right text-gray-700 mb-2 font-medium">رقم الطالب</label>
-          <input type="text" id="studentNumber" required placeholder="رقم الطالب" class="input-field w-full px-4 py-3 rounded-lg text-right focus:outline-none" />
-        </div>
-        <div>
-          <label for="password" class="block text-right text-gray-700 mb-2 font-medium">كلمة المرور</label>
-          <input type="password" id="password" required placeholder="كلمة المرور" class="input-field w-full px-4 py-3 rounded-lg text-right focus:outline-none" />
+          <input type="text" id="studentNumber" required placeholder="رقم الطالب" 
+                 class="input-field w-full px-4 py-3 rounded-xl text-right focus:outline-none" />
         </div>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="fatherNumber" class="block text-right text-gray-700 mb-2 font-medium">رقم الأب</label>
-          <input type="text" id="fatherNumber" required placeholder="رقم ولي الأمر" class="input-field w-full px-4 py-3 rounded-lg text-right focus:outline-none" />
+          <label for="fatherNumber" class="block text-right text-gray-700 mb-2 font-medium">رقم ولي الأمر</label>
+          <input type="text" id="fatherNumber" required placeholder="رقم الأب" 
+                 class="input-field w-full px-4 py-3 rounded-xl text-right focus:outline-none" />
         </div>
         <div>
           <label for="motherNumber" class="block text-right text-gray-700 mb-2 font-medium">رقم الأم</label>
-          <input type="text" id="motherNumber" required placeholder="رقم الأم" class="input-field w-full px-4 py-3 rounded-lg text-right focus:outline-none" />
+          <input type="text" id="motherNumber" required placeholder="رقم الأم" 
+                 class="input-field w-full px-4 py-3 rounded-xl text-right focus:outline-none" />
         </div>
       </div>
       
       <div>
-        <label class="block text-right text-gray-700 mb-2 font-medium">صورة شخصية</label>
-        <div class="file-upload">
+        <label for="password" class="block text-right text-gray-700 mb-2 font-medium">كلمة المرور</label>
+        <input type="password" id="password" required placeholder="كلمة المرور" 
+               class="input-field w-full px-4 py-3 rounded-xl text-right focus:outline-none" />
+      </div>
+      
+      <div>
+        <label class="block text-right text-gray-700 mb-2 font-medium">الصورة الشخصية</label>
+        <div class="file-upload rounded-xl p-4 text-center">
           <input type="file" id="selfie" required accept="image/*" class="file-upload-input" />
-          <label for="selfie" class="file-upload-label">
-            <i class="fas fa-camera text-primary-600 text-xl mb-2"></i>
-            <p class="text-gray-600">اضغط لرفع صورتك الشخصية</p>
-            <p class="text-xs text-gray-500 mt-1">يجب أن تكون الصورة واضحة وحديثة</p>
+          <label for="selfie" class="cursor-pointer">
+            <i class="fas fa-cloud-upload-alt text-primary-600 text-3xl mb-2"></i>
+            <p class="text-gray-700 font-medium">اسحب وأفلت الصورة هنا أو انقر للاختيار</p>
+            <p class="text-sm text-gray-500 mt-1">يجب أن تكون الصورة واضحة وحديثة</p>
           </label>
         </div>
       </div>
       
-      <button type="submit" class="btn-primary w-full text-white font-semibold py-3 rounded-lg mt-6 flex items-center justify-center gap-2">
+      <button type="submit" class="btn-primary w-full text-white font-semibold py-3 rounded-xl mt-2 flex items-center justify-center gap-2">
         <i class="fas fa-paper-plane"></i>
-        <span>تقديم الطلب</span>
+        <span>إتمام التسجيل</span>
       </button>
     </form>
 
     <!-- Success Message -->
-    <div id="successMsg" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg text-center hidden animate-pulse">
-      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+    <div id="successMsg" class="p-6 bg-green-50 border border-green-200 rounded-xl text-center hidden pulse-effect">
+      <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <i class="fas fa-check-circle text-green-600 text-3xl"></i>
       </div>
-      <h3 class="text-xl font-bold text-green-800 mb-2">تم التقديم بنجاح!</h3>
-      <p class="text-green-600">سيتم مراجعة معلوماتك خلال ٤٨ ساعة وسيتم إعلامك عبر البريد الإلكتروني</p>
-      <p class="text-sm text-green-500 mt-2">رقم الطلب: <span id="requestNumber" class="font-mono font-bold"></span></p>
+      <h3 class="text-xl font-bold text-green-800 mb-2">تم التسجيل بنجاح!</h3>
+      <p class="text-green-600">سيتم مراجعة طلبك خلال 48 ساعة وسيتم إعلامك عبر البريد الإلكتروني</p>
     </div>
     
     <!-- Footer -->
     <div class="mt-8 pt-5 border-t border-gray-200 text-center">
-      <p class="text-gray-600 text-sm">بالنقر على "التسجيل" فإنك توافق على <a href="#" class="text-primary-600 hover:underline">شروط الخدمة</a> و<a href="#" class="text-primary-600 hover:underline">سياسة الخصوصية</a></p>
+      <p class="text-gray-600 text-sm">بالنقر على "المتابعة" فإنك توافق على <a href="#" class="text-primary-600 hover:underline">الشروط والأحكام</a> و<a href="#" class="text-primary-600 hover:underline">سياسة الخصوصية</a></p>
     </div>
   </div>
 
   <!-- Firebase Config -->
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
-  authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-  projectId: "hhhhhh-d4fb8",
-  storageBucket: "hhhhhh-d4fb8.appspot.com",
-  messagingSenderId: "24512338206",
-  appId: "1:24512338206:web:dfe045db59bd3434a2110f",
-  measurementId: "G-HD4R7GNQ5H"
-};
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -262,82 +268,71 @@
   <!-- Submit Logic -->
   <script>
     const googleBtn = document.getElementById("googleLogin");
+    const appleBtn = document.getElementById("appleLogin");
     const form = document.getElementById("registerForm");
     const successMsg = document.getElementById("successMsg");
-    const requestNumberSpan = document.getElementById("requestNumber");
 
-    // Generate random request number
-    function generateRequestNumber() {
-      const prefix = "REQ";
-      const randomNum = Math.floor(100000 + Math.random() * 900000);
-      return `${prefix}-${randomNum}`;
-    }
-
-    googleBtn.addEventListener("click", async () => {
-      googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تسجيل الدخول...';
-      googleBtn.disabled = true;
+    async function handleLogin(provider) {
+      const originalBtnText = event.target.innerHTML;
+      event.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحقق...';
+      event.target.disabled = true;
       
-      const provider = new firebase.auth.GoogleAuthProvider();
       try {
         const result = await auth.signInWithPopup(provider);
         const user = result.user;
-
-        // تحقق هل مكتمل بياناته من قبل أم لا
         const doc = await db.collection("students").doc(user.uid).get();
+        
         if (doc.exists && doc.data().status !== undefined) {
-          // Show nice notification
-          Swal.fire({
-            icon: 'success',
-            title: 'تم تسجيل الدخول بنجاح',
-            text: 'حسابك مسجل مسبقاً، سيتم تحويلك إلى لوحة التحكم',
-            confirmButtonText: 'حسناً',
-            timer: 3000,
-            timerProgressBar: true,
-            didOpen: () => {
-              Swal.showLoading()
-            }
-          });
+          // Show success message
+          successMsg.innerHTML = `
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-check-circle text-green-600 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-green-800 mb-2">مرحباً بعودتك!</h3>
+            <p class="text-green-600">حسابك مسجل مسبقاً، سيتم تحويلك إلى لوحة التحكم</p>
+          `;
+          form.classList.add("hidden");
+          successMsg.classList.remove("hidden");
           
-          // يمكنك تحويله للوحة التحكم مثلاً
-          // setTimeout(() => { window.location.href = '/dashboard'; }, 3000);
+          // Redirect to dashboard after 3 seconds
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 3000);
         } else {
           form.classList.remove("hidden");
-          googleBtn.innerHTML = '<i class="fab fa-google text-red-500 text-xl"></i> <span>تم تسجيل الدخول بنجاح</span>';
-          
-          // Auto-fill name from Google account
           if (user.displayName) {
             document.getElementById("fullName").value = user.displayName;
           }
         }
       } catch (err) {
         console.error("Login error:", err);
-        Swal.fire({
-          icon: 'error',
-          title: 'فشل تسجيل الدخول',
-          text: err.message,
-          confirmButtonText: 'حسناً'
-        });
-        
-        googleBtn.innerHTML = '<i class="fab fa-google text-red-500 text-xl"></i> <span>التسجيل بحساب جوجل</span>';
-        googleBtn.disabled = false;
+        alert("فشل تسجيل الدخول: " + err.message);
+      } finally {
+        event.target.innerHTML = originalBtnText;
+        event.target.disabled = false;
       }
+    }
+
+    googleBtn.addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      handleLogin(provider);
+    });
+
+    appleBtn.addEventListener("click", () => {
+      const provider = new firebase.auth.OAuthProvider('apple.com');
+      handleLogin(provider);
     });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalBtnText = submitBtn.innerHTML;
-      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التقديم...';
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التسجيل...';
       submitBtn.disabled = true;
       
       const user = auth.currentUser;
       if (!user) {
-        Swal.fire({
-          icon: 'error',
-          title: 'خطأ',
-          text: 'يرجى تسجيل الدخول بحساب جوجل أولاً',
-          confirmButtonText: 'حسناً'
-        });
+        alert("يرجى تسجيل الدخول أولاً");
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
         return;
@@ -351,20 +346,14 @@
         const password = document.getElementById("password").value;
         const selfieFile = document.getElementById("selfie").files[0];
 
-        // Validate inputs
-        if (!fullName || !studentNumber || !fatherNumber || !motherNumber || !password || !selfieFile) {
-          throw new Error("الرجاء ملء جميع الحقول المطلوبة");
+        if (!selfieFile) {
+          throw new Error("الرجاء رفع صورة شخصية");
         }
 
-        // Upload selfie
         const storageRef = storage.ref().child(`students/${user.uid}/selfie.jpg`);
         const uploadTask = await storageRef.put(selfieFile);
         const selfieURL = await uploadTask.ref.getDownloadURL();
 
-        // Generate request number
-        const requestNumber = generateRequestNumber();
-        
-        // Save to Firestore
         await db.collection("students").doc(user.uid).set({
           id: user.uid,
           email: user.email,
@@ -374,27 +363,16 @@
           motherNumber,
           password,
           selfieURL,
-          requestNumber,
           status: "في انتظار الموافقة",
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Hide form and show success message
         form.classList.add("hidden");
-        requestNumberSpan.textContent = requestNumber;
         successMsg.classList.remove("hidden");
-        
-        // Reset form
-        form.reset();
       } catch (err) {
         console.error("Submission error:", err);
-        Swal.fire({
-          icon: 'error',
-          title: 'خطأ في التقديم',
-          text: err.message,
-          confirmButtonText: 'حسناً'
-        });
+        alert("حدث خطأ: " + err.message);
       } finally {
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
@@ -407,12 +385,12 @@
       if (file) {
         const reader = new FileReader();
         reader.onload = function(event) {
-          const label = document.querySelector('.file-upload-label');
+          const label = document.querySelector('.file-upload label');
           label.innerHTML = `
             <div class="flex items-center justify-center gap-4">
               <img src="${event.target.result}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow" />
               <div class="text-right">
-                <p class="text-gray-800 font-medium">${file.name}</p>
+                <p class="text-gray-800 font-medium truncate">${file.name}</p>
                 <p class="text-xs text-gray-500">${(file.size / 1024).toFixed(1)} KB</p>
               </div>
             </div>
@@ -422,8 +400,5 @@
       }
     });
   </script>
-  
-  <!-- SweetAlert for beautiful alerts -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>
