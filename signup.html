@@ -250,15 +250,18 @@
 
   <!-- Firebase Config -->
   <script>
+    // تأكد من استبدال هذه القيم بتفاصيل مشروع Firebase الخاص بك
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "SENDER_ID",
-      appId: "APP_ID"
-    };
+  apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+  authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+  projectId: "hhhhhh-d4fb8",
+  storageBucket: "hhhhhh-d4fb8.appspot.com",
+  messagingSenderId: "24512338206",
+  appId: "1:24512338206:web:dfe045db59bd3434a2110f",
+  measurementId: "G-HD4R7GNQ5H"
+};
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
@@ -280,10 +283,12 @@
       try {
         const result = await auth.signInWithPopup(provider);
         const user = result.user;
-        const doc = await db.collection("students").doc(user.uid).get();
         
-        if (doc.exists && doc.data().status !== undefined) {
-          // Show success message
+        // تحقق مما إذا كان المستخدم موجودًا في Firestore
+        const userDoc = await db.collection("students").doc(user.uid).get();
+        
+        if (userDoc.exists && userDoc.data().status) {
+          // الحساب موجود ومكتمل
           successMsg.innerHTML = `
             <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <i class="fas fa-check-circle text-green-600 text-3xl"></i>
@@ -294,35 +299,56 @@
           form.classList.add("hidden");
           successMsg.classList.remove("hidden");
           
-          // Redirect to dashboard after 3 seconds
+          // توجيه المستخدم إلى لوحة التحكم بعد 3 ثواني
           setTimeout(() => {
             window.location.href = '/dashboard';
           }, 3000);
         } else {
+          // الحساب غير موجود أو غير مكتمل
           form.classList.remove("hidden");
           if (user.displayName) {
             document.getElementById("fullName").value = user.displayName;
           }
+          if (user.email) {
+            // يمكنك تعبئة الحقول الأخرى إذا لزم الأمر
+          }
         }
-      } catch (err) {
-        console.error("Login error:", err);
-        alert("فشل تسجيل الدخول: " + err.message);
+      } catch (error) {
+        console.error("حدث خطأ أثناء تسجيل الدخول:", error);
+        
+        // عرض رسالة الخطأ للمستخدم
+        let errorMessage = "حدث خطأ أثناء تسجيل الدخول";
+        if (error.code === 'auth/popup-closed-by-user') {
+          errorMessage = "تم إغلاق نافذة التسجيل من قبل المستخدم";
+        } else if (error.code === 'auth/account-exists-with-different-credential') {
+          errorMessage = "هذا الحساب مسجل بالفعل بطريقة تسجيل مختلفة";
+        }
+        
+        alert(errorMessage);
       } finally {
+        // إعادة تعيين حالة الزر
         event.target.innerHTML = originalBtnText;
         event.target.disabled = false;
       }
     }
 
-    googleBtn.addEventListener("click", () => {
+    // معالجة تسجيل الدخول بحساب جوجل
+    googleBtn.addEventListener("click", (event) => {
       const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('profile');
+      provider.addScope('email');
       handleLogin(provider);
     });
 
-    appleBtn.addEventListener("click", () => {
+    // معالجة تسجيل الدخول بحساب Apple
+    appleBtn.addEventListener("click", (event) => {
       const provider = new firebase.auth.OAuthProvider('apple.com');
+      provider.addScope('email');
+      provider.addScope('name');
       handleLogin(provider);
     });
 
+    // معالجة تقديم النموذج
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const submitBtn = form.querySelector('button[type="submit"]');
@@ -339,21 +365,25 @@
       }
 
       try {
-        const fullName = document.getElementById("fullName").value;
-        const studentNumber = document.getElementById("studentNumber").value;
-        const fatherNumber = document.getElementById("fatherNumber").value;
-        const motherNumber = document.getElementById("motherNumber").value;
-        const password = document.getElementById("password").value;
+        // جمع بيانات النموذج
+        const fullName = document.getElementById("fullName").value.trim();
+        const studentNumber = document.getElementById("studentNumber").value.trim();
+        const fatherNumber = document.getElementById("fatherNumber").value.trim();
+        const motherNumber = document.getElementById("motherNumber").value.trim();
+        const password = document.getElementById("password").value.trim();
         const selfieFile = document.getElementById("selfie").files[0];
 
-        if (!selfieFile) {
-          throw new Error("الرجاء رفع صورة شخصية");
+        // التحقق من صحة البيانات
+        if (!fullName || !studentNumber || !fatherNumber || !motherNumber || !password || !selfieFile) {
+          throw new Error("الرجاء ملء جميع الحقول المطلوبة");
         }
 
+        // رفع الصورة إلى Firebase Storage
         const storageRef = storage.ref().child(`students/${user.uid}/selfie.jpg`);
         const uploadTask = await storageRef.put(selfieFile);
         const selfieURL = await uploadTask.ref.getDownloadURL();
 
+        // حفظ بيانات المستخدم في Firestore
         await db.collection("students").doc(user.uid).set({
           id: user.uid,
           email: user.email,
@@ -368,18 +398,22 @@
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        // إخفاء النموذج وإظهار رسالة النجاح
         form.classList.add("hidden");
         successMsg.classList.remove("hidden");
-      } catch (err) {
-        console.error("Submission error:", err);
-        alert("حدث خطأ: " + err.message);
+        
+        // إعادة تعيين النموذج
+        form.reset();
+      } catch (error) {
+        console.error("حدث خطأ أثناء التسجيل:", error);
+        alert("حدث خطأ: " + error.message);
       } finally {
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
       }
     });
     
-    // Preview selected image
+    // معاينة الصورة المرفوعة
     document.getElementById("selfie").addEventListener("change", function(e) {
       const file = e.target.files[0];
       if (file) {
