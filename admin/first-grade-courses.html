@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>كورسات الصف الأول | منصة عبدالرحمن السقا</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+  <!-- auth check -->
+  <script type="module" src="auth-check.js"></script>
+
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen text-gray-800">
+
+  <!-- ✅ الهيدر -->
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <div class="flex items-center gap-4">
+      <img src="logo.png" alt="شعار الأستاذ" class="h-10 rounded-full" />
+      <h1 class="text-xl font-bold text-indigo-700">كورسات الصف الأول</h1>
+    </div>
+    <div class="flex items-center gap-4 text-sm">
+      <span id="student-name" class="font-bold text-gray-700"></span>
+      <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full" id="wallet">0 🪙</span>
+    </div>
+  </header>
+
+  <!-- ✅ المحتوى -->
+  <main class="max-w-5xl mx-auto py-8 px-4">
+    <div id="courses" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- الكورسات تظهر هنا -->
+    </div>
+  </main>
+
+  <!-- ✅ Firebase config -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+  </script>
+
+  <!-- ✅ المنطق -->
+  <script>
+    let currentUser = null;
+    let userCoins = 0;
+    let userId = "";
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      userId = user.uid;
+      currentUser = user;
+
+      // تحميل بيانات الطالب
+      const doc = await db.collection("students").doc(userId).get();
+      if (!doc.exists || doc.data().status !== "تمت الموافقة") {
+        alert("🚫 حسابك غير مفعل حتى الآن.");
+        auth.signOut();
+        return;
+      }
+
+      const data = doc.data();
+      document.getElementById("student-name").textContent = `أهلاً ${data.fullName}`;
+      userCoins = data.coins || 0;
+      updateWalletUI();
+
+      loadCourses();
+    });
+
+    function updateWalletUI() {
+      document.getElementById("wallet").textContent = `${userCoins} 🪙`;
+    }
+
+    async function loadCourses() {
+      const res = await db.collection("courses").where("stage", "==", "الصف الأول").get();
+      const container = document.getElementById("courses");
+      container.innerHTML = "";
+
+      const userDoc = await db.collection("students").doc(userId).get();
+      const enrolled = userDoc.data().enrolledCourses || [];
+
+      res.forEach(doc => {
+        const course = doc.data();
+        const isEnrolled = enrolled.includes(course.id);
+
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-xl shadow p-4 flex flex-col";
+
+        card.innerHTML = `
+          <img src="${course.imageURL}" alt="${course.name}" class="h-40 w-full object-cover rounded-lg mb-4">
+          <h3 class="text-lg font-bold mb-1 text-indigo-700">${course.name}</h3>
+          <p class="text-sm text-gray-600 mb-3">${course.description}</p>
+          <div class="mt-auto">
+            ${course.isFree || isEnrolled
+              ? `<a href="course.html?id=${course.id}" class="block bg-green-500 text-white text-center py-2 rounded-lg hover:bg-green-600 transition">🎓 الدخول للكورس</a>`
+              : `<button onclick="subscribeCourse('${course.id}', ${course.price})"
+                  class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">
+                  اشترك مقابل ${course.price} 🪙
+                </button>`
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    async function subscribeCourse(courseId, price) {
+      if (userCoins < price) {
+        alert("❌ لا يوجد كوينات كافية");
+        return;
+      }
+
+      const confirmSub = confirm(`هل تريد الاشتراك في هذا الكورس مقابل ${price} كوين؟`);
+      if (!confirmSub) return;
+
+      const studentRef = db.collection("students").doc(userId);
+
+      await studentRef.update({
+        coins: firebase.firestore.FieldValue.increment(-price),
+        enrolledCourses: firebase.firestore.FieldValue.arrayUnion(courseId)
+      });
+
+      alert("✅ تم الاشتراك بنجاح!");
+      location.reload();
+    }
+  </script>
+
+</body>
+</html>
