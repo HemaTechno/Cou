@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تسجيل الدخول | نظام الطلاب</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل الدخول | منصة عبدالرحمن السقا</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
@@ -15,102 +16,109 @@
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
     .login-card {
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      background-color: rgba(255, 255, 255, 0.85);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
     }
-    .input-field:focus {
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    .btn-gradient {
+      background: linear-gradient(45deg, #6b21ff, #9f66ff);
+      transition: all 0.3s ease;
     }
-    .btn-login:hover {
+    .btn-gradient:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+      box-shadow: 0 10px 20px rgba(107, 33, 255, 0.2);
+    }
+    .btn-google {
+      background: linear-gradient(45deg, #4285F4, #34A853);
+      transition: all 0.3s ease;
+    }
+    .btn-google:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(66, 133, 244, 0.2);
+    }
+    .btn-apple {
+      background: linear-gradient(45deg, #000000, #434343);
+      transition: all 0.3s ease;
+    }
+    .btn-apple:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      color: #6b7280;
+      margin: 20px 0;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .divider::before {
+      margin-left: 10px;
+    }
+    .divider::after {
+      margin-right: 10px;
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-  <div class="login-card w-full max-w-md rounded-2xl overflow-hidden transition-all duration-300">
-    <!-- Header Section -->
-    <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 p-6 text-center">
-      <div class="flex justify-center mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+<body class="flex items-center justify-center min-h-screen p-4">
+
+  <div class="login-card p-10 w-full max-w-md relative overflow-hidden">
+    <!-- Decorative elements -->
+    <div class="absolute -top-20 -right-20 w-40 h-40 bg-purple-100 rounded-full opacity-20"></div>
+    <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-100 rounded-full opacity-20"></div>
+    
+    <!-- Logo and title -->
+    <div class="text-center mb-8">
+      <div class="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
         </svg>
       </div>
-      <h1 class="text-2xl font-bold text-white">تسجيل الدخول للطلاب</h1>
-      <p class="text-indigo-100 mt-1">أدخل بياناتك للوصول إلى حسابك</p>
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">منصة عبدالرحمن السقا</h1>
+      <p class="text-gray-600">سجل الدخول للوصول إلى حسابك</p>
     </div>
-    
-    <!-- Form Section -->
-    <div class="p-8">
-      <form id="loginForm" class="space-y-6">
-        <!-- Student Number Field -->
-        <div>
-          <label for="studentNumber" class="block text-sm font-medium text-gray-700 mb-1">رقم الطالب</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-              </svg>
-            </div>
-            <input id="studentNumber" type="text" placeholder="أدخل رقم الطالب" 
-              class="input-field w-full pr-10 border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all duration-300" required>
-          </div>
-        </div>
-        
-        <!-- Password Field -->
-        <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">كلمة المرور</label>
-          <div class="relative">
-            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <input id="password" type="password" placeholder="أدخل كلمة المرور" 
-              class="input-field w-full pr-10 border border-gray-300 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all duration-300" required>
-          </div>
-        </div>
-        
-        <!-- Remember & Forgot -->
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <input id="rememberMe" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-            <label for="rememberMe" class="mr-2 block text-sm text-gray-700">تذكرني</label>
-          </div>
-          <a href="#" class="text-sm text-indigo-600 hover:text-indigo-500">نسيت كلمة المرور؟</a>
-        </div>
-        
-        <!-- Submit Button -->
-        <button type="submit" class="btn-login w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-          </svg>
-          تسجيل الدخول
-        </button>
-      </form>
+
+    <!-- Login buttons -->
+    <div class="space-y-4">
+      <button id="googleLogin" class="w-full btn-google text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        تسجيل الدخول باستخدام Google
+      </button>
       
-      <!-- Divider -->
-      <div class="relative my-6">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-gray-300"></div>
-        </div>
-        <div class="relative flex justify-center text-sm">
-          <span class="px-2 bg-white text-gray-500">أو</span>
-        </div>
-      </div>
-      
-      <!-- Register Link -->
-      <div class="text-center">
-        <p class="text-sm text-gray-600">ليس لديك حساب؟ 
-          <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">سجل الآن</a>
-        </p>
-      </div>
+      <button id="appleLogin" class="w-full btn-apple text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+        </svg>
+        تسجيل الدخول باستخدام Apple
+      </button>
     </div>
+
+    <div class="divider">أو</div>
+
+    <button class="w-full btn-gradient text-white py-3 rounded-xl font-bold hover:opacity-90">
+      الدخول باستخدام البريد الإلكتروني
+    </button>
+
+    <p class="text-center mt-6 text-gray-600">
+      ليس لديك حساب؟ <a href="#" class="text-indigo-600 font-medium hover:underline">سجل الآن</a>
+    </p>
+
+    <p id="loginMessage" class="text-center mt-4 text-sm text-red-600 hidden animate-pulse"></p>
   </div>
 
   <script>
-    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -120,99 +128,102 @@
       appId: "1:24512338206:web:dfe045db59bd3434a2110f"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // Login Form Handler
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const studentNumber = document.getElementById("studentNumber").value.trim();
-      const password = document.getElementById("password").value;
-      const rememberMe = document.getElementById("rememberMe").checked;
-      
-      // Show loading state
-      const btn = e.target.querySelector('button[type="submit"]');
-      const originalBtnText = btn.innerHTML;
-      btn.innerHTML = `
-        <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        جاري التحقق...
-      `;
-      btn.disabled = true;
-      
+    const loginMessage = document.getElementById("loginMessage");
+
+    function showMessage(msg) {
+      loginMessage.textContent = msg;
+      loginMessage.classList.remove("hidden");
+      anime({
+        targets: '#loginMessage',
+        scale: [1, 1.05, 1],
+        duration: 600,
+        easing: 'easeInOutQuad'
+      });
+    }
+
+    async function handleLoginResult(user) {
       try {
-        const snapshot = await db.collection("students")
-          .where("studentNumber", "==", studentNumber)
-          .where("password", "==", password)
-          .get();
+        const docRef = db.collection("students").doc(user.uid);
+        const doc = await docRef.get();
 
-        if (snapshot.empty) {
-          throw new Error("بيانات الدخول غير صحيحة");
+        if (!doc.exists) {
+          showMessage("⚠️ لم يتم العثور على حساب الطالب.");
+          return;
         }
 
-        const studentDoc = snapshot.docs[0];
-        const student = studentDoc.data();
+        const data = doc.data();
 
-        if (student.status !== "تمت الموافقة") {
-          throw new Error("لم يتم قبول الحساب بعد. يرجى الانتظار ٤٨ ساعة");
+        if (data.status !== "تمت الموافقة") {
+          showMessage("🚫 لم يتم قبول الحساب بعد. يرجى الانتظار ٤٨ ساعة.");
+          return;
         }
 
-        // إنشاء session id عشوائي
-        const sessionId = "S-" + Date.now() + Math.random().toString(36).substring(2, 10);
+        // ✅ توليد session_id جديد
+        const sessionId = "S-" + Math.random().toString(36).substring(2);
 
-        // تحديثه في قاعدة البيانات
-        await db.collection("students").doc(studentDoc.id).update({ 
-          session_id: sessionId,
-          lastLogin: new Date().toISOString()
-        });
+        // تخزينه في قاعدة البيانات
+        await docRef.update({ session_id: sessionId });
 
-        // حفظ الجلسة
-        if (rememberMe) {
-          localStorage.setItem("student", JSON.stringify({ 
-            id: studentDoc.id, 
-            fullName: student.fullName,
-            studentNumber: student.studentNumber
-          }));
-          localStorage.setItem("session_id", sessionId);
-        } else {
-          sessionStorage.setItem("student", JSON.stringify({ 
-            id: studentDoc.id, 
-            fullName: student.fullName,
-            studentNumber: student.studentNumber
-          }));
-          sessionStorage.setItem("session_id", sessionId);
-        }
+        // حفظ البيانات في localStorage
+        localStorage.setItem("student", JSON.stringify({
+          id: user.uid,
+          fullName: data.fullName
+        }));
+        localStorage.setItem("session_id", sessionId);
 
-        // تحويل إلى لوحة الطالب
+        // التوجيه للوحة الطالب
         window.location.href = "dashboard.html";
+      } catch (err) {
+        showMessage("❌ حدث خطأ: " + err.message);
+      }
+    }
 
-      } catch (error) {
-        // Reset button state
-        btn.innerHTML = originalBtnText;
-        btn.disabled = false;
-        
-        // Show error message
-        Swal.fire({
-          title: 'خطأ في تسجيل الدخول',
-          text: error.message,
-          icon: 'error',
-          confirmButtonText: 'حسناً',
-          confirmButtonColor: '#4f46e5',
-          customClass: {
-            popup: 'font-tajawal'
-          }
-        });
+    // Google Login
+    document.getElementById("googleLogin").addEventListener("click", async () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        const result = await auth.signInWithPopup(provider);
+        await handleLoginResult(result.user);
+      } catch (err) {
+        showMessage("❌ فشل تسجيل الدخول بـ Google: " + err.message);
       }
     });
 
-    // Auto focus on first input
+    // Apple Login
+    document.getElementById("appleLogin").addEventListener("click", async () => {
+      const provider = new firebase.auth.OAuthProvider('apple.com');
+      try {
+        const result = await auth.signInWithPopup(provider);
+        await handleLoginResult(result.user);
+      } catch (err) {
+        showMessage("❌ فشل تسجيل الدخول بـ Apple: " + err.message);
+      }
+    });
+
+    // Animation on load
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('studentNumber').focus();
+      anime({
+        targets: '.login-card',
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 800,
+        easing: 'easeOutExpo'
+      });
+      
+      anime({
+        targets: 'button',
+        opacity: [0, 1],
+        translateY: [10, 0],
+        delay: anime.stagger(100),
+        duration: 600,
+        easing: 'easeOutExpo'
+      });
     });
   </script>
+
 </body>
 </html>
