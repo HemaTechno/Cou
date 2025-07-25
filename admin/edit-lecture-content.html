@@ -2,462 +2,67 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>نظام إدارة المحتوى التعليمي</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>إدارة محتوى المحاضرات</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    body {
-      font-family: 'Tajawal', sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-    }
-    .card {
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      background-color: rgba(255, 255, 255, 0.85);
-      border-radius: 12px;
-      border: 1px solid rgba(209, 213, 219, 0.3);
-    }
-    .progress-bar {
-      height: 6px;
-      background: linear-gradient(90deg, #4f46e5 0%, #a855f7 100%);
-      transition: width 0.3s ease;
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-      animation: fadeIn 0.3s ease;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+  <style> body { font-family: 'Tajawal', sans-serif; } </style>
 </head>
-<body class="min-h-screen p-4 md:p-8">
-  <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="text-center mb-8">
-      <h1 class="text-3xl md:text-4xl font-bold text-indigo-800 mb-2">نظام إدارة المحتوى التعليمي</h1>
-      <p class="text-gray-600">إدارة المحاضرات والمحتوى التعليمي بسهولة واحترافية</p>
+<body class="bg-gray-100 p-6">
+
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
+    <h1 class="text-2xl font-bold text-center text-indigo-700">📚 إدارة محتوى المحاضرات</h1>
+
+    <!-- اختيار الصف والكورس والمحاضرة -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <select id="stage" class="border p-2 rounded">
+        <option selected disabled>اختر الصف</option>
+        <option>الصف الأول</option>
+        <option>الصف الثاني</option>
+        <option>الصف الثالث</option>
+      </select>
+      <select id="course" class="border p-2 rounded" disabled></select>
+      <select id="lecture" class="border p-2 rounded" disabled></select>
     </div>
 
-    <!-- Tabs Navigation -->
-    <div class="flex border-b mb-6">
-      <button class="tab-btn px-4 py-2 font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-300 transition" data-tab="lectures-tab">
-        <i class="fas fa-chalkboard-teacher mr-2"></i> المحاضرات
+    <!-- نموذج الإضافة/التعديل -->
+    <form id="contentForm" class="space-y-4">
+      <input type="hidden" id="contentId" />
+      <input type="text" id="title" placeholder="عنوان المحتوى" class="w-full border p-3 rounded" required />
+      <div class="flex gap-4">
+        <label><input type="radio" name="type" value="video" checked> فيديو</label>
+        <label><input type="radio" name="type" value="pdf"> PDF</label>
+        <label><input type="radio" name="type" value="quiz"> اختبار</label>
+      </div>
+
+      <input type="url" id="videoUrl" placeholder="رابط الفيديو" class="w-full border p-3 rounded" />
+      <input type="file" id="pdfFile" accept="application/pdf" class="w-full border p-3 rounded hidden" />
+      <input type="text" id="quizId" placeholder="ID الاختبار" class="w-full border p-3 rounded hidden" />
+
+      <button class="bg-indigo-600 text-white py-3 w-full rounded hover:bg-indigo-700">
+        حفظ المحتوى
       </button>
-      <button class="tab-btn px-4 py-2 font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-300 transition" data-tab="add-lecture-tab">
-        <i class="fas fa-plus-circle mr-2"></i> إضافة محاضرة
-      </button>
-      <button class="tab-btn px-4 py-2 font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-300 transition" data-tab="add-content-tab">
-        <i class="fas fa-file-alt mr-2"></i> إضافة محتوى
-      </button>
-    </div>
+    </form>
 
-    <!-- Lectures Tab -->
-    <div id="lectures-tab" class="tab-content active">
-      <div class="card shadow-xl p-6 space-y-6">
-        <div class="flex items-center justify-between border-b pb-4">
-          <h2 class="text-xl md:text-2xl font-bold text-indigo-700">
-            <i class="fas fa-list-ol mr-2"></i> قائمة المحاضرات
-          </h2>
-          <div class="flex items-center space-x-2 space-x-reverse">
-            <span id="lecturesCount" class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">0 محاضرة</span>
-          </div>
-        </div>
-
-        <!-- Filter Section -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <select id="filterStage" class="border border-gray-300 px-4 py-2 rounded-lg">
-            <option value="">كل الصفوف</option>
-            <option value="الصف الأول">الصف الأول</option>
-            <option value="الصف الثاني">الصف الثاني</option>
-            <option value="الصف الثالث">الصف الثالث</option>
-          </select>
-          
-          <select id="filterCourse" class="border border-gray-300 px-4 py-2 rounded-lg" disabled>
-            <option value="">كل الكورسات</option>
-          </select>
-          
-          <button id="filterBtn" class="bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition">
-            <i class="fas fa-filter mr-2"></i> تصفية
-          </button>
-        </div>
-
-        <!-- Lectures Table -->
-        <div class="overflow-x-auto">
-          <table class="w-full border-collapse">
-            <thead>
-              <tr class="bg-gray-100">
-                <th class="p-3 text-right border-b">عنوان المحاضرة</th>
-                <th class="p-3 text-right border-b">الصف</th>
-                <th class="p-3 text-right border-b">الكورس</th>
-                <th class="p-3 text-right border-b">عدد المحتويات</th>
-                <th class="p-3 text-right border-b">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody id="lecturesTableBody">
-              <!-- سيتم ملؤها بالبيانات -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Loading Indicator -->
-        <div id="lecturesLoading" class="text-center py-8">
-          <i class="fas fa-spinner fa-spin text-2xl text-indigo-600"></i>
-          <p class="mt-2 text-gray-600">جاري تحميل المحاضرات...</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Lecture Tab -->
-    <div id="add-lecture-tab" class="tab-content">
-      <div class="card shadow-xl p-6 md:p-8 space-y-6">
-        <div class="flex items-center justify-between border-b pb-4">
-          <h2 class="text-xl md:text-2xl font-bold text-indigo-700">
-            <i class="fas fa-plus-circle mr-2"></i> إضافة محاضرة جديدة
-          </h2>
-        </div>
-
-        <form id="lectureForm" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">الصف الدراسي</label>
-            <select id="lectureStage" class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" required>
-              <option value="" disabled selected>اختر الصف الدراسي</option>
-              <option value="الصف الأول">الصف الأول</option>
-              <option value="الصف الثاني">الصف الثاني</option>
-              <option value="الصف الثالث">الصف الثالث</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">الكورس التعليمي</label>
-            <select id="lectureCourse" class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" disabled required>
-              <option value="" disabled selected>اختر الكورس</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">عنوان المحاضرة</label>
-            <input type="text" id="lectureTitle" placeholder="أدخل عنوان المحاضرة" required 
-                   class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">وصف المحاضرة (اختياري)</label>
-            <textarea id="lectureDescription" rows="3" placeholder="أدخل وصفاً للمحاضرة"
-                   class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
-          </div>
-
-          <button type="submit" id="saveLectureBtn" 
-                  class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition flex items-center justify-center">
-            <i class="fas fa-save mr-2"></i> حفظ المحاضرة
-          </button>
-        </form>
-
-        <!-- Success Message -->
-        <div id="lectureSuccessMsg" class="hidden p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
-          <div class="flex items-center">
-            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-            <div>
-              <p class="font-semibold">تم بنجاح!</p>
-              <p class="text-sm" id="lectureSuccessText"></p>
-            </div>
-            <button id="closeLectureSuccess" class="mr-auto text-green-700 hover:text-green-900">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Content Tab -->
-    <div id="add-content-tab" class="tab-content">
-      <div class="card shadow-xl p-6 md:p-8 space-y-6">
-        <div class="flex items-center justify-between border-b pb-4">
-          <h2 class="text-xl md:text-2xl font-bold text-indigo-700">
-            <i class="fas fa-file-alt mr-2"></i> إضافة محتوى جديد
-          </h2>
-        </div>
-
-        <form id="contentForm" class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">الصف الدراسي</label>
-            <select id="contentStage" class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-              <option value="" disabled selected>اختر الصف الدراسي</option>
-              <option value="الصف الأول">الصف الأول</option>
-              <option value="الصف الثاني">الصف الثاني</option>
-              <option value="الصف الثالث">الصف الثالث</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">الكورس التعليمي</label>
-            <select id="contentCourse" class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" disabled>
-              <option value="" disabled selected>اختر الكورس</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">المحاضرة</label>
-            <select id="contentLecture" class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" disabled>
-              <option value="" disabled selected>اختر المحاضرة</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">عنوان المحتوى</label>
-            <input type="text" id="contentTitle" placeholder="أدخل عنوان المحتوى" required 
-                   class="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">نوع المحتوى</label>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <label class="flex items-center space-x-2 space-x-reverse p-3 border rounded-lg cursor-pointer hover:bg-indigo-50 transition has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-300">
-                <input type="radio" name="contentType" value="video" checked class="text-indigo-600 focus:ring-indigo-500">
-                <div>
-                  <span class="block font-medium">فيديو</span>
-                  <span class="block text-xs text-gray-500">رفع رابط فيديو</span>
-                </div>
-                <i class="fas fa-video ml-auto text-indigo-400"></i>
-              </label>
-              
-              <label class="flex items-center space-x-2 space-x-reverse p-3 border rounded-lg cursor-pointer hover:bg-indigo-50 transition has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-300">
-                <input type="radio" name="contentType" value="pdf" class="text-indigo-600 focus:ring-indigo-500">
-                <div>
-                  <span class="block font-medium">ملف PDF</span>
-                  <span class="block text-xs text-gray-500">رفع ملف PDF</span>
-                </div>
-                <i class="fas fa-file-pdf ml-auto text-red-400"></i>
-              </label>
-              
-              <label class="flex items-center space-x-2 space-x-reverse p-3 border rounded-lg cursor-pointer hover:bg-indigo-50 transition has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-300">
-                <input type="radio" name="contentType" value="quiz" class="text-indigo-600 focus:ring-indigo-500">
-                <div>
-                  <span class="block font-medium">اختبار</span>
-                  <span class="block text-xs text-gray-500">إضافة اختبار</span>
-                </div>
-                <i class="fas fa-question-circle ml-auto text-purple-400"></i>
-              </label>
-            </div>
-          </div>
-
-          <!-- Video Field -->
-          <div id="videoField">
-            <label class="block text-sm font-medium text-gray-700 mb-1">رابط الفيديو</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                <i class="fas fa-link"></i>
-              </div>
-              <input type="url" id="videoUrl" placeholder="https://example.com/video" 
-                     class="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
-            </div>
-          </div>
-
-          <!-- PDF Field -->
-          <div id="pdfField" class="hidden">
-            <label class="block text-sm font-medium text-gray-700 mb-1">ملف PDF</label>
-            <div class="flex items-center justify-center w-full">
-              <label for="pdfFile" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                <div class="flex flex-col items-center justify-center pt-5 pb-6" id="pdfUploadText">
-                  <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                  <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">انقر لرفع الملف</span> أو اسحبه هنا</p>
-                  <p class="text-xs text-gray-500">PDF فقط (حتى 10MB)</p>
-                </div>
-                <input id="pdfFile" type="file" accept="application/pdf" class="hidden" />
-              </label>
-            </div>
-            
-            <!-- Progress Bar -->
-            <div id="pdfProgress" class="hidden mt-3">
-              <div class="flex justify-between text-xs text-gray-500 mb-1">
-                <span id="fileName">جاري التحميل...</span>
-                <span id="progressPercent">0%</span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-1.5">
-                <div id="progressBar" class="progress-bar h-1.5 rounded-full" style="width: 0%"></div>
-              </div>
-            </div>
-            
-            <!-- File Info -->
-            <div id="fileInfo" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div class="flex items-center">
-                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                <span class="text-sm font-medium text-green-800">تم تحميل الملف بنجاح</span>
-                <button id="removeFile" class="mr-auto text-red-500 hover:text-red-700">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-              <div class="mt-1 text-xs text-green-700" id="fileDetails"></div>
-            </div>
-          </div>
-
-          <!-- Quiz Field -->
-          <div id="quizField" class="hidden">
-            <label class="block text-sm font-medium text-gray-700 mb-1">معرف الاختبار</label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                <i class="fas fa-id-card"></i>
-              </div>
-              <input type="text" id="quizId" placeholder="أدخل معرف الاختبار" 
-                     class="w-full border border-gray-300 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
-            </div>
-          </div>
-
-          <button type="submit" id="submitContentBtn" 
-                  class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition flex items-center justify-center">
-            <i class="fas fa-save mr-2"></i> حفظ المحتوى
-          </button>
-        </form>
-
-        <!-- Success Message -->
-        <div id="contentSuccessMsg" class="hidden p-4 bg-green-100 border-l-4 border-green-500 text-green-700">
-          <div class="flex items-center">
-            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-            <div>
-              <p class="font-semibold">تم بنجاح!</p>
-              <p class="text-sm">تم إضافة المحتوى بنجاح إلى قاعدة البيانات.</p>
-            </div>
-            <button id="closeContentSuccess" class="mr-auto text-green-700 hover:text-green-900">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Lecture Content Modal -->
-    <div id="contentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-      <div class="card w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div class="p-6 space-y-6">
-          <div class="flex items-center justify-between border-b pb-4">
-            <h2 class="text-xl font-bold text-indigo-700" id="modalLectureTitle"></h2>
-            <button id="closeModal" class="text-gray-500 hover:text-gray-700">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm text-gray-600">الصف: <span id="modalLectureStage" class="font-medium"></span></p>
-                <p class="text-sm text-gray-600">الكورس: <span id="modalLectureCourse" class="font-medium"></span></p>
-              </div>
-              <div class="flex space-x-2 space-x-reverse">
-                <button id="editLectureBtn" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">
-                  <i class="fas fa-edit mr-1"></i> تعديل
-                </button>
-                <button id="deleteLectureBtn" class="px-3 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
-                  <i class="fas fa-trash-alt mr-1"></i> حذف
-                </button>
-              </div>
-            </div>
-            
-            <p class="text-gray-700" id="modalLectureDescription"></p>
-          </div>
-          
-          <div>
-            <h3 class="font-medium text-lg mb-3 border-b pb-2">محتويات المحاضرة</h3>
-            <div id="lectureContents" class="space-y-3">
-              <!-- سيتم ملؤها بالبيانات -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Edit Lecture Modal -->
-    <div id="editLectureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-      <div class="card w-full max-w-md">
-        <div class="p-6 space-y-6">
-          <div class="flex items-center justify-between border-b pb-4">
-            <h2 class="text-xl font-bold text-indigo-700">تعديل المحاضرة</h2>
-            <button id="closeEditModal" class="text-gray-500 hover:text-gray-700">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          
-          <form id="editLectureForm">
-            <input type="hidden" id="editLectureId">
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">عنوان المحاضرة</label>
-                <input type="text" id="editLectureTitle" required 
-                       class="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">وصف المحاضرة</label>
-                <textarea id="editLectureDescription" rows="3"
-                       class="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
-              </div>
-              
-              <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition">
-                <i class="fas fa-save mr-2"></i> حفظ التعديلات
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Edit Content Modal -->
-    <div id="editContentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-      <div class="card w-full max-w-md">
-        <div class="p-6 space-y-6">
-          <div class="flex items-center justify-between border-b pb-4">
-            <h2 class="text-xl font-bold text-indigo-700">تعديل المحتوى</h2>
-            <button id="closeEditContentModal" class="text-gray-500 hover:text-gray-700">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          
-          <form id="editContentForm">
-            <input type="hidden" id="editContentId">
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">عنوان المحتوى</label>
-                <input type="text" id="editContentTitle" required 
-                       class="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
-              </div>
-              
-              <div id="editContentUrlField">
-                <label class="block text-sm font-medium text-gray-700 mb-1" id="editContentUrlLabel">رابط المحتوى</label>
-                <input type="text" id="editContentUrl" 
-                       class="w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
-              </div>
-              
-              <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition">
-                <i class="fas fa-save mr-2"></i> حفظ التعديلات
-              </button>
-              
-              <button type="button" id="deleteContentBtn" class="w-full bg-red-100 text-red-700 py-2 px-4 rounded-lg hover:bg-red-200 transition">
-                <i class="fas fa-trash-alt mr-2"></i> حذف المحتوى
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="text-center mt-6 text-sm text-gray-500">
-      <p>نظام إدارة المحتوى التعليمي &copy; 2023</p>
+    <!-- جدول المحتويات -->
+    <div>
+      <h2 class="text-xl font-semibold mt-6 mb-2">📄 قائمة المحتويات</h2>
+      <table class="w-full border text-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="p-2">العنوان</th>
+            <th class="p-2">النوع</th>
+            <th class="p-2">إجراء</th>
+          </tr>
+        </thead>
+        <tbody id="contentList"></tbody>
+      </table>
     </div>
   </div>
 
   <script>
-    // Firebase Init
+    // Firebase config
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -468,855 +73,149 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    // عناصر الواجهة
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    // عناصر قسم المحاضرات
-    const filterStage = document.getElementById('filterStage');
-    const filterCourse = document.getElementById('filterCourse');
-    const filterBtn = document.getElementById('filterBtn');
-    const lecturesTableBody = document.getElementById('lecturesTableBody');
-    const lecturesLoading = document.getElementById('lecturesLoading');
-    const lecturesCount = document.getElementById('lecturesCount');
-    
-    // عناصر إضافة محاضرة
-    const lectureForm = document.getElementById('lectureForm');
-    const lectureStage = document.getElementById('lectureStage');
-    const lectureCourse = document.getElementById('lectureCourse');
-    const lectureTitle = document.getElementById('lectureTitle');
-    const lectureDescription = document.getElementById('lectureDescription');
-    const saveLectureBtn = document.getElementById('saveLectureBtn');
-    const lectureSuccessMsg = document.getElementById('lectureSuccessMsg');
-    const lectureSuccessText = document.getElementById('lectureSuccessText');
-    const closeLectureSuccess = document.getElementById('closeLectureSuccess');
-    
-    // عناصر إضافة محتوى
-    const contentForm = document.getElementById('contentForm');
-    const contentStage = document.getElementById('contentStage');
-    const contentCourse = document.getElementById('contentCourse');
-    const contentLecture = document.getElementById('contentLecture');
-    const contentTitle = document.getElementById('contentTitle');
-    const videoField = document.getElementById('videoField');
-    const pdfField = document.getElementById('pdfField');
-    const quizField = document.getElementById('quizField');
-    const videoUrl = document.getElementById('videoUrl');
-    const pdfInput = document.getElementById('pdfFile');
-    const quizInput = document.getElementById('quizId');
-    const submitContentBtn = document.getElementById('submitContentBtn');
-    const contentSuccessMsg = document.getElementById('contentSuccessMsg');
-    const closeContentSuccess = document.getElementById('closeContentSuccess');
-    const pdfUploadText = document.getElementById('pdfUploadText');
-    const pdfProgress = document.getElementById('pdfProgress');
-    const fileInfo = document.getElementById('fileInfo');
-    const fileDetails = document.getElementById('fileDetails');
-    const progressBar = document.getElementById('progressBar');
-    const progressPercent = document.getElementById('progressPercent');
-    const fileName = document.getElementById('fileName');
-    const removeFile = document.getElementById('removeFile');
-    
-    // عناصر المودال
-    const contentModal = document.getElementById('contentModal');
-    const modalLectureTitle = document.getElementById('modalLectureTitle');
-    const modalLectureStage = document.getElementById('modalLectureStage');
-    const modalLectureCourse = document.getElementById('modalLectureCourse');
-    const modalLectureDescription = document.getElementById('modalLectureDescription');
-    const lectureContents = document.getElementById('lectureContents');
-    const closeModal = document.getElementById('closeModal');
-    const editLectureBtn = document.getElementById('editLectureBtn');
-    const deleteLectureBtn = document.getElementById('deleteLectureBtn');
-    
-    // مودال تعديل المحاضرة
-    const editLectureModal = document.getElementById('editLectureModal');
-    const editLectureForm = document.getElementById('editLectureForm');
-    const editLectureId = document.getElementById('editLectureId');
-    const editLectureTitle = document.getElementById('editLectureTitle');
-    const editLectureDescription = document.getElementById('editLectureDescription');
-    const closeEditModal = document.getElementById('closeEditModal');
-    
-    // مودال تعديل المحتوى
-    const editContentModal = document.getElementById('editContentModal');
-    const editContentForm = document.getElementById('editContentForm');
-    const editContentId = document.getElementById('editContentId');
-    const editContentTitle = document.getElementById('editContentTitle');
-    const editContentUrl = document.getElementById('editContentUrl');
-    const editContentUrlField = document.getElementById('editContentUrlField');
-    const editContentUrlLabel = document.getElementById('editContentUrlLabel');
-    const closeEditContentModal = document.getElementById('closeEditContentModal');
-    const deleteContentBtn = document.getElementById('deleteContentBtn');
-    
-    // متغيرات التطبيق
-    let uploadedFileUrl = '';
-    let uploadedFileName = '';
-    let currentLectureId = '';
-    let courses = [];
-    let currentContentType = 'video';
-    let currentContentId = '';
+    const stage = document.getElementById("stage");
+    const course = document.getElementById("course");
+    const lecture = document.getElementById("lecture");
+    const contentList = document.getElementById("contentList");
+    const form = document.getElementById("contentForm");
 
-    // تبديل التبويبات
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tabId = btn.getAttribute('data-tab');
-        
-        tabBtns.forEach(b => b.classList.remove('border-indigo-500', 'text-indigo-600'));
-        btn.classList.add('border-indigo-500', 'text-indigo-600');
-        
-        tabContents.forEach(content => content.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
+    const title = document.getElementById("title");
+    const typeRadios = document.querySelectorAll('input[name="type"]');
+    const videoUrl = document.getElementById("videoUrl");
+    const pdfFile = document.getElementById("pdfFile");
+    const quizId = document.getElementById("quizId");
+    const contentId = document.getElementById("contentId");
+
+    // تحميل الكورسات
+    stage.addEventListener("change", async () => {
+      course.disabled = true;
+      lecture.disabled = true;
+      course.innerHTML = '<option>جاري التحميل...</option>';
+      const snap = await db.collection("courses").where("stage", "==", stage.value).get();
+      course.innerHTML = '<option disabled selected>اختر الكورس</option>';
+      snap.forEach(doc => {
+        course.innerHTML += `<option value="${doc.data().id}">${doc.data().name}</option>`;
       });
+      course.disabled = false;
     });
 
-    // تحميل الكورسات عند اختيار الصف (إضافة محاضرة)
-    lectureStage.addEventListener('change', async () => {
-      const stage = lectureStage.value;
-      lectureCourse.innerHTML = '<option disabled selected>جاري التحميل...</option>';
-      lectureCourse.disabled = true;
-
-      try {
-        const snapshot = await db.collection("courses").where("stage", "==", stage).get();
-        lectureCourse.innerHTML = '<option value="" disabled selected>اختر الكورس</option>';
-        
-        if (snapshot.empty) {
-          lectureCourse.innerHTML = '<option disabled selected>لا توجد كورسات متاحة</option>';
-        } else {
-          snapshot.forEach(doc => {
-            const c = doc.data();
-            const option = document.createElement("option");
-            option.value = c.id;
-            option.textContent = c.name;
-            lectureCourse.appendChild(option);
-          });
-        }
-
-        lectureCourse.disabled = false;
-      } catch (error) {
-        console.error("Error loading courses:", error);
-        lectureCourse.innerHTML = '<option disabled selected>خطأ في تحميل الكورسات</option>';
-      }
+    // تحميل المحاضرات
+    course.addEventListener("change", async () => {
+      lecture.disabled = true;
+      lecture.innerHTML = '<option>جاري التحميل...</option>';
+      const snap = await db.collection("lectures").where("courseId", "==", course.value).get();
+      lecture.innerHTML = '<option disabled selected>اختر المحاضرة</option>';
+      snap.forEach(doc => {
+        lecture.innerHTML += `<option value="${doc.data().id}">${doc.data().lectureTitle}</option>`;
+      });
+      lecture.disabled = false;
     });
 
-    // تحميل الكورسات عند اختيار الصف (تصفية المحاضرات)
-    filterStage.addEventListener('change', async () => {
-      const stage = filterStage.value;
-      filterCourse.innerHTML = '<option value="">كل الكورسات</option>';
-      filterCourse.disabled = !stage;
+    // تحميل محتوى المحاضرة
+    lecture.addEventListener("change", loadContent);
 
-      if (stage) {
-        try {
-          const snapshot = await db.collection("courses").where("stage", "==", stage).get();
-          
-          if (!snapshot.empty) {
-            snapshot.forEach(doc => {
-              const c = doc.data();
-              const option = document.createElement("option");
-              option.value = c.id;
-              option.textContent = c.name;
-              filterCourse.appendChild(option);
-            });
-          }
-        } catch (error) {
-          console.error("Error loading courses:", error);
-        }
-      }
-    });
-
-    // تحميل الكورسات عند اختيار الصف (إضافة محتوى)
-    contentStage.addEventListener('change', async () => {
-      const stage = contentStage.value;
-      contentCourse.innerHTML = '<option disabled selected>جاري التحميل...</option>';
-      contentCourse.disabled = true;
-
-      try {
-        const snapshot = await db.collection("courses").where("stage", "==", stage).get();
-        contentCourse.innerHTML = '<option value="" disabled selected>اختر الكورس</option>';
-        
-        if (snapshot.empty) {
-          contentCourse.innerHTML = '<option disabled selected>لا توجد كورسات متاحة</option>';
-        } else {
-          snapshot.forEach(doc => {
-            const c = doc.data();
-            const option = document.createElement("option");
-            option.value = c.id;
-            option.textContent = c.name;
-            contentCourse.appendChild(option);
-          });
-        }
-
-        contentCourse.disabled = false;
-        contentLecture.innerHTML = '<option disabled selected>اختر المحاضرة</option>';
-        contentLecture.disabled = true;
-      } catch (error) {
-        console.error("Error loading courses:", error);
-        contentCourse.innerHTML = '<option disabled selected>خطأ في تحميل الكورسات</option>';
-      }
-    });
-
-    // تحميل المحاضرات عند اختيار الكورس (إضافة محتوى)
-    contentCourse.addEventListener('change', async () => {
-      const courseId = contentCourse.value;
-      contentLecture.innerHTML = '<option disabled selected>جاري التحميل...</option>';
-      contentLecture.disabled = true;
-
-      try {
-        const snapshot = await db.collection("lectures").where("courseId", "==", courseId).get();
-        contentLecture.innerHTML = '<option value="" disabled selected>اختر المحاضرة</option>';
-        
-        if (snapshot.empty) {
-          contentLecture.innerHTML = '<option disabled selected>لا توجد محاضرات متاحة</option>';
-        } else {
-          snapshot.forEach(doc => {
-            const l = doc.data();
-            const option = document.createElement("option");
-            option.value = l.id;
-            option.textContent = l.lectureTitle;
-            contentLecture.appendChild(option);
-          });
-        }
-
-        contentLecture.disabled = false;
-      } catch (error) {
-        console.error("Error loading lectures:", error);
-        contentLecture.innerHTML = '<option disabled selected>خطأ في تحميل المحاضرات</option>';
-      }
-    });
+    async function loadContent() {
+      const snap = await db.collection("lectureContent").where("lectureId", "==", lecture.value).get();
+      contentList.innerHTML = "";
+      snap.forEach(doc => {
+        const d = doc.data();
+        contentList.innerHTML += `
+          <tr class="border-t">
+            <td class="p-2">${d.title}</td>
+            <td class="p-2">${d.type}</td>
+            <td class="p-2 space-x-2">
+              <button onclick="editContent('${doc.id}', '${d.title}', '${d.type}', '${d.url}')" class="text-blue-600">✏️</button>
+              <button onclick="deleteContent('${doc.id}')" class="text-red-600">🗑️</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
 
     // تغيير نوع المحتوى
-    document.querySelectorAll('input[name="contentType"]').forEach(r => {
-      r.addEventListener("change", () => {
-        const type = r.value;
-        currentContentType = type;
-        videoField.classList.toggle("hidden", type !== "video");
-        pdfField.classList.toggle("hidden", type !== "pdf");
-        quizField.classList.toggle("hidden", type !== "quiz");
+    typeRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        const val = document.querySelector('input[name="type"]:checked').value;
+        videoUrl.classList.toggle("hidden", val !== "video");
+        pdfFile.classList.toggle("hidden", val !== "pdf");
+        quizId.classList.toggle("hidden", val !== "quiz");
       });
     });
 
-    // إدارة رفع ملف PDF
-    pdfInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      // التحقق من نوع الملف
-      if (file.type !== "application/pdf") {
-        alert("الرجاء اختيار ملف PDF فقط");
-        return;
-      }
-
-      // التحقق من حجم الملف (10MB كحد أقصى)
-      if (file.size > 10 * 1024 * 1024) {
-        alert("حجم الملف كبير جداً. الحد الأقصى 10MB");
-        return;
-      }
-
-      uploadedFileName = file.name;
-      fileName.textContent = file.name;
-      pdfUploadText.classList.add("hidden");
-      pdfProgress.classList.remove("hidden");
-      fileInfo.classList.add("hidden");
-
-      // رفع الملف إلى Firebase Storage
-      uploadFile(file);
-    });
-
-    // دالة رفع الملف مع متابعة التقدم
-    function uploadFile(file) {
-      submitContentBtn.disabled = true;
-      
-      const fileRef = storage.ref(`pdfs/${Date.now()}_${file.name}`);
-      const uploadTask = fileRef.put(file);
-
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          // تحديث شريط التقدم
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          progressBar.style.width = `${progress}%`;
-          progressPercent.textContent = `${Math.round(progress)}%`;
-        },
-        (error) => {
-          console.error("Upload error:", error);
-          resetPdfUpload();
-        },
-        () => {
-          // عند اكتمال الرفع
-          uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-            uploadedFileUrl = downloadURL;
-            progressBar.style.width = '100%';
-            progressPercent.textContent = '100%';
-            
-            // عرض معلومات الملف
-            pdfProgress.classList.add("hidden");
-            fileInfo.classList.remove("hidden");
-            fileDetails.innerHTML = `
-              <span class="font-medium">${file.name}</span><br>
-              <span>${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
-            `;
-            
-            submitContentBtn.disabled = false;
-          });
-        }
-      );
-    }
-
-    // إزالة الملف المرفوع
-    removeFile.addEventListener("click", (e) => {
+    // حفظ/تعديل
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      resetPdfUpload();
-    });
 
-    // إعادة تعيين حقل PDF
-    function resetPdfUpload() {
-      pdfInput.value = '';
-      uploadedFileUrl = '';
-      uploadedFileName = '';
-      progressBar.style.width = '0%';
-      progressPercent.textContent = '0%';
-      pdfUploadText.classList.remove("hidden");
-      pdfProgress.classList.add("hidden");
-      fileInfo.classList.add("hidden");
-      submitContentBtn.disabled = false;
-    }
+      const lectureId = lecture.value;
+      const t = title.value.trim();
+      const type = document.querySelector('input[name="type"]:checked').value;
 
-    // إغلاق رسالة النجاح (إضافة محتوى)
-    closeContentSuccess.addEventListener("click", () => {
-      contentSuccessMsg.classList.add("hidden");
-    });
+      if (!lectureId || !t) return alert("يرجى تعبئة كل الحقول");
 
-    // إغلاق رسالة النجاح (إضافة محاضرة)
-    closeLectureSuccess.addEventListener("click", () => {
-      lectureSuccessMsg.classList.add("hidden");
-    });
-
-    // حفظ محاضرة جديدة
-    lectureForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const stage = lectureStage.value;
-      const courseId = lectureCourse.value;
-      const title = lectureTitle.value.trim();
-      const description = lectureDescription.value.trim();
-
-      if (!stage || !courseId || !title) {
-        alert("الرجاء تعبئة جميع الحقول المطلوبة");
-        return;
-      }
-
-      saveLectureBtn.disabled = true;
-      saveLectureBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> جاري الحفظ...';
-
-      try {
-        // الحصول على اسم الكورس
-        const courseDoc = await db.collection("courses").doc(courseId).get();
-        const courseName = courseDoc.data().name;
-
-        // حفظ المحاضرة في Firestore
-        await db.collection("lectures").add({
-          stage,
-          courseId,
-          courseName,
-          lectureTitle: title,
-          lectureDescription: description,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // إعادة تعيين النموذج
-        lectureForm.reset();
-        
-        // عرض رسالة النجاح
-        lectureSuccessText.textContent = `تم إضافة محاضرة "${title}" بنجاح`;
-        lectureSuccessMsg.classList.remove("hidden");
-        
-        // إعادة تعيين الزر
-        setTimeout(() => {
-          saveLectureBtn.disabled = false;
-          saveLectureBtn.innerHTML = '<i class="fas fa-save mr-2"></i> حفظ المحاضرة';
-        }, 2000);
-        
-        // إخفاء رسالة النجاح بعد 5 ثواني
-        setTimeout(() => {
-          lectureSuccessMsg.classList.add("hidden");
-        }, 5000);
-      } catch (err) {
-        console.error(err);
-        saveLectureBtn.disabled = false;
-        saveLectureBtn.innerHTML = '<i class="fas fa-save mr-2"></i> حفظ المحاضرة';
-        alert("❌ حدث خطأ أثناء حفظ المحاضرة: " + err.message);
-      }
-    });
-
-    // حفظ محتوى جديد
-    contentForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const lectureId = contentLecture.value;
-      const title = contentTitle.value.trim();
-      const type = document.querySelector('input[name="contentType"]:checked').value;
-
-      if (!lectureId || !title) {
-        alert("الرجاء تعبئة جميع الحقول المطلوبة");
-        return;
-      }
-
-      let url = '';
-      submitContentBtn.disabled = true;
-      submitContentBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> جاري الحفظ...';
+      let url = "";
 
       try {
         if (type === "video") {
           url = videoUrl.value.trim();
-          if (!url) {
-            alert("الرجاء إدخال رابط الفيديو");
-            throw new Error("No video URL");
-          }
+          if (!url) return alert("أدخل رابط الفيديو");
         } else if (type === "pdf") {
-          if (!uploadedFileUrl) {
-            alert("الرجاء رفع ملف PDF أولاً");
-            throw new Error("No PDF file");
-          }
-          url = uploadedFileUrl;
+          const file = pdfFile.files[0];
+          if (!file) return alert("اختر ملف PDF");
+          const fileName = file.name.replace(/\s+/g, "_");
+          const ref = storage.ref(`pdfs/${Date.now()}_${fileName}`);
+          await ref.put(file);
+          url = await ref.getDownloadURL();
         } else if (type === "quiz") {
-          url = quizInput.value.trim();
-          if (!url) {
-            alert("الرجاء إدخال معرف الاختبار");
-            throw new Error("No quiz ID");
-          }
+          url = quizId.value.trim();
+          if (!url) return alert("أدخل ID الاختبار");
         }
 
-        // حفظ البيانات في Firestore
-        await db.collection("lectureContent").add({
-          lectureId,
-          title,
-          type,
-          url,
-          fileName: type === 'pdf' ? uploadedFileName : null,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        if (contentId.value) {
+          await db.collection("lectureContent").doc(contentId.value).update({ title: t, type, url });
+        } else {
+          await db.collection("lectureContent").add({
+            lectureId,
+            title: t,
+            type,
+            url,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
 
-        // إعادة تعيين النموذج
-        contentForm.reset();
-        videoField.classList.remove("hidden");
-        pdfField.classList.add("hidden");
-        quizField.classList.add("hidden");
-        resetPdfUpload();
-        
-        // عرض رسالة النجاح
-        contentSuccessMsg.classList.remove("hidden");
-        
-        // إعادة تعيين الزر
-        setTimeout(() => {
-          submitContentBtn.disabled = false;
-          submitContentBtn.innerHTML = '<i class="fas fa-save mr-2"></i> حفظ المحتوى';
-        }, 2000);
-        
-        // إخفاء رسالة النجاح بعد 5 ثواني
-        setTimeout(() => {
-          contentSuccessMsg.classList.add("hidden");
-        }, 5000);
+        form.reset();
+        contentId.value = "";
+        videoUrl.classList.remove("hidden");
+        pdfFile.classList.add("hidden");
+        quizId.classList.add("hidden");
+        loadContent();
+        alert("✅ تم الحفظ");
       } catch (err) {
         console.error(err);
-        submitContentBtn.disabled = false;
-        submitContentBtn.innerHTML = '<i class="fas fa-save mr-2"></i> حفظ المحتوى';
-        alert("❌ حدث خطأ أثناء حفظ البيانات: " + err.message);
+        alert("❌ خطأ أثناء الحفظ");
       }
     });
 
-    // تصفية وعرض المحاضرات
-    filterBtn.addEventListener('click', loadLectures);
+    // تعديل
+    window.editContent = (id, t, type, urlVal) => {
+      contentId.value = id;
+      title.value = t;
+      document.querySelector(`input[name="type"][value="${type}"]`).checked = true;
 
-    // تحميل المحاضرات
-    async function loadLectures() {
-      lecturesTableBody.innerHTML = '';
-      lecturesLoading.classList.remove('hidden');
-      
-      let query = db.collection("lectures").orderBy("createdAt", "desc");
-      
-      const stage = filterStage.value;
-      const courseId = filterCourse.value;
-      
-      if (stage) query = query.where("stage", "==", stage);
-      if (courseId) query = query.where("courseId", "==", courseId);
-      
-      try {
-        const snapshot = await query.get();
-        lecturesTableBody.innerHTML = '';
-        
-        if (snapshot.empty) {
-          lecturesTableBody.innerHTML = `
-            <tr>
-              <td colspan="5" class="p-4 text-center text-gray-500">لا توجد محاضرات متاحة</td>
-            </tr>
-          `;
-        } else {
-          // حساب عدد المحتويات لكل محاضرة
-          const contentsCount = {};
-          const contentsSnapshot = await db.collection("lectureContent").get();
-          contentsSnapshot.forEach(doc => {
-            const data = doc.data();
-            contentsCount[data.lectureId] = (contentsCount[data.lectureId] || 0) + 1;
-          });
-          
-          snapshot.forEach(doc => {
-            const l = doc.data();
-            const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50 transition';
-            row.innerHTML = `
-              <td class="p-3 border-b">${l.lectureTitle}</td>
-              <td class="p-3 border-b">${l.stage}</td>
-              <td class="p-3 border-b">${l.courseName}</td>
-              <td class="p-3 border-b text-center">${contentsCount[doc.id] || 0}</td>
-              <td class="p-3 border-b">
-                <button class="view-lecture px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition" 
-                        data-id="${doc.id}" data-stage="${l.stage}" data-course="${l.courseName}" 
-                        data-title="${l.lectureTitle}" data-desc="${l.lectureDescription || 'لا يوجد وصف'}">
-                  <i class="fas fa-eye mr-1"></i> عرض
-                </button>
-              </td>
-            `;
-            lecturesTableBody.appendChild(row);
-          });
-          
-          // إضافة مستمعين لأزرار العرض
-          document.querySelectorAll('.view-lecture').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const lectureId = btn.getAttribute('data-id');
-              const stage = btn.getAttribute('data-stage');
-              const course = btn.getAttribute('data-course');
-              const title = btn.getAttribute('data-title');
-              const desc = btn.getAttribute('data-desc');
-              
-              showLectureModal(lectureId, stage, course, title, desc);
-            });
-          });
-        }
-        
-        lecturesCount.textContent = `${snapshot.size} محاضرة`;
-      } catch (error) {
-        console.error("Error loading lectures:", error);
-        lecturesTableBody.innerHTML = `
-          <tr>
-            <td colspan="5" class="p-4 text-center text-red-500">حدث خطأ أثناء تحميل المحاضرات</td>
-          </tr>
-        `;
-      } finally {
-        lecturesLoading.classList.add('hidden');
+      videoUrl.classList.toggle("hidden", type !== "video");
+      pdfFile.classList.toggle("hidden", type !== "pdf");
+      quizId.classList.toggle("hidden", type !== "quiz");
+
+      videoUrl.value = type === "video" ? urlVal : "";
+      quizId.value = type === "quiz" ? urlVal : "";
+    };
+
+    // حذف
+    window.deleteContent = async (id) => {
+      if (confirm("هل تريد حذف هذا المحتوى؟")) {
+        await db.collection("lectureContent").doc(id).delete();
+        loadContent();
       }
-    }
-
-    // عرض مودال المحاضرة مع محتوياتها
-    async function showLectureModal(lectureId, stage, course, title, desc) {
-      currentLectureId = lectureId;
-      modalLectureTitle.textContent = title;
-      modalLectureStage.textContent = stage;
-      modalLectureCourse.textContent = course;
-      modalLectureDescription.textContent = desc;
-      
-      // تحميل محتويات المحاضرة
-      lectureContents.innerHTML = `
-        <div class="text-center py-4">
-          <i class="fas fa-spinner fa-spin text-indigo-600"></i>
-          <p class="mt-2 text-gray-600">جاري تحميل المحتويات...</p>
-        </div>
-      `;
-      
-      contentModal.classList.remove('hidden');
-      
-      try {
-        const snapshot = await db.collection("lectureContent")
-                               .where("lectureId", "==", lectureId)
-                               .orderBy("createdAt", "desc")
-                               .get();
-        
-        lectureContents.innerHTML = '';
-        
-        if (snapshot.empty) {
-          lectureContents.innerHTML = `
-            <div class="text-center py-4 text-gray-500">
-              <i class="fas fa-folder-open text-2xl mb-2"></i>
-              <p>لا يوجد محتوى لهذه المحاضرة بعد</p>
-            </div>
-          `;
-        } else {
-          snapshot.forEach(doc => {
-            const content = doc.data();
-            const contentItem = document.createElement('div');
-            contentItem.className = 'p-3 border rounded-lg bg-gray-50';
-            
-            let icon, typeText;
-            if (content.type === 'video') {
-              icon = '<i class="fas fa-video text-indigo-500"></i>';
-              typeText = 'فيديو';
-            } else if (content.type === 'pdf') {
-              icon = '<i class="fas fa-file-pdf text-red-500"></i>';
-              typeText = 'ملف PDF';
-            } else {
-              icon = '<i class="fas fa-question-circle text-purple-500"></i>';
-              typeText = 'اختبار';
-            }
-            
-            contentItem.innerHTML = `
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2 space-x-reverse">
-                  ${icon}
-                  <span class="font-medium">${content.title}</span>
-                  <span class="text-xs px-2 py-1 bg-gray-200 rounded-full">${typeText}</span>
-                </div>
-                <div class="flex space-x-2 space-x-reverse">
-                  <button class="edit-content px-2 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition" 
-                          data-id="${doc.id}" data-title="${content.title}" data-type="${content.type}" data-url="${content.url}">
-                    <i class="fas fa-edit mr-1"></i> تعديل
-                  </button>
-                  <button class="delete-content px-2 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition" 
-                          data-id="${doc.id}" data-type="${content.type}" data-url="${content.url}">
-                    <i class="fas fa-trash-alt mr-1"></i> حذف
-                  </button>
-                </div>
-              </div>
-            `;
-            
-            lectureContents.appendChild(contentItem);
-          });
-          
-          // إضافة مستمعين لأزرار التعديل والحذف
-          document.querySelectorAll('.edit-content').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const contentId = btn.getAttribute('data-id');
-              const title = btn.getAttribute('data-title');
-              const type = btn.getAttribute('data-type');
-              const url = btn.getAttribute('data-url');
-              
-              editContent(contentId, title, type, url);
-            });
-          });
-          
-          document.querySelectorAll('.delete-content').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              const contentId = btn.getAttribute('data-id');
-              const type = btn.getAttribute('data-type');
-              const url = btn.getAttribute('data-url');
-              
-              if (confirm('هل أنت متأكد من حذف هذا المحتوى؟')) {
-                deleteContent(contentId, type, url);
-              }
-            });
-          });
-        }
-      } catch (error) {
-        console.error("Error loading lecture contents:", error);
-        lectureContents.innerHTML = `
-          <div class="text-center py-4 text-red-500">
-            <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
-            <p>حدث خطأ أثناء تحميل المحتويات</p>
-          </div>
-        `;
-      }
-    }
-
-    // إغلاق مودال المحاضرة
-    closeModal.addEventListener('click', () => {
-      contentModal.classList.add('hidden');
-      currentLectureId = '';
-    });
-
-    // فتح مودال تعديل المحاضرة
-    editLectureBtn.addEventListener('click', () => {
-      editLectureId.value = currentLectureId;
-      editLectureTitle.value = modalLectureTitle.textContent;
-      editLectureDescription.value = modalLectureDescription.textContent;
-      
-      contentModal.classList.add('hidden');
-      editLectureModal.classList.remove('hidden');
-    });
-
-    // إغلاق مودال تعديل المحاضرة
-    closeEditModal.addEventListener('click', () => {
-      editLectureModal.classList.add('hidden');
-      showLectureModal(currentLectureId, 
-                       modalLectureStage.textContent, 
-                       modalLectureCourse.textContent, 
-                       modalLectureTitle.textContent, 
-                       modalLectureDescription.textContent);
-    });
-
-    // حفظ تعديلات المحاضرة
-    editLectureForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const id = editLectureId.value;
-      const title = editLectureTitle.value.trim();
-      const description = editLectureDescription.value.trim();
-      
-      if (!title) {
-        alert("الرجاء إدخال عنوان المحاضرة");
-        return;
-      }
-      
-      try {
-        await db.collection("lectures").doc(id).update({
-          lectureTitle: title,
-          lectureDescription: description
-        });
-        
-        editLectureModal.classList.add('hidden');
-        showLectureModal(id, 
-                         modalLectureStage.textContent, 
-                         modalLectureCourse.textContent, 
-                         title, 
-                         description);
-      } catch (error) {
-        console.error("Error updating lecture:", error);
-        alert("حدث خطأ أثناء تحديث المحاضرة");
-      }
-    });
-
-    // حذف المحاضرة
-    deleteLectureBtn.addEventListener('click', async () => {
-      if (confirm('هل أنت متأكد من حذف هذه المحاضرة وجميع محتوياتها؟')) {
-        try {
-          // حذف المحاضرة
-          await db.collection("lectures").doc(currentLectureId).delete();
-          
-          // حذف جميع محتويات المحاضرة
-          const snapshot = await db.collection("lectureContent")
-                                 .where("lectureId", "==", currentLectureId)
-                                 .get();
-          
-          const batch = db.batch();
-          snapshot.forEach(doc => {
-            batch.delete(doc.ref);
-          });
-          await batch.commit();
-          
-          // إغلاق المودال وتحديث الجدول
-          contentModal.classList.add('hidden');
-          loadLectures();
-        } catch (error) {
-          console.error("Error deleting lecture:", error);
-          alert("حدث خطأ أثناء حذف المحاضرة");
-        }
-      }
-    });
-
-    // تعديل محتوى
-    function editContent(contentId, title, type, url) {
-      currentContentId = contentId;
-      editContentId.value = contentId;
-      editContentTitle.value = title;
-      
-      // إظهار الحقل المناسب لنوع المحتوى
-      if (type === 'video') {
-        editContentUrlLabel.textContent = 'رابط الفيديو';
-        editContentUrl.value = url;
-      } else if (type === 'pdf') {
-        editContentUrlLabel.textContent = 'رابط ملف PDF';
-        editContentUrl.value = url;
-      } else {
-        editContentUrlLabel.textContent = 'معرف الاختبار';
-        editContentUrl.value = url;
-      }
-      
-      contentModal.classList.add('hidden');
-      editContentModal.classList.remove('hidden');
-    }
-
-    // إغلاق مودال تعديل المحتوى
-    closeEditContentModal.addEventListener('click', () => {
-      editContentModal.classList.add('hidden');
-      showLectureModal(currentLectureId, 
-                       modalLectureStage.textContent, 
-                       modalLectureCourse.textContent, 
-                       modalLectureTitle.textContent, 
-                       modalLectureDescription.textContent);
-    });
-
-    // حفظ تعديلات المحتوى
-    editContentForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const id = editContentId.value;
-      const title = editContentTitle.value.trim();
-      const url = editContentUrl.value.trim();
-      
-      if (!title || !url) {
-        alert("الرجاء تعبئة جميع الحقول المطلوبة");
-        return;
-      }
-      
-      try {
-        await db.collection("lectureContent").doc(id).update({
-          title,
-          url
-        });
-        
-        editContentModal.classList.add('hidden');
-        showLectureModal(currentLectureId, 
-                         modalLectureStage.textContent, 
-                         modalLectureCourse.textContent, 
-                         modalLectureTitle.textContent, 
-                         modalLectureDescription.textContent);
-      } catch (error) {
-        console.error("Error updating content:", error);
-        alert("حدث خطأ أثناء تحديث المحتوى");
-      }
-    });
-
-    // حذف محتوى
-    async function deleteContent(contentId, type, url) {
-      try {
-        // حذف ملف PDF من التخزين إذا كان نوع المحتوى PDF
-        if (type === 'pdf') {
-          const fileRef = storage.refFromURL(url);
-          await fileRef.delete();
-        }
-        
-        // حذف المحتوى من Firestore
-        await db.collection("lectureContent").doc(contentId).delete();
-        
-        // إعادة تحميل محتويات المحاضرة
-        showLectureModal(currentLectureId, 
-                         modalLectureStage.textContent, 
-                         modalLectureCourse.textContent, 
-                         modalLectureTitle.textContent, 
-                         modalLectureDescription.textContent);
-      } catch (error) {
-        console.error("Error deleting content:", error);
-        alert("حدث خطأ أثناء حذف المحتوى");
-      }
-    }
-
-    // حذف المحتوى من زر الحذف في المودال
-    deleteContentBtn.addEventListener('click', async () => {
-      if (confirm('هل أنت متأكد من حذف هذا المحتوى؟')) {
-        try {
-          // الحصول على بيانات المحتوى أولاً
-          const doc = await db.collection("lectureContent").doc(currentContentId).get();
-          const content = doc.data();
-          
-          // حذف ملف PDF من التخزين إذا كان نوع المحتوى PDF
-          if (content.type === 'pdf') {
-            const fileRef = storage.refFromURL(content.url);
-            await fileRef.delete();
-          }
-          
-          // حذف المحتوى من Firestore
-          await db.collection("lectureContent").doc(currentContentId).delete();
-          
-          // إغلاق المودال وإعادة تحميل المحتويات
-          editContentModal.classList.add('hidden');
-          showLectureModal(currentLectureId, 
-                           modalLectureStage.textContent, 
-                           modalLectureCourse.textContent, 
-                           modalLectureTitle.textContent, 
-                           modalLectureDescription.textContent);
-        } catch (error) {
-          console.error("Error deleting content:", error);
-          alert("حدث خطأ أثناء حذف المحتوى");
-        }
-      }
-    });
-
-    // تحميل المحاضرات عند بدء التشغيل
-    loadLectures();
+    };
   </script>
 </body>
-                  </html>
+</html>
