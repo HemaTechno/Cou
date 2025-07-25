@@ -2,152 +2,169 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>مشاهدة الفيديو</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
       font-family: 'Tajawal', sans-serif;
-      background: #000;
-      color: #fff;
+      background-color: #f3f4f6;
     }
 
     #video-container {
       position: relative;
-      padding-top: 56.25%;
-    }
-
-    #player {
-      position: absolute;
-      top: 0; left: 0;
       width: 100%;
-      height: 100%;
-      border: none;
-      z-index: 1;
-      pointer-events: none; /* يمنع التفاعل */
+      max-width: 800px;
+      margin: auto;
+      overflow: hidden;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
     }
 
-    .overlay-block {
+    #yt-video {
+      width: 100%;
+      pointer-events: none; /* منع المستخدم من التفاعل مع الفيديو */
+    }
+
+    #overlay {
       position: absolute;
       inset: 0;
-      z-index: 2;
-      background: transparent;
-      pointer-events: all;
+      background-color: transparent;
+      z-index: 10;
     }
 
-    .watermark {
+    #watermark {
       position: absolute;
+      top: 0;
+      left: 0;
+      background-color: rgba(255, 255, 255, 0.4);
+      color: #111827;
       padding: 6px 12px;
-      background: rgba(255,255,255,0.1);
       font-weight: bold;
-      border-radius: 10px;
-      z-index: 3;
+      border-radius: 6px;
+      z-index: 20;
+      pointer-events: none;
     }
 
-    .blackout {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.8);
-      z-index: 9999;
-      display: none;
-    }
-
-    .controls {
+    #controls {
+      display: flex;
+      justify-content: center;
       margin-top: 20px;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      font-size: 15px;
+      border: none;
+      background-color: #6366f1;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #4f46e5;
     }
   </style>
 </head>
-<body>
+<body class="p-6">
 
-<div class="max-w-4xl mx-auto p-4">
-  <h1 class="text-2xl font-bold mb-4 text-center text-indigo-400">🎬 مشاهدة الفيديو التعليمي</h1>
+  <h1 class="text-center text-2xl font-bold text-indigo-700 mb-6">🎬 مشاهدة الفيديو</h1>
 
   <div id="video-container">
-    <div class="overlay-block"></div>
-    <div id="watermark" class="watermark">منصة السقا</div>
-    <iframe id="player"
-            src="https://www.youtube.com/embed/GwduwHxu6aU?enablejsapi=1&autoplay=1&rel=0&controls=0&modestbranding=1"
-            allow="autoplay"
-            allowfullscreen></iframe>
+    <!-- فيديو يوتيوب (غير مدرج) -->
+    <iframe id="yt-video"
+      src="https://www.youtube.com/embed/GwduwHxu6aU?autoplay=1&controls=0&rel=0&modestbranding=1&enablejsapi=1"
+      frameborder="0"
+      allow="autoplay; encrypted-media"
+      allowfullscreen>
+    </iframe>
+
+    <div id="overlay"></div>
+    <div id="watermark">منصة السقا</div>
   </div>
 
-  <!-- أزرار التحكم -->
-  <div class="controls flex justify-center gap-4 mt-6">
-    <button onclick="togglePlay()" class="bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700">⏯ تشغيل/إيقاف</button>
-    <button onclick="goFullscreen()" class="bg-gray-700 px-4 py-2 rounded-lg hover:bg-gray-800">🔳 ملء الشاشة</button>
+  <div id="controls">
+    <button onclick="playVideo()">▶️ تشغيل</button>
+    <button onclick="pauseVideo()">⏸️ إيقاف</button>
+    <button onclick="changeSpeed(0.5)">⏪ تبطيء</button>
+    <button onclick="changeSpeed(2)">⏩ تسريع</button>
+    <button onclick="goFullScreen()">🖥️ ملء الشاشة</button>
   </div>
-</div>
 
-<!-- طبقة حماية سوداء -->
-<div id="blackout" class="blackout"></div>
-
-<!-- YouTube API -->
-<script>
-  let player;
-  function onYouTubeIframeAPIReady() {
-    player = new YT.Player('player');
-  }
-
-  // تحميل YouTube API
-  const tag = document.createElement('script');
-  tag.src = "https://www.youtube.com/iframe_api";
-  document.head.appendChild(tag);
-
-  // زر تشغيل/إيقاف
-  function togglePlay() {
-    if (player.getPlayerState() === 1) {
-      player.pauseVideo();
-    } else {
-      player.playVideo();
-    }
-  }
-
-  // زر ملء الشاشة
-  function goFullscreen() {
-    const iframe = document.getElementById("player");
-    if (iframe.requestFullscreen) {
-      iframe.requestFullscreen();
-    } else if (iframe.webkitRequestFullscreen) {
-      iframe.webkitRequestFullscreen();
-    } else if (iframe.msRequestFullscreen) {
-      iframe.msRequestFullscreen();
-    }
-  }
-
-  // watermark حركة عشوائية
-  const watermark = document.getElementById("watermark");
-  function moveWatermark() {
+  <script>
+    // تحريك العلامة المائية في كل الاتجاهات
+    const watermark = document.getElementById("watermark");
     const container = document.getElementById("video-container");
-    const maxX = container.offsetWidth - watermark.offsetWidth;
-    const maxY = container.offsetHeight - watermark.offsetHeight;
-    const x = Math.random() * maxX;
-    const y = Math.random() * maxY;
-    watermark.style.transform = `translate(${x}px, ${y}px)`;
-  }
-  setInterval(moveWatermark, 2000);
+    let posX = 0, posY = 0, dirX = 1, dirY = 1;
+    const speed = 1.5;
 
-  // حماية ضد أدوات المطور
-  document.addEventListener("keydown", function (e) {
-    if (
-      e.key === "F12" ||
-      (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key))
-    ) {
-      e.preventDefault();
+    function animateWatermark() {
+      const maxX = container.offsetWidth - watermark.offsetWidth;
+      const maxY = container.offsetHeight - watermark.offsetHeight;
+
+      posX += dirX * speed;
+      posY += dirY * speed;
+
+      if (posX <= 0 || posX >= maxX) dirX *= -1;
+      if (posY <= 0 || posY >= maxY) dirY *= -1;
+
+      watermark.style.transform = `translate(${posX}px, ${posY}px)`;
+      requestAnimationFrame(animateWatermark);
     }
-  });
 
-  // طبقة سوداء عند السكرين (وهمية)
-  setInterval(() => {
-    const img = new Image();
-    img.__defineGetter__('id', function () {
-      document.getElementById("blackout").style.display = "block";
-      setTimeout(() => {
-        document.getElementById("blackout").style.display = "none";
-      }, 2000);
+    requestAnimationFrame(animateWatermark);
+
+    // تحكم في الفيديو عبر API
+    let player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('yt-video', {
+        events: {
+          'onReady': () => player.playVideo()
+        }
+      });
+    }
+
+    function playVideo() {
+      if (player) player.playVideo();
+    }
+
+    function pauseVideo() {
+      if (player) player.pauseVideo();
+    }
+
+    function changeSpeed(rate) {
+      if (player) player.setPlaybackRate(rate);
+    }
+
+    function goFullScreen() {
+      const iframe = document.getElementById("yt-video");
+      if (iframe.requestFullscreen) {
+        iframe.requestFullscreen();
+      } else if (iframe.webkitRequestFullscreen) {
+        iframe.webkitRequestFullscreen();
+      } else if (iframe.mozRequestFullScreen) {
+        iframe.mozRequestFullScreen();
+      } else if (iframe.msRequestFullscreen) {
+        iframe.msRequestFullscreen();
+      }
+    }
+
+    // تحميل API الخاص بـ YouTube
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+
+    // حماية مبدئية ضد تصوير الشاشة: تغطية سوداء عند الضغط على زر PrintScreen
+    window.addEventListener('keyup', function(e) {
+      if (e.key === 'PrintScreen') {
+        document.getElementById("overlay").style.backgroundColor = "black";
+        setTimeout(() => {
+          document.getElementById("overlay").style.backgroundColor = "transparent";
+        }, 2000);
+      }
     });
-    console.log(img);
-  }, 2000);
-</script>
-
+  </script>
 </body>
 </html>
