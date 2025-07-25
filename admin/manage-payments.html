@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مراجعة طلبات الشحن | الإدارة</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+  <h1 class="text-3xl font-bold mb-6 text-center text-indigo-700">مراجعة طلبات شحن الكوينات</h1>
+
+  <div id="paymentsList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f"
+    });
+
+    const db = firebase.firestore();
+    const paymentsList = document.getElementById("paymentsList");
+
+    async function loadPayments() {
+      const snapshot = await db.collection("payments").where("status", "==", "معلق").get();
+      paymentsList.innerHTML = "";
+
+      if (snapshot.empty) {
+        paymentsList.innerHTML = `<p class="text-center col-span-full text-gray-600">لا توجد طلبات حالياً</p>`;
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 rounded-xl shadow-md border";
+
+        card.innerHTML = `
+          <h2 class="text-lg font-bold text-indigo-700 mb-2">📌 ${p.fullName}</h2>
+          <p class="text-gray-700 mb-1">ID: ${p.studentId}</p>
+          <p class="text-gray-700 mb-1">العدد المطلوب: <strong>${p.coinsRequested}</strong> كوين</p>
+          <p class="text-gray-700 mb-2">المبلغ: ${p.amountEGP} جنيه</p>
+          <img src="${p.receiptURL}" class="rounded-lg border mb-3 w-full h-40 object-contain bg-gray-50" alt="إيصال" />
+          <div class="flex justify-between gap-2">
+            <button onclick="approve('${p.id}', '${p.studentId}', ${p.coinsRequested})" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg">✅ موافقة</button>
+            <button onclick="reject('${p.id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">❌ رفض</button>
+          </div>
+        `;
+
+        paymentsList.appendChild(card);
+      });
+    }
+
+    async function approve(paymentId, studentId, coins) {
+      try {
+        const studentRef = db.collection("students").doc(studentId);
+        const studentDoc = await studentRef.get();
+        const currentCoins = studentDoc.exists ? (studentDoc.data().coins || 0) : 0;
+
+        await studentRef.update({
+          coins: currentCoins + coins
+        });
+
+        await db.collection("payments").doc(paymentId).update({
+          status: "تمت الموافقة",
+          reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert("✅ تمت الموافقة وإضافة الكوينات");
+        loadPayments();
+      } catch (err) {
+        alert("❌ حدث خطأ: " + err.message);
+      }
+    }
+
+    async function reject(paymentId) {
+      const note = prompt("اكتب سبب الرفض (اختياري):");
+      await db.collection("payments").doc(paymentId).update({
+        status: "مرفوض",
+        note: note || "",
+        reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      alert("❌ تم رفض الطلب");
+      loadPayments();
+    }
+
+    loadPayments();
+  </script>
+</body>
+</html>
+
