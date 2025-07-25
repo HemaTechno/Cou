@@ -8,50 +8,142 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { font-family: 'Tajawal', sans-serif; }
+    .gradient-bg { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
+    .course-card { transition: all 0.3s ease; }
+    .course-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+    .fade-in { animation: fadeIn 0.5s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-6">
+<body class="bg-gray-50 min-h-screen p-6">
+
+  <!-- Header -->
+  <header class="gradient-bg text-white rounded-xl shadow-lg mb-10 p-6">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold"><i class="fas fa-graduation-cap mr-2"></i>منصة عبدالرحمن السقا</h1>
+        <p class="text-indigo-100 mt-1">نظام إدارة الكورسات التعليمية</p>
+      </div>
+      <div class="bg-white/20 p-3 rounded-full">
+        <i class="fas fa-cog text-xl"></i>
+      </div>
+    </div>
+  </header>
 
   <div class="max-w-6xl mx-auto space-y-10">
 
     <!-- ✅ نموذج إضافة / تعديل كورس -->
-    <div class="bg-white p-6 rounded-xl shadow">
-      <h2 class="text-xl font-bold text-indigo-700 mb-4" id="formTitle">➕ إضافة كورس جديد</h2>
+    <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+      <div class="flex items-center mb-6">
+        <div class="gradient-bg p-3 rounded-xl mr-4">
+          <i class="fas fa-plus text-white text-xl" id="formIcon"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800" id="formTitle">إضافة كورس جديد</h2>
+      </div>
 
-      <form id="courseForm" class="space-y-4">
+      <form id="courseForm" class="space-y-6">
         <input type="hidden" id="courseId" />
-        <input type="text" id="courseName" placeholder="اسم الكورس" required class="w-full border px-4 py-2 rounded-lg text-right" />
-        <textarea id="courseDescription" placeholder="وصف الكورس" rows="3" required class="w-full border px-4 py-2 rounded-lg text-right"></textarea>
-
-        <select id="stage" required class="w-full border px-4 py-2 rounded-lg">
-          <option value="" disabled selected>اختر المرحلة الدراسية</option>
-          <option value="الصف الأول">الصف الأول</option>
-          <option value="الصف الثاني">الصف الثاني</option>
-          <option value="الصف الثالث">الصف الثالث</option>
-        </select>
-
-        <label class="block font-medium">صورة الكورس:</label>
-        <input type="file" id="courseImage" accept="image/*" class="w-full border px-4 py-2 bg-gray-50 rounded-lg" />
-
-        <div class="flex gap-4 items-center">
-          <label><input type="radio" name="isFree" value="true" checked /> مجاني</label>
-          <label><input type="radio" name="isFree" value="false" /> مدفوع</label>
+        
+        <div class="space-y-1">
+          <label class="block text-gray-700 font-medium">اسم الكورس</label>
+          <div class="relative">
+            <i class="fas fa-book absolute left-3 top-3 text-gray-400"></i>
+            <input type="text" id="courseName" placeholder="أدخل اسم الكورس" required 
+                   class="w-full border border-gray-200 px-12 py-3 rounded-xl text-right focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+          </div>
         </div>
 
-        <input type="number" id="price" placeholder="عدد الكوينات" min="1" class="w-full border px-4 py-2 rounded-lg text-right hidden" />
+        <div class="space-y-1">
+          <label class="block text-gray-700 font-medium">وصف الكورس</label>
+          <div class="relative">
+            <i class="fas fa-align-right absolute left-3 top-3 text-gray-400"></i>
+            <textarea id="courseDescription" placeholder="أدخل وصف الكورس" rows="3" required 
+                      class="w-full border border-gray-200 px-12 py-3 rounded-xl text-right focus:ring-2 focus:ring-indigo-500 focus:border-transparent"></textarea>
+          </div>
+        </div>
 
-        <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">💾 حفظ الكورس</button>
+        <div class="space-y-1">
+          <label class="block text-gray-700 font-medium">المرحلة الدراسية</label>
+          <div class="relative">
+            <i class="fas fa-layer-group absolute left-3 top-3 text-gray-400"></i>
+            <select id="stage" required 
+                    class="w-full border border-gray-200 px-12 py-3 rounded-xl appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <option value="" disabled selected>اختر المرحلة الدراسية</option>
+              <option value="الصف الأول">الصف الأول</option>
+              <option value="الصف الثاني">الصف الثاني</option>
+              <option value="الصف الثالث">الصف الثالث</option>
+            </select>
+            <i class="fas fa-chevron-down absolute left-3 top-4 text-gray-400"></i>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-gray-700 font-medium">صورة الكورس</label>
+          <div class="relative">
+            <i class="fas fa-image absolute left-3 top-3 text-gray-400"></i>
+            <input type="file" id="courseImage" accept="image/*" 
+                   class="w-full border border-gray-200 px-12 py-3 bg-gray-50 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700" />
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-gray-700 font-medium mb-2">نوع الكورس</label>
+          <div class="flex gap-6 items-center">
+            <label class="inline-flex items-center">
+              <input type="radio" name="isFree" value="true" checked class="h-5 w-5 text-indigo-600 focus:ring-indigo-500" />
+              <span class="mr-2 text-gray-700">مجاني</span>
+            </label>
+            <label class="inline-flex items-center">
+              <input type="radio" name="isFree" value="false" class="h-5 w-5 text-indigo-600 focus:ring-indigo-500" />
+              <span class="mr-2 text-gray-700">مدفوع</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="space-y-1 hidden" id="priceContainer">
+          <label class="block text-gray-700 font-medium">عدد الكوينات</label>
+          <div class="relative">
+            <i class="fas fa-coins absolute left-3 top-3 text-gray-400"></i>
+            <input type="number" id="price" placeholder="أدخل عدد الكوينات المطلوبة" min="1" 
+                   class="w-full border border-gray-200 px-12 py-3 rounded-xl text-right focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+          </div>
+        </div>
+
+        <button type="submit" class="w-full gradient-bg text-white py-4 rounded-xl hover:opacity-90 transition font-bold text-lg shadow-lg">
+          <i class="fas fa-save mr-2"></i>حفظ الكورس
+        </button>
       </form>
 
-      <p id="successMsg" class="text-center text-green-600 mt-4 hidden">✅ تم حفظ الكورس بنجاح!</p>
+      <div id="successMsg" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl text-center hidden fade-in">
+        <div class="flex items-center justify-center space-x-2 text-green-700">
+          <i class="fas fa-check-circle text-xl"></i>
+          <span class="font-medium">تم حفظ الكورس بنجاح!</span>
+        </div>
+      </div>
     </div>
 
     <!-- ✅ قائمة الكورسات -->
-    <div class="bg-white p-6 rounded-xl shadow">
-      <h2 class="text-xl font-bold text-indigo-700 mb-4">📚 الكورسات المضافة</h2>
-      <div id="coursesList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+      <div class="flex items-center mb-6">
+        <div class="gradient-bg p-3 rounded-xl mr-4">
+          <i class="fas fa-book-open text-white text-xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">الكورسات المضافة</h2>
+      </div>
+      
+      <div id="coursesList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- سيتم ملؤها بالكورسات -->
+      </div>
+      
+      <div id="emptyState" class="text-center py-12 hidden">
+        <i class="fas fa-book fa-3x text-gray-300 mb-4"></i>
+        <h3 class="text-xl font-medium text-gray-500">لا توجد كورسات متاحة</h3>
+        <p class="text-gray-400 mt-2">إضغط على زر إضافة كورس لبدء الإضافة</p>
+      </div>
     </div>
 
   </div>
@@ -71,13 +163,16 @@
     const storage = firebase.storage();
 
     const form = document.getElementById("courseForm");
-    const priceInput = document.getElementById("price");
+    const priceContainer = document.getElementById("priceContainer");
     const successMsg = document.getElementById("successMsg");
+    const emptyState = document.getElementById("emptyState");
+    const formTitle = document.getElementById("formTitle");
+    const formIcon = document.getElementById("formIcon");
 
     // Show/hide price field
     document.querySelectorAll('input[name="isFree"]').forEach(radio => {
       radio.addEventListener("change", () => {
-        priceInput.classList.toggle("hidden", radio.value === "true");
+        priceContainer.classList.toggle("hidden", radio.value === "true");
       });
     });
 
@@ -90,15 +185,17 @@
       const description = document.getElementById("courseDescription").value.trim();
       const stage = document.getElementById("stage").value;
       const isFree = document.querySelector('input[name="isFree"]:checked').value === "true";
-      const price = isFree ? 0 : parseInt(priceInput.value);
+      const price = isFree ? 0 : parseInt(document.getElementById("price").value);
       const imageFile = document.getElementById("courseImage").files[0];
 
       if (!name || !description || !stage || (!isFree && (!price || price <= 0))) {
-        alert("يرجى تعبئة جميع الحقول المطلوبة");
+        showAlert("يرجى تعبئة جميع الحقول المطلوبة", "error");
         return;
       }
 
       try {
+        showLoading(true);
+        
         let imageURL = "";
         if (imageFile) {
           const imageRef = storage.ref(`courses/${courseId}.jpg`);
@@ -115,67 +212,124 @@
           price,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
+        
+        // Only set createdAt for new courses
+        if (!document.getElementById("courseId").value) {
+          courseData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        }
+        
         if (imageURL) courseData.imageURL = imageURL;
 
         await db.collection("courses").doc(courseId).set(courseData, { merge: true });
 
         form.reset();
-        document.getElementById("formTitle").textContent = "➕ إضافة كورس جديد";
-        priceInput.classList.add("hidden");
+        formTitle.textContent = "إضافة كورس جديد";
+        formIcon.className = "fas fa-plus text-white text-xl";
+        priceContainer.classList.add("hidden");
         successMsg.classList.remove("hidden");
         setTimeout(() => successMsg.classList.add("hidden"), 3000);
         loadCourses();
-
+        
       } catch (err) {
         console.error(err);
-        alert("❌ خطأ أثناء الحفظ");
+        showAlert("حدث خطأ أثناء حفظ الكورس", "error");
+      } finally {
+        showLoading(false);
       }
     });
 
     // تحميل الكورسات
     async function loadCourses() {
-      const res = await db.collection("courses").orderBy("createdAt", "desc").get();
-      const list = document.getElementById("coursesList");
-      list.innerHTML = "";
+      try {
+        showLoading(true);
+        const res = await db.collection("courses").orderBy("createdAt", "desc").get();
+        const list = document.getElementById("coursesList");
+        list.innerHTML = "";
 
-      res.forEach(doc => {
-        const c = doc.data();
-        const card = document.createElement("div");
-        card.className = "bg-gray-50 rounded-xl shadow p-4 space-y-2";
+        if (res.empty) {
+          emptyState.classList.remove("hidden");
+          return;
+        }
+        
+        emptyState.classList.add("hidden");
 
-        card.innerHTML = `
-          <img src="${c.imageURL || '#'}" class="w-full h-40 object-cover rounded-md mb-2">
-          <h3 class="text-lg font-bold text-indigo-700">${c.name}</h3>
-          <p class="text-sm text-gray-600">${c.description}</p>
-          <p class="text-xs text-gray-500">المرحلة: ${c.stage}</p>
-          <p class="text-xs text-${c.isFree ? "green" : "yellow"}-600">${c.isFree ? "مجاني" : "مدفوع: " + c.price + " 🪙"}</p>
-          <div class="flex justify-between gap-2 mt-2">
-            <button onclick="editCourse('${c.id}')" class="bg-blue-600 text-white text-sm px-3 py-1 rounded">تعديل</button>
-            <button onclick="deleteCourse('${c.id}')" class="bg-red-600 text-white text-sm px-3 py-1 rounded">حذف</button>
-          </div>
-        `;
-        list.appendChild(card);
-      });
+        res.forEach(doc => {
+          const c = doc.data();
+          const card = document.createElement("div");
+          card.className = "course-card bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden fade-in";
+
+          card.innerHTML = `
+            <div class="relative">
+              <img src="${c.imageURL || 'https://via.placeholder.com/400x225?text=No+Image'}" 
+                   class="w-full h-48 object-cover" onerror="this.src='https://via.placeholder.com/400x225?text=No+Image'">
+              <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold ${c.isFree ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                ${c.isFree ? 'مجاني' : 'مدفوع'}
+              </span>
+            </div>
+            <div class="p-5">
+              <div class="flex justify-between items-start">
+                <h3 class="text-lg font-bold text-gray-800 mb-1">${c.name}</h3>
+                <span class="bg-indigo-50 text-indigo-700 text-xs px-2 py-1 rounded">${c.stage}</span>
+              </div>
+              <p class="text-sm text-gray-600 mt-2 line-clamp-2">${c.description}</p>
+              
+              ${!c.isFree ? `<div class="mt-3 flex items-center text-yellow-600">
+                <i class="fas fa-coins mr-1"></i>
+                <span class="font-medium">${c.price} كوين</span>
+              </div>` : ''}
+              
+              <div class="flex justify-between gap-3 mt-5">
+                <button onclick="editCourse('${c.id}')" 
+                        class="flex-1 bg-blue-50 text-blue-700 hover:bg-blue-100 transition py-2 rounded-lg text-sm font-medium">
+                  <i class="fas fa-edit mr-1"></i> تعديل
+                </button>
+                <button onclick="deleteCourse('${c.id}')" 
+                        class="flex-1 bg-red-50 text-red-700 hover:bg-red-100 transition py-2 rounded-lg text-sm font-medium">
+                  <i class="fas fa-trash-alt mr-1"></i> حذف
+                </button>
+              </div>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        showAlert("حدث خطأ أثناء تحميل الكورسات", "error");
+      } finally {
+        showLoading(false);
+      }
     }
 
     // تعديل
     async function editCourse(id) {
-      const doc = await db.collection("courses").doc(id).get();
-      if (!doc.exists) return;
+      try {
+        showLoading(true);
+        const doc = await db.collection("courses").doc(id).get();
+        if (!doc.exists) return;
 
-      const c = doc.data();
-      document.getElementById("formTitle").textContent = "✏️ تعديل كورس";
-      document.getElementById("courseId").value = c.id;
-      document.getElementById("courseName").value = c.name;
-      document.getElementById("courseDescription").value = c.description;
-      document.getElementById("stage").value = c.stage;
-      document.querySelector(`input[name="isFree"][value="${c.isFree ? "true" : "false"}"]`).checked = true;
+        const c = doc.data();
+        formTitle.textContent = "تعديل كورس";
+        formIcon.className = "fas fa-edit text-white text-xl";
+        document.getElementById("courseId").value = c.id;
+        document.getElementById("courseName").value = c.name;
+        document.getElementById("courseDescription").value = c.description;
+        document.getElementById("stage").value = c.stage;
+        document.querySelector(`input[name="isFree"][value="${c.isFree ? "true" : "false"}"]`).checked = true;
 
-      if (!c.isFree) {
-        priceInput.value = c.price;
-        priceInput.classList.remove("hidden");
-      } else {
-        priceInput.classList.add("hidden");
+        if (!c.isFree) {
+          document.getElementById("price").value = c.price;
+          priceContainer.classList.remove("hidden");
+        } else {
+          priceContainer.classList.add("hidden");
+        }
+        
+        // Scroll to form
+        document.getElementById("courseForm").scrollIntoView({ behavior: 'smooth' });
+      } catch (err) {
+        console.error(err);
+        showAlert("حدث خطأ أثناء تحميل بيانات الكورس", "error");
+      } finally {
+        showLoading(false);
       }
     }
 
@@ -183,13 +337,52 @@
     async function deleteCourse(id) {
       if (!confirm("هل أنت متأكد أنك تريد حذف هذا الكورس؟")) return;
       try {
+        showLoading(true);
         await db.collection("courses").doc(id).delete();
-        await storage.ref(`courses/${id}.jpg`).delete();
+        try {
+          await storage.ref(`courses/${id}.jpg`).delete();
+        } catch (storageErr) {
+          console.log("No image to delete");
+        }
+        showAlert("تم حذف الكورس بنجاح", "success");
         loadCourses();
       } catch (err) {
         console.error(err);
-        alert("❌ خطأ أثناء الحذف");
+        showAlert("حدث خطأ أثناء حذف الكورس", "error");
+      } finally {
+        showLoading(false);
       }
+    }
+
+    // وظائف مساعدة
+    function showAlert(message, type) {
+      const alertDiv = document.createElement("div");
+      alertDiv.className = `fixed top-5 right-5 p-4 rounded-lg shadow-lg z-50 fade-in ${type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+      alertDiv.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      document.body.appendChild(alertDiv);
+      
+      setTimeout(() => {
+        alertDiv.classList.add("opacity-0", "transition-opacity", "duration-300");
+        setTimeout(() => alertDiv.remove(), 300);
+      }, 3000);
+    }
+    
+    function showLoading(show) {
+      const buttons = document.querySelectorAll("button[type='submit']");
+      buttons.forEach(btn => {
+        if (show) {
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> جاري المعالجة...';
+          btn.disabled = true;
+        } else {
+          btn.innerHTML = '<i class="fas fa-save mr-2"></i> حفظ الكورس';
+          btn.disabled = false;
+        }
+      });
     }
 
     // أول تحميل
