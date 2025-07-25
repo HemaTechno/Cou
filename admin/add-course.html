@@ -16,28 +16,23 @@
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     }
     .form-container {
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
     .btn-submit {
       background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       transition: all 0.3s ease;
-      box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
     }
     .btn-submit:hover {
       background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
       transform: translateY(-2px);
-      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
+      box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
     }
     .input-field {
-      transition: all 0.3s ease;
-      background-color: rgba(255, 255, 255, 0.8);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
     .input-field:focus {
       border-color: #818cf8;
-      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
-      background-color: white;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
     }
     .radio-btn:checked {
       background-color: #4f46e5;
@@ -46,36 +41,20 @@
     .upload-label {
       border: 2px dashed #cbd5e1;
       transition: all 0.3s ease;
-      background-color: rgba(255, 255, 255, 0.8);
     }
     .upload-label:hover {
       border-color: #818cf8;
-      background-color: rgba(248, 250, 252, 0.9);
+      background-color: #f8fafc;
     }
     .file-selected {
       border-color: #4f46e5;
-      background-color: rgba(238, 242, 255, 0.8);
-    }
-    .badge-option {
-      transition: all 0.2s ease;
-    }
-    .badge-option:hover {
-      transform: scale(1.05);
-    }
-    .badge-option.selected {
-      border: 2px solid #4f46e5;
-      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
-    }
-    .tag-input {
-      transition: all 0.2s ease;
-    }
-    .tag-input:focus {
-      box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.3);
+      background-color: #eef2ff;
     }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 md:p-8">
-  <div class="form-container bg-white/90 p-6 md:p-10 rounded-2xl w-full max-w-2xl">
+
+  <div class="form-container bg-white p-6 md:p-10 rounded-2xl w-full max-w-2xl">
     <div class="text-center mb-8">
       <h2 class="text-3xl font-bold text-indigo-900 mb-2 flex items-center justify-center gap-2">
         <i data-feather="plus-circle" class="w-8 h-8"></i>
@@ -85,195 +64,88 @@
     </div>
 
     <form id="courseForm" class="space-y-6">
-      <!-- معلومات أساسية -->
-      <div class="bg-white/50 p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center gap-2">
-          <i data-feather="info" class="w-5 h-5"></i>
-          المعلومات الأساسية
-        </h3>
-        
-        <div class="space-y-4">
-          <div>
-            <label for="courseName" class="block text-right font-medium text-gray-700 mb-2">اسم الكورس</label>
-            <div class="relative">
-              <input type="text" id="courseName" placeholder="أدخل اسم الكورس" required 
-                     class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right pr-12" />
-              <i data-feather="book" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5"></i>
+      <div>
+        <label for="courseName" class="block text-right font-medium text-gray-700 mb-2">اسم الكورس</label>
+        <div class="relative">
+          <input type="text" id="courseName" placeholder="أدخل اسم الكورس" required 
+                 class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right pr-12" />
+          <i data-feather="book" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5"></i>
+        </div>
+      </div>
+      
+      <div>
+        <label for="courseDescription" class="block text-right font-medium text-gray-700 mb-2">وصف الكورس</label>
+        <div class="relative">
+          <textarea id="courseDescription" placeholder="أدخل وصفاً تفصيلياً للكورس" rows="4" required 
+                    class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right pr-12"></textarea>
+          <i data-feather="align-left" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5"></i>
+        </div>
+      </div>
+      
+      <div>
+        <label for="stage" class="block text-right font-medium text-gray-700 mb-2">المرحلة الدراسية</label>
+        <div class="relative">
+          <select id="stage" required class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right appearance-none pr-12">
+            <option value="" disabled selected>اختر المرحلة الدراسية</option>
+            <option value="الصف الأول">الصف الأول</option>
+            <option value="الصف الثاني">الصف الثاني</option>
+            <option value="الصف الثالث">الصف الثالث</option>
+          </select>
+          <i data-feather="chevron-down" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5 pointer-events-none"></i>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-right font-medium text-gray-700 mb-2">صورة الكورس</label>
+        <label id="uploadLabel" for="courseImage" class="upload-label flex flex-col items-center justify-center p-6 rounded-xl cursor-pointer">
+          <i data-feather="upload" class="w-10 h-10 text-gray-400 mb-3"></i>
+          <span class="text-gray-600 text-center">
+            <span class="font-medium text-indigo-600">اضغط لرفع صورة</span> أو اسحبها هنا<br>
+            <span class="text-sm text-gray-500">(JPEG, PNG بحد أقصى 5MB)</span>
+          </span>
+          <span id="fileName" class="mt-2 text-sm text-indigo-700 hidden"></span>
+          <input type="file" id="courseImage" accept="image/*" required class="hidden"/>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-50 p-4 rounded-xl">
+          <label class="flex items-center justify-between cursor-pointer">
+            <span class="text-gray-700 font-medium">نوع الكورس</span>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-2">
+                <input type="radio" name="isFree" value="true" checked class="radio-btn h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                <span>مجاني</span>
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="isFree" value="false" class="radio-btn h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                <span>مدفوع</span>
+              </label>
             </div>
-          </div>
-          
-          <div>
-            <label for="courseDescription" class="block text-right font-medium text-gray-700 mb-2">وصف الكورس</label>
-            <div class="relative">
-              <textarea id="courseDescription" placeholder="أدخل وصفاً تفصيلياً للكورس" rows="4" required 
-                        class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right pr-12"></textarea>
-              <i data-feather="align-left" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5"></i>
-            </div>
-          </div>
-          
-          <div>
-            <label for="stage" class="block text-right font-medium text-gray-700 mb-2">المرحلة الدراسية</label>
-            <div class="relative">
-              <select id="stage" required class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right appearance-none pr-12">
-                <option value="" disabled selected>اختر المرحلة الدراسية</option>
-                <option value="الصف الأول">الصف الأول</option>
-                <option value="الصف الثاني">الصف الثاني</option>
-                <option value="الصف الثالث">الصف الثالث</option>
-              </select>
-              <i data-feather="chevron-down" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5 pointer-events-none"></i>
-            </div>
+          </label>
+        </div>
+
+        <div id="priceContainer" class="bg-gray-50 p-4 rounded-xl hidden">
+          <label for="price" class="block text-right font-medium text-gray-700 mb-2">سعر الكورس</label>
+          <div class="relative">
+            <input type="number" id="price" placeholder="عدد الكوينات المطلوبة" min="1" 
+                   class="input-field w-full border border-gray-300 px-4 py-2 rounded-lg text-right pr-12" />
+            <span class="absolute left-3 top-2 text-gray-500">🪙</span>
           </div>
         </div>
       </div>
 
-      <!-- الصورة والعلامات -->
-      <div class="bg-white/50 p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center gap-2">
-          <i data-feather="image" class="w-5 h-5"></i>
-          الصورة والعلامات
-        </h3>
-        
-        <div class="space-y-4">
-          <div>
-            <label class="block text-right font-medium text-gray-700 mb-2">صورة الكورس</label>
-            <label id="uploadLabel" for="courseImage" class="upload-label flex flex-col items-center justify-center p-6 rounded-xl cursor-pointer">
-              <i data-feather="upload" class="w-10 h-10 text-gray-400 mb-3"></i>
-              <span class="text-gray-600 text-center">
-                <span class="font-medium text-indigo-600">اضغط لرفع صورة</span> أو اسحبها هنا<br>
-                <span class="text-sm text-gray-500">(JPEG, PNG بحد أقصى 5MB)</span>
-              </span>
-              <span id="fileName" class="mt-2 text-sm text-indigo-700 hidden"></span>
-              <input type="file" id="courseImage" accept="image/*" required class="hidden"/>
-            </label>
-          </div>
-
-          <div>
-            <label class="block text-right font-medium text-gray-700 mb-2">علامة التميز</label>
-            <div class="grid grid-cols-3 gap-3">
-              <label class="badge-option flex flex-col items-center p-3 rounded-lg border border-gray-200 cursor-pointer">
-                <input type="radio" name="badge" value="مميز" checked class="hidden">
-                <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium mb-1">مميز</span>
-                <span class="text-xs text-gray-500">الخيار الافتراضي</span>
-              </label>
-              
-              <label class="badge-option flex flex-col items-center p-3 rounded-lg border border-gray-200 cursor-pointer">
-                <input type="radio" name="badge" value="جديد" class="hidden">
-                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-1">جديد</span>
-                <span class="text-xs text-gray-500">للكورسات الحديثة</span>
-              </label>
-              
-              <label class="badge-option flex flex-col items-center p-3 rounded-lg border border-gray-200 cursor-pointer">
-                <input type="radio" name="badge" value="الأكثر طلباً" class="hidden">
-                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium mb-1">الأكثر طلباً</span>
-                <span class="text-xs text-gray-500">للشهرة فقط</span>
-              </label>
-              
-              <label class="badge-option flex flex-col items-center p-3 rounded-lg border border-gray-200 cursor-pointer">
-                <input type="radio" name="badge" value="مبتكر" class="hidden">
-                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium mb-1">مبتكر</span>
-                <span class="text-xs text-gray-500">لمحتوى فريد</span>
-              </label>
-              
-              <label class="badge-option flex flex-col items-center p-3 rounded-lg border border-gray-200 cursor-pointer">
-                <input type="radio" name="badge" value="مكثف" class="hidden">
-                <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium mb-1">مكثف</span>
-                <span class="text-xs text-gray-500">لكورسات مكثفة</span>
-              </label>
-              
-              <label class="badge-option flex flex-col items-center p-3 rounded-lg border border-gray-200 cursor-pointer">
-                <input type="radio" name="badge" value="بدون" class="hidden">
-                <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium mb-1">بدون</span>
-                <span class="text-xs text-gray-500">لا توجد علامة</span>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label for="tags" class="block text-right font-medium text-gray-700 mb-2">وسوم الكورس (اختياري)</label>
-            <div class="relative">
-              <input type="text" id="tags" placeholder="أضف وسوماً مثل: رياضيات، علوم، تعليمي" 
-                     class="tag-input w-full border border-gray-300 px-4 py-2 rounded-lg text-right pr-12" />
-              <i data-feather="tag" class="absolute left-3 top-2.5 text-gray-400 w-5 h-5"></i>
-            </div>
-            <div id="tagsContainer" class="flex flex-wrap gap-2 mt-2"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- التسعير والإعدادات -->
-      <div class="bg-white/50 p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 class="text-xl font-semibold text-indigo-800 mb-4 flex items-center gap-2">
-          <i data-feather="dollar-sign" class="w-5 h-5"></i>
-          التسعير والإعدادات
-        </h3>
-        
-        <div class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gray-50/80 p-4 rounded-xl">
-              <label class="flex items-center justify-between cursor-pointer">
-                <span class="text-gray-700 font-medium">نوع الكورس</span>
-                <div class="flex items-center gap-4">
-                  <label class="flex items-center gap-2">
-                    <input type="radio" name="isFree" value="true" checked class="radio-btn h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                    <span>مجاني</span>
-                  </label>
-                  <label class="flex items-center gap-2">
-                    <input type="radio" name="isFree" value="false" class="radio-btn h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                    <span>مدفوع</span>
-                  </label>
-                </div>
-              </label>
-            </div>
-
-            <div id="priceContainer" class="bg-gray-50/80 p-4 rounded-xl hidden">
-              <label for="price" class="block text-right font-medium text-gray-700 mb-2">سعر الكورس</label>
-              <div class="relative">
-                <input type="number" id="price" placeholder="عدد الكوينات المطلوبة" min="1" 
-                       class="input-field w-full border border-gray-300 px-4 py-2 rounded-lg text-right pr-12" />
-                <span class="absolute left-3 top-2 text-gray-500">🪙</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label for="duration" class="block text-right font-medium text-gray-700 mb-2">مدة الكورس (اختياري)</label>
-            <div class="relative">
-              <input type="text" id="duration" placeholder="مثال: 4 ساعات، 12 يوم" 
-                     class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right pr-12" />
-              <i data-feather="clock" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5"></i>
-            </div>
-          </div>
-
-          <div>
-            <label for="difficulty" class="block text-right font-medium text-gray-700 mb-2">مستوى الصعوبة (اختياري)</label>
-            <div class="relative">
-              <select id="difficulty" class="input-field w-full border border-gray-300 px-4 py-3 rounded-xl text-right appearance-none pr-12">
-                <option value="" selected>اختر مستوى الصعوبة</option>
-                <option value="مبتدئ">مبتدئ</option>
-                <option value="متوسط">متوسط</option>
-                <option value="متقدم">متقدم</option>
-                <option value="خبير">خبير</option>
-              </select>
-              <i data-feather="bar-chart-2" class="absolute left-3 top-3.5 text-gray-400 w-5 h-5 pointer-events-none"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- زر الإرسال -->
       <button type="submit" id="submitBtn" class="btn-submit w-full text-white py-3 px-6 rounded-xl font-medium flex items-center justify-center gap-2">
         <i data-feather="save" class="w-5 h-5"></i>
         حفظ الكورس
       </button>
 
-      <!-- مؤشر التحميل -->
       <div id="loadingIndicator" class="hidden flex-col items-center justify-center py-4">
         <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 mb-3"></div>
         <p class="text-gray-600">جاري رفع الكورس، يرجى الانتظار...</p>
         <p id="uploadProgress" class="text-sm text-indigo-600 mt-1"></p>
       </div>
 
-      <!-- رسالة النجاح -->
       <div id="successMsg" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-center">
         <div class="flex items-center justify-center gap-2">
           <i data-feather="check-circle" class="w-5 h-5 text-green-600"></i>
@@ -301,12 +173,6 @@
     // Initialize feather icons
     document.addEventListener('DOMContentLoaded', () => {
       feather.replace();
-      
-      // Initialize badge selection
-      initBadgeSelection();
-      
-      // Initialize tags input
-      initTagsInput();
     });
 
     // Show/hide price field based on radio
@@ -356,64 +222,6 @@
       }
     });
 
-    // Initialize badge selection
-    function initBadgeSelection() {
-      const badgeOptions = document.querySelectorAll('.badge-option');
-      
-      badgeOptions.forEach(option => {
-        option.addEventListener('click', () => {
-          // Remove selected class from all options
-          badgeOptions.forEach(opt => opt.classList.remove('selected'));
-          
-          // Add selected class to clicked option
-          option.classList.add('selected');
-        });
-      });
-      
-      // Select the first option by default
-      badgeOptions[0].classList.add('selected');
-    }
-
-    // Initialize tags input
-    function initTagsInput() {
-      const tagsInput = document.getElementById('tags');
-      const tagsContainer = document.getElementById('tagsContainer');
-      let tags = [];
-      
-      tagsInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ',') {
-          e.preventDefault();
-          const tag = tagsInput.value.trim();
-          if (tag && !tags.includes(tag)) {
-            tags.push(tag);
-            renderTags();
-            tagsInput.value = '';
-          }
-        }
-      });
-      
-      function renderTags() {
-        tagsContainer.innerHTML = '';
-        tags.forEach((tag, index) => {
-          const tagElement = document.createElement('div');
-          tagElement.className = 'flex items-center bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm';
-          tagElement.innerHTML = `
-            ${tag}
-            <button type="button" onclick="removeTag(${index})" class="ml-1 text-indigo-600 hover:text-indigo-900">
-              <i data-feather="x" class="w-3 h-3"></i>
-            </button>
-          `;
-          tagsContainer.appendChild(tagElement);
-        });
-        feather.replace();
-      }
-      
-      window.removeTag = (index) => {
-        tags.splice(index, 1);
-        renderTags();
-      };
-    }
-
     // Handle form submission
     document.getElementById("courseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -429,11 +237,7 @@
       const imageFile = document.getElementById("courseImage").files[0];
       const isFree = document.querySelector('input[name="isFree"]:checked').value === "true";
       const price = isFree ? 0 : parseInt(document.getElementById("price").value);
-      const badge = document.querySelector('input[name="badge"]:checked').value;
-      const duration = document.getElementById("duration").value.trim();
-      const difficulty = document.getElementById("difficulty").value;
-      const tags = Array.from(document.querySelectorAll('#tagsContainer div')).map(tag => tag.textContent.trim());
-      
+
       // Validation
       if (!name || !description || !stage || !imageFile || (!isFree && (!price || price <= 0))) {
         alert("⚠️ يرجى تعبئة كل الحقول المطلوبة بشكل صحيح");
@@ -467,8 +271,8 @@
             // Upload completed successfully
             const imageURL = await uploadTask.snapshot.ref.getDownloadURL();
 
-            // Prepare course data
-            const courseData = {
+            // Save course to Firestore
+            await db.collection("courses").doc(courseId).set({
               id: courseId,
               name,
               description,
@@ -476,17 +280,8 @@
               isFree,
               price,
               imageURL,
-              badge: badge !== "بدون" ? badge : null,
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            // Add optional fields if they exist
-            if (duration) courseData.duration = duration;
-            if (difficulty) courseData.difficulty = difficulty;
-            if (tags.length > 0) courseData.tags = tags;
-
-            // Save course to Firestore
-            await db.collection("courses").doc(courseId).set(courseData);
+            });
 
             // Show success message
             successMsg.classList.remove("hidden");
@@ -498,7 +293,6 @@
               document.getElementById("uploadLabel").classList.remove("file-selected");
               document.getElementById("fileName").classList.add("hidden");
               document.getElementById("priceContainer").classList.add("hidden");
-              document.getElementById("tagsContainer").innerHTML = '';
               successMsg.classList.add("hidden");
               submitBtn.disabled = false;
               submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
@@ -511,12 +305,6 @@
                   <span class="text-sm text-gray-500">(JPEG, PNG بحد أقصى 5MB)</span>
                 </span>
               `;
-              
-              // Reset badge selection
-              const badgeOptions = document.querySelectorAll('.badge-option');
-              badgeOptions.forEach(opt => opt.classList.remove('selected'));
-              badgeOptions[0].classList.add('selected');
-              
               feather.replace();
             }, 3000);
           }
