@@ -1,26 +1,60 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>مشاهدة الفيديو</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة السقا | مشاهدة الفيديو</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-color: #1a1a2e;
+      --secondary-color: #16213e;
+      --accent-color: #0f3460;
+      --text-color: #f1f1f1;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
     body {
       margin: 0;
-      background: #000;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
       font-family: 'Tajawal', sans-serif;
+      color: var(--text-color);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .video-container {
+      position: relative;
+      width: 90%;
+      max-width: 1000px;
+      aspect-ratio: 16/9;
+      overflow: hidden;
+      border-radius: 15px;
+      box-shadow: var(--shadow);
+      border: 2px solid rgba(255, 255, 255, 0.1);
     }
 
     .video-wrapper {
       position: relative;
-      width: 800px;
-      height: 450px;
-      overflow: hidden;
-      border-radius: 12px;
-      box-shadow: 0 0 30px rgba(0,0,0,0.6);
+      width: 100%;
+      height: 100%;
     }
 
     iframe {
@@ -32,138 +66,335 @@
 
     .watermark {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      color: rgba(255, 255, 255, 0.3);
-      font-size: 24px;
+      color: rgba(255, 255, 255, 0.2);
+      font-size: 2rem;
       font-weight: bold;
-      animation: moveMark 10s infinite linear alternate;
       z-index: 10;
       pointer-events: none;
-      user-select: none;
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      animation: moveMark 15s infinite linear alternate;
     }
 
     @keyframes moveMark {
-      0%   { top: 5%; left: 5%; }
-      25%  { top: 5%; left: 80%; }
-      50%  { top: 80%; left: 80%; }
-      75%  { top: 80%; left: 5%; }
-      100% { top: 5%; left: 5%; }
+      0%   { top: 5%; left: 5%; transform: rotate(-5deg); }
+      25%  { top: 5%; left: 75%; transform: rotate(5deg); }
+      50%  { top: 80%; left: 75%; transform: rotate(-5deg); }
+      75%  { top: 80%; left: 5%; transform: rotate(5deg); }
+      100% { top: 5%; left: 5%; transform: rotate(-5deg); }
     }
 
     .controls {
       position: absolute;
-      bottom: 15px;
-      right: 15px;
+      bottom: 20px;
+      right: 20px;
       display: flex;
-      gap: 10px;
-      z-index: 1001;
+      gap: 15px;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .video-container:hover .controls {
+      opacity: 1;
     }
 
     .controls button {
-      background: rgba(0,0,0,0.7);
+      background: rgba(15, 52, 96, 0.8);
       color: white;
       border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 10px 15px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 1rem;
+      font-weight: 500;
+      backdrop-filter: blur(5px);
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .screenshot-shield {
+    .controls button:hover {
+      background: rgba(15, 52, 96, 1);
+      transform: translateY(-2px);
+    }
+
+    .controls button:active {
+      transform: translateY(0);
+    }
+
+    .protection-overlay {
       position: absolute;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       background: transparent;
       z-index: 999;
       pointer-events: none;
-      transition: background 0.2s ease;
     }
 
-    .screenshot-detected .screenshot-shield {
-      background: rgba(0, 0, 0, 0.85);
+    .protection-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      text-align: center;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+    }
+
+    .protection-message.show {
+      display: block;
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+      10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) rotate(-2deg); }
+      20%, 40%, 60%, 80% { transform: translate(-50%, -50%) rotate(2deg); }
+    }
+
+    .loading-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--primary-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .loader {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--accent-color);
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 1.2rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* حماية إضافية ضد التقاط الشاشة */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(255, 0, 0, 0.03) 1px,
+        transparent 1px,
+        transparent 5px
+      );
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    body.protection-active::before {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
-  <div class="video-wrapper" id="videoWrapper">
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loader"></div>
+    <div class="loading-text">جاري تحميل الفيديو...</div>
+  </div>
+
+  <div class="video-container" id="videoContainer">
     <div class="watermark">منصة السقا</div>
     
-    <iframe id="yt-video"
-      src="https://www.youtube.com/embed/DRLWIjUqgGE?autoplay=1&controls=0&rel=0&modestbranding=1&enablejsapi=1"
-      allow="autoplay; encrypted-media"
-      allowfullscreen
-    ></iframe>
-
-    <div class="controls">
-      <button id="playPause">⏸ إيقاف</button>
-      <button id="fullscreen">⛶ ملء الشاشة</button>
+    <div class="video-wrapper">
+      <iframe id="yt-video"
+        src="https://www.youtube.com/embed/DRLWIjUqgGE?autoplay=1&controls=0&rel=0&modestbranding=1&enablejsapi=1&playsinline=1"
+        allow="autoplay; encrypted-media; accelerometer; gyroscope; picture-in-picture"
+        allowfullscreen
+      ></iframe>
     </div>
 
-    <div class="screenshot-shield"></div>
+    <div class="controls">
+      <button id="playPause">
+        <span id="playIcon">⏸</span>
+        <span id="playText">إيقاف</span>
+      </button>
+      <button id="fullscreen">
+        <span>⛶</span>
+        <span>ملء الشاشة</span>
+      </button>
+    </div>
+
+    <div class="protection-overlay"></div>
+    <div class="protection-message" id="protectionMessage">
+      <h3>تحذير أمان!</h3>
+      <p>تم الكشف عن محاولة غير مصرح بها لتسجيل الشاشة</p>
+    </div>
   </div>
 
   <script>
-    // منع أدوات المطور
+    // حماية متقدمة ضد أدوات المطور
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+
     document.addEventListener('keydown', function(e) {
+      // منع F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
       if (
         e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'C', 'J'].includes(e.key)) ||
-        (e.ctrlKey && e.key === 'U')
+        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
+        (e.ctrlKey && e.key === 'u') ||
+        (e.key === 'PrintScreen')
       ) {
         e.preventDefault();
+        showProtectionMessage('تم منع محاولة فتح أدوات المطور');
       }
     });
 
-    // محاكاة الحماية ضد السكرين
-    let lastTime = Date.now();
-    setInterval(() => {
-      const now = Date.now();
-      const diff = now - lastTime;
-      const wrapper = document.getElementById("videoWrapper");
-      if (diff > 2500) {
-        wrapper.classList.add("screenshot-detected");
-      } else {
-        wrapper.classList.remove("screenshot-detected");
+    // حماية ضد تسجيل الشاشة والتقاطها
+    let lastVisibilityChange = Date.now();
+    let lastFocusTime = Date.now();
+    let lastMouseMove = Date.now();
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        lastVisibilityChange = Date.now();
+        showProtectionMessage('تم الكشف عن تغيير حالة الصفحة');
       }
-      lastTime = now;
+    });
+
+    window.addEventListener('blur', function() {
+      lastFocusTime = Date.now();
+    });
+
+    document.addEventListener('mousemove', function() {
+      lastMouseMove = Date.now();
+    });
+
+    // فحص دوري لاكتشاف أي نشاط مشبوه
+    setInterval(function() {
+      const now = Date.now();
+      
+      // الكشف عن تغيير حالة الصفحة
+      if (now - lastVisibilityChange < 1000) {
+        showProtectionMessage('تم الكشف عن تغيير حالة الصفحة');
+      }
+      
+      // الكشف عن فقدان التركيز
+      if (now - lastFocusTime < 1000) {
+        showProtectionMessage('تم الكشف عن فقدان تركيز النافذة');
+      }
+      
+      // الكشف عن عدم وجود حركة لفترة طويلة (ممكن تكون تسجيل شاشة)
+      if (now - lastMouseMove > 5000) {
+        showProtectionMessage('تم الكشف عن نشاط غير عادي');
+      }
     }, 1000);
+
+    // عرض رسالة الحماية
+    function showProtectionMessage(message) {
+      const msgElement = document.getElementById('protectionMessage');
+      if (msgElement) {
+        msgElement.querySelector('p').textContent = message;
+        msgElement.classList.add('show');
+        document.body.classList.add('protection-active');
+        
+        setTimeout(() => {
+          msgElement.classList.remove('show');
+          document.body.classList.remove('protection-active');
+        }, 3000);
+      }
+    }
 
     // تحميل API من يوتيوب
     let player;
     function onYouTubeIframeAPIReady() {
-      player = new YT.Player('yt-video');
+      player = new YT.Player('yt-video', {
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerReady(event) {
+      // إخفاء شاشة التحميل عندما يكون الفيديو جاهزًا
+      const loadingScreen = document.getElementById('loadingScreen');
+      if (loadingScreen) {
+        loadingScreen.style.display = 'none';
+      }
+    }
+
+    function onPlayerStateChange(event) {
+      const playPauseBtn = document.getElementById('playPause');
+      if (!playPauseBtn) return;
+      
+      if (event.data === YT.PlayerState.PLAYING) {
+        document.getElementById('playIcon').textContent = '⏸';
+        document.getElementById('playText').textContent = 'إيقاف';
+      } else if (event.data === YT.PlayerState.PAUSED) {
+        document.getElementById('playIcon').textContent = '▶️';
+        document.getElementById('playText').textContent = 'تشغيل';
+      }
     }
 
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
-    document.body.appendChild(tag);
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
     // أزرار التحكم
     document.getElementById("playPause").addEventListener("click", function() {
       if (player) {
         const state = player.getPlayerState();
-        if (state === 1) {
+        if (state === YT.PlayerState.PLAYING) {
           player.pauseVideo();
-          this.textContent = "▶️ تشغيل";
         } else {
           player.playVideo();
-          this.textContent = "⏸ إيقاف";
         }
       }
     });
 
     document.getElementById("fullscreen").addEventListener("click", function() {
-      const wrapper = document.getElementById("videoWrapper");
-      if (wrapper.requestFullscreen) {
-        wrapper.requestFullscreen();
-      } else if (wrapper.webkitRequestFullscreen) {
-        wrapper.webkitRequestFullscreen();
-      } else if (wrapper.msRequestFullscreen) {
-        wrapper.msRequestFullscreen();
+      const container = document.getElementById("videoContainer");
+      if (container.requestFullscreen) {
+        container.requestFullscreen();
+      } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+      } else if (container.msRequestFullscreen) {
+        container.msRequestFullscreen();
       }
     });
+
+    // حماية إضافية ضد فتح الإطار في نافذة جديدة
+    if (window.top !== window.self) {
+      document.body.innerHTML = '<div style="text-align:center;padding:50px;color:red;font-size:24px;">غير مسموح بتضمين هذه الصفحة في إطار آخر</div>';
+    }
   </script>
 </body>
 </html>
