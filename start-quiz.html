@@ -3,22 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>بدء الاختبار</title>
+  <title>بدء الاختبار | المنصة التعليمية</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: 'Tajawal', sans-serif; }
-    #timer { font-size: 1.2rem; font-weight: bold; color: #DC2626; }
   </style>
 </head>
 <body class="bg-gray-100 p-6">
   <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-indigo-700">📝 اختبار</h1>
-      <div id="timer">⌛ 3:00:00</div>
-    </div>
+    <h1 class="text-2xl font-bold text-indigo-700 mb-2">📝 اختبار</h1>
+    <p id="timer" class="text-right text-red-600 font-bold mb-4">تحميل المؤقت...</p>
     <div id="quizContainer" class="space-y-6"></div>
     <button id="submitBtn" class="mt-6 w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">إنهاء وإرسال</button>
     <p id="resultMsg" class="text-center font-bold text-green-600 mt-6 hidden"></p>
@@ -39,10 +36,9 @@
     const quizContainer = document.getElementById("quizContainer");
     const submitBtn = document.getElementById("submitBtn");
     const resultMsg = document.getElementById("resultMsg");
-    const timerDisplay = document.getElementById("timer");
+    const timerElement = document.getElementById("timer");
 
     let currentUser, correctAnswers = 0, totalQuestions = 0;
-    let timer;
 
     auth.onAuthStateChanged(async user => {
       if (!user) return window.location.href = "index.html";
@@ -52,17 +48,16 @@
       if (!userDoc.exists) return alert("حساب غير صالح");
       const student = userDoc.data();
 
-      const resultRef = db.collection("students").doc(user.uid).collection("quizResults").doc(quizId);
-      const prevResult = await resultRef.get();
-      if (prevResult.exists) {
+      // منع إعادة الاختبار
+      const attemptDoc = await db.collection("quizAttempts").doc(user.uid + "_" + quizId).get();
+      if (attemptDoc.exists) {
+        alert("لقد قمت بحل هذا الاختبار من قبل.");
         submitBtn.disabled = true;
-        return resultMsg.textContent = "✅ لقد قمت بحل هذا الاختبار من قبل.";
+        timerElement.textContent = "تم إنهاء هذا الاختبار مسبقاً.";
+        return;
       }
 
-      const quizSnap = await db.collection("quizzes").doc(quizId).get();
-      if (!quizSnap.exists) return alert("لم يتم العثور على الاختبار");
-      const quizData = quizSnap.data();
-
+      // جلب بيانات الاختبار من quizzes > quizId > questions
       const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
       if (questionsSnap.empty) {
         quizContainer.innerHTML = `<p class="text-center text-gray-500">لا يوجد أسئلة حالياً.</p>`;
@@ -71,6 +66,7 @@
       }
 
       totalQuestions = questionsSnap.size;
+
       questionsSnap.forEach((doc, idx) => {
         const q = doc.data();
         const box = document.createElement("div");
@@ -92,10 +88,32 @@
         quizContainer.appendChild(box);
       });
 
-      startTimer(3 * 60 * 60); // 3 hours
+      startTimer();
     });
 
-    submitBtn.addEventListener("click", submitQuiz);
+    function startTimer() {
+      const duration = 3 * 60 * 60 * 1000; // 3 ساعات
+      const endTime = Date.now() + duration;
+
+      const interval = setInterval(() => {
+        const remaining = endTime - Date.now();
+
+        if (remaining <= 0) {
+          clearInterval(interval);
+          timerElement.textContent = "انتهى الوقت! سيتم إرسال الاختبار تلقائياً.";
+          submitQuiz();
+          return;
+        }
+
+        const h = Math.floor(remaining / (1000 * 60 * 60));
+        const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((remaining % (1000 * 60)) / 1000);
+
+        timerElement.textContent = `الوقت المتبقي: ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    submitBtn.addEventListener("click", () => submitQuiz());
 
     async function submitQuiz() {
       const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
@@ -113,25 +131,15 @@
         date: firebase.firestore.FieldValue.serverTimestamp()
       });
 
+      await db.collection("quizAttempts").doc(currentUser.uid + "_" + quizId).set({
+        studentId: currentUser.uid,
+        quizId,
+        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
       resultMsg.textContent = `✅ تم إنهاء الاختبار. نتيجتك: ${score}%`;
       resultMsg.classList.remove("hidden");
       submitBtn.disabled = true;
-      clearInterval(timer);
-    }
-
-    function startTimer(duration) {
-      let time = duration;
-      timer = setInterval(() => {
-        const hours = Math.floor(time / 3600);
-        const minutes = Math.floor((time % 3600) / 60);
-        const seconds = time % 60;
-        timerDisplay.textContent = `⌛ ${hours}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
-
-        if (--time < 0) {
-          clearInterval(timer);
-          submitQuiz();
-        }
-      }, 1000);
     }
   </script>
 </body>
