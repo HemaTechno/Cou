@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إضافة اختبار</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <style> body { font-family: 'Tajawal', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
+    <h1 class="text-2xl font-bold text-center text-indigo-700">📝 إنشاء اختبار جديد</h1>
+
+    <!-- اختيار الصف والكورس والمحاضرة -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <select id="stage" class="border px-4 py-2 rounded">
+        <option value="" disabled selected>اختر الصف</option>
+        <option value="الصف الأول">الصف الأول</option>
+        <option value="الصف الثاني">الصف الثاني</option>
+        <option value="الصف الثالث">الصف الثالث</option>
+      </select>
+      <select id="course" class="border px-4 py-2 rounded" disabled>
+        <option value="" disabled selected>اختر الكورس</option>
+      </select>
+      <select id="lecture" class="border px-4 py-2 rounded" disabled>
+        <option value="" disabled selected>اختر المحاضرة</option>
+      </select>
+    </div>
+
+    <!-- اختيار أو إنشاء اختبار -->
+    <div class="space-y-2">
+      <input type="text" id="quizId" placeholder="معرّف الاختبار (ID)" class="w-full border px-4 py-2 rounded" />
+      <input type="text" id="quizName" placeholder="اسم الاختبار" class="w-full border px-4 py-2 rounded" />
+      <button id="createQuiz" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">🎯 إنشاء / تحديد الاختبار</button>
+    </div>
+
+    <hr>
+
+    <!-- إضافة سؤال -->
+    <div class="space-y-4">
+      <input type="text" id="questionText" placeholder="نص السؤال" class="w-full border px-4 py-2 rounded">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <input type="text" id="option1" placeholder="الاختيار 1" class="border px-4 py-2 rounded">
+        <input type="text" id="option2" placeholder="الاختيار 2" class="border px-4 py-2 rounded">
+        <input type="text" id="option3" placeholder="الاختيار 3" class="border px-4 py-2 rounded">
+        <input type="text" id="option4" placeholder="الاختيار 4" class="border px-4 py-2 rounded">
+      </div>
+      <select id="correctAnswer" class="border px-4 py-2 rounded w-full">
+        <option value="" disabled selected>الإجابة الصحيحة</option>
+        <option value="1">الاختيار 1</option>
+        <option value="2">الاختيار 2</option>
+        <option value="3">الاختيار 3</option>
+        <option value="4">الاختيار 4</option>
+      </select>
+      <input type="file" id="questionImage" accept="image/*" class="border px-4 py-2 rounded w-full">
+      <button id="addQuestion" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">➕ إضافة السؤال</button>
+    </div>
+
+    <p id="statusMsg" class="text-center text-green-600 font-bold hidden"></p>
+  </div>
+
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com"
+    });
+
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    const stage = document.getElementById("stage");
+    const course = document.getElementById("course");
+    const lecture = document.getElementById("lecture");
+    const quizIdInput = document.getElementById("quizId");
+    const quizNameInput = document.getElementById("quizName");
+    const statusMsg = document.getElementById("statusMsg");
+    let quizRef = null;
+
+    stage.addEventListener("change", async () => {
+      const snapshot = await db.collection("courses").where("stage", "==", stage.value).get();
+      course.innerHTML = '<option disabled selected>اختر الكورس</option>';
+      snapshot.forEach(doc => {
+        const c = doc.data();
+        const op = document.createElement("option");
+        op.value = doc.id;
+        op.textContent = c.name;
+        course.appendChild(op);
+      });
+      course.disabled = false;
+      lecture.innerHTML = '<option disabled selected>اختر المحاضرة</option>';
+      lecture.disabled = true;
+    });
+
+    course.addEventListener("change", async () => {
+      const snapshot = await db.collection("lectures").where("courseId", "==", course.value).get();
+      lecture.innerHTML = '<option disabled selected>اختر المحاضرة</option>';
+      snapshot.forEach(doc => {
+        const l = doc.data();
+        const op = document.createElement("option");
+        op.value = doc.id;
+        op.textContent = l.lectureTitle;
+        lecture.appendChild(op);
+      });
+      lecture.disabled = false;
+    });
+
+    document.getElementById("createQuiz").addEventListener("click", async () => {
+      const id = quizIdInput.value.trim();
+      const name = quizNameInput.value.trim();
+      if (!id || !name || !lecture.value) return alert("يرجى إدخال كل الحقول.");
+      quizRef = db.collection("quizzes").doc(id);
+      await quizRef.set({ quizId: id, name, lectureId: lecture.value }, { merge: true });
+      statusMsg.textContent = "✅ تم تحديد الاختبار";
+      statusMsg.classList.remove("hidden");
+    });
+
+    document.getElementById("addQuestion").addEventListener("click", async () => {
+      if (!quizRef) return alert("يرجى تحديد الاختبار أولاً");
+      const qText = document.getElementById("questionText").value.trim();
+      const opt1 = document.getElementById("option1").value.trim();
+      const opt2 = document.getElementById("option2").value.trim();
+      const opt3 = document.getElementById("option3").value.trim();
+      const opt4 = document.getElementById("option4").value.trim();
+      const correct = document.getElementById("correctAnswer").value;
+      const file = document.getElementById("questionImage").files[0];
+
+      if (!qText || !opt1 || !opt2 || !opt3 || !opt4 || !correct) return alert("يرجى ملء جميع البيانات");
+
+      let imageUrl = "";
+      if (file) {
+        const fileRef = storage.ref(`quizImages/${Date.now()}_${file.name}`);
+        await fileRef.put(file);
+        imageUrl = await fileRef.getDownloadURL();
+      }
+
+      await quizRef.collection("questions").add({
+        question: qText,
+        options: [opt1, opt2, opt3, opt4],
+        correctAnswer: parseInt(correct),
+        imageUrl,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      statusMsg.textContent = "✅ تم إضافة السؤال بنجاح";
+      statusMsg.classList.remove("hidden");
+    });
+  </script>
+</body>
+</html>
