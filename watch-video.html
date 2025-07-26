@@ -2,89 +2,107 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>مشاهدة الفيديو</title>
+  <title>منصة التعليم | مشاهدة الفيديو</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; margin: 0; background-color: #f9fafb; overflow: hidden; }
-    .video-container {
+    body { font-family: 'Tajawal', sans-serif; margin: 0; background-color: #f0f4f8; }
+    .header {
+      background-color: #1e293b;
+      color: white;
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.1rem;
+    }
+    .video-wrapper {
       position: relative;
-      width: 90%;
-      max-width: 960px;
-      margin: 50px auto;
+      max-width: 1000px;
+      margin: 30px auto;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
     iframe {
       width: 100%;
-      height: 500px;
+      aspect-ratio: 16/9;
       border: none;
-      pointer-events: none;
+      display: block;
     }
-    .protection-layer {
+    .overlay {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       z-index: 10;
-      cursor: not-allowed;
+      background: transparent;
     }
     .controls {
       position: absolute;
       bottom: 10px;
       left: 10px;
       z-index: 20;
-      display: flex;
-      gap: 10px;
     }
     .controls button {
-      padding: 8px 14px;
-      font-size: 14px;
-      border: none;
-      border-radius: 6px;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0,0,0,0.6);
       color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
+      font-weight: bold;
     }
     .watermark {
       position: absolute;
-      font-size: 1rem;
-      font-weight: bold;
-      color: rgba(255, 255, 255, 0.2);
-      pointer-events: none;
-      animation: float 30s linear infinite;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.15);
       z-index: 15;
+      pointer-events: none;
+      animation: float 20s linear infinite;
+      white-space: nowrap;
     }
     @keyframes float {
-      0% { top: 5%; left: 5%; }
-      25% { top: 30%; left: 70%; }
-      50% { top: 70%; left: 40%; }
-      75% { top: 50%; left: 20%; }
-      100% { top: 5%; left: 5%; }
+      0% { transform: translateX(-10%) translateY(0%) rotate(0deg); }
+      25% { transform: translateX(120%) translateY(30%) rotate(10deg); }
+      50% { transform: translateX(80%) translateY(80%) rotate(-5deg); }
+      75% { transform: translateX(-20%) translateY(40%) rotate(5deg); }
+      100% { transform: translateX(-10%) translateY(0%) rotate(0deg); }
     }
-    #errorBox {
-      color: red;
+    .error-box {
       text-align: center;
-      margin-top: 50px;
-      font-size: 1.2rem;
+      margin-top: 30px;
+      color: red;
+      font-weight: bold;
+    }
+    .info-bar {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 1rem;
+      color: #1e293b;
     }
   </style>
 </head>
 <body>
-  <div id="errorBox" style="display: none;"></div>
-  <div class="video-container" style="display: none;">
-    <div class="protection-layer"></div>
-    <div class="watermark" id="watermark">جارٍ التحميل...</div>
-    <iframe id="videoFrame" allowfullscreen></iframe>
+  <div class="header">
+    <span>📚 منصة التعليم</span>
+    <span id="studentCoins">💰 تحميل...</span>
+  </div>
+
+  <div class="info-bar" id="courseInfo"></div>
+
+  <div class="video-wrapper">
+    <iframe id="videoFrame" allowfullscreen allow="autoplay"></iframe>
+    <div class="overlay"></div>
     <div class="controls">
       <button id="playPause">⏸ إيقاف</button>
-      <button id="fullscreen">⛶ ملء الشاشة</button>
     </div>
+    <div class="watermark" id="watermark">Student</div>
   </div>
+
+  <div class="error-box" id="errorBox" style="display: none;"></div>
 
   <script>
     firebase.initializeApp({
@@ -98,98 +116,91 @@
 
     const params = new URLSearchParams(window.location.search);
     const videoUrl = decodeURIComponent(params.get("url"));
+    const videoTitle = decodeURIComponent(params.get("title"));
 
     const iframe = document.getElementById("videoFrame");
     const errorBox = document.getElementById("errorBox");
-    const videoContainer = document.querySelector(".video-container");
-    const playPauseBtn = document.getElementById("playPause");
     const watermark = document.getElementById("watermark");
+    const courseInfo = document.getElementById("courseInfo");
+    const studentCoins = document.getElementById("studentCoins");
+    const playPauseBtn = document.getElementById("playPause");
 
-    let isPaused = false;
-    let player;
-
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('videoFrame', {
-        events: {
-          'onReady': (e) => {
-            e.target.playVideo();
-          }
-        }
-      });
-    }
-
-    document.getElementById("playPause").onclick = () => {
-      if (!player) return;
-      const state = player.getPlayerState();
-      if (state === YT.PlayerState.PLAYING) {
-        player.pauseVideo();
-        playPauseBtn.innerText = "▶️ تشغيل";
-      } else {
-        player.playVideo();
-        playPauseBtn.innerText = "⏸ إيقاف";
-      }
-    };
-
-    document.getElementById("fullscreen").onclick = () => {
-      const container = document.querySelector(".video-container");
-      if (container.requestFullscreen) container.requestFullscreen();
-      else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-    };
+    let isPlaying = true;
 
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        errorBox.textContent = "يجب تسجيل الدخول أولاً.";
+        errorBox.textContent = "❌ يجب تسجيل الدخول أولاً.";
         errorBox.style.display = "block";
         return;
       }
 
       try {
         const userDoc = await db.collection("students").doc(user.uid).get();
-        if (!userDoc.exists) throw new Error("لا يوجد بيانات للمستخدم.");
+        const studentData = userDoc.data();
 
-        const student = userDoc.data();
-        const studentNumber = student.studentNumber || "طالب";
-        watermark.textContent = studentNumber;
+        watermark.textContent = `🎓 ${studentData.studentNumber || user.uid}`;
+        studentCoins.textContent = `💰 ${studentData.coins || 0} كوين`;
 
-        const enrolledCourses = student.enrolledCourses || [];
+        const videoSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
+        if (videoSnap.empty) throw new Error("❌ لا يمكن العثور على الفيديو.");
 
-        const videoSnapshot = await db.collection("lectureContent").where("url", "==", videoUrl).get();
-        if (videoSnapshot.empty) throw new Error("لم يتم العثور على هذا الفيديو.");
+        const videoData = videoSnap.docs[0].data();
+        const lectureSnap = await db.collection("lectures").doc(videoData.lectureId).get();
+        const lectureData = lectureSnap.data();
 
-        const videoData = videoSnapshot.docs[0].data();
-        const lectureId = videoData.lectureId;
+        const courseSnap = await db.collection("courses").doc(lectureData.courseId).get();
+        const courseData = courseSnap.data();
 
-        const lectureSnapshot = await db.collection("lectures").doc(lectureId).get();
-        if (!lectureSnapshot.exists) throw new Error("لا يمكن العثور على المحاضرة.");
+        courseInfo.textContent = `📘 الكورس: ${courseData.name} | 🎥 المحاضرة: ${lectureData.lectureTitle}`;
 
-        const courseId = lectureSnapshot.data().courseId;
-        if (!enrolledCourses.includes(courseId)) {
-          throw new Error("غير مسموح لك بمشاهدة هذا الفيديو. اشترك أولاً.");
+        if (!studentData.enrolledCourses.includes(lectureData.courseId)) {
+          errorBox.textContent = "❌ غير مشترك في هذا الكورس.";
+          errorBox.style.display = "block";
+          return;
         }
 
-        const embedUrl = videoUrl.includes("youtu") ?
-          videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1&enablejsapi=1" : videoUrl;
-
+        const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1&enablejsapi=1";
         iframe.src = embedUrl;
-        videoContainer.style.display = "block";
 
-        const tag = document.createElement("script");
+        // YouTube API setup
+        const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         document.body.appendChild(tag);
+
+        window.onYouTubeIframeAPIReady = () => {
+          window.player = new YT.Player("videoFrame", {
+            events: {
+              onReady: () => player.playVideo(),
+              onStateChange: (e) => {
+                const isPaused = e.data === YT.PlayerState.PAUSED;
+                playPauseBtn.textContent = isPaused ? "▶️ تشغيل" : "⏸ إيقاف";
+              }
+            }
+          });
+        };
+
+        playPauseBtn.onclick = () => {
+          if (window.player) {
+            const state = window.player.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+              window.player.pauseVideo();
+            } else {
+              window.player.playVideo();
+            }
+          }
+        };
+
+        // حماية من الكيبورد وأدوات المطور
+        document.addEventListener("keydown", e => {
+          if (e.key === 'F12' || (e.ctrlKey && ['u', 's', 'U', 'S'].includes(e.key))) {
+            e.preventDefault();
+          }
+        });
       } catch (err) {
         console.error(err);
-        errorBox.textContent = err.message || "حدث خطأ أثناء تحميل الفيديو.";
+        errorBox.textContent = err.message || "❌ حدث خطأ أثناء تحميل الفيديو.";
         errorBox.style.display = "block";
       }
-    });
-
-    document.addEventListener('keydown', function(e) {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
-        (e.ctrlKey && e.key === 'U') ||
-        e.key === 'PrintScreen'
-      ) e.preventDefault();
     });
   </script>
 </body>
