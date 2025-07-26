@@ -13,8 +13,7 @@
   <style>
     body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; }
     .certificate-container {
-      width: 100%;
-      max-width: 1000px;
+      width: 1000px;
       height: 700px;
       background: white;
       position: relative;
@@ -43,11 +42,6 @@
       transform: translateY(-2px);
       border-left-color: #4f46e5;
       box-shadow: 0 5px 15px rgba(79, 70, 229, 0.1);
-    }
-    .certificate-landscape {
-      width: 1000px;
-      height: 700px;
-      padding: 40px;
     }
   </style>
 </head>
@@ -113,7 +107,7 @@
         </div>
         
         <!-- Certificate Container -->
-        <div id="certificateBox" class="certificate-container certificate-landscape p-8 bg-gradient-to-br from-white to-gray-50 relative">
+        <div id="certificateBox" class="certificate-container p-8 bg-gradient-to-br from-white to-gray-50 relative">
           <!-- Background Elements -->
           <div class="bg-pattern" style="top: -50px; right: -50px; width: 300px; height: 300px; background: radial-gradient(circle, #4f46e5 0%, transparent 70%);"></div>
           <div class="bg-pattern" style="bottom: -100px; left: -100px; width: 400px; height: 400px; background: radial-gradient(circle, #10b981 0%, transparent 70%);"></div>
@@ -196,6 +190,7 @@
   </div>
 
   <script>
+    // Initialize Firebase
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -216,94 +211,112 @@
 
     let currentUser, correctAnswers = 0, totalQuestions = 0, student;
 
+    // Handle authentication state
     auth.onAuthStateChanged(async user => {
-      if (!user) return window.location.href = "index.html";
-      currentUser = user;
-
-      const userDoc = await db.collection("students").doc(user.uid).get();
-      if (!userDoc.exists) return alert("حساب غير صالح");
-      student = userDoc.data();
-
-      const quizDoc = await db.collection("quizzes").doc(quizId).get();
-      if (quizDoc.exists) {
-        quizTitleElement.textContent = quizDoc.data().title || quizId;
-      }
-
-      const resultDoc = await db.collection("students").doc(user.uid).collection("quizResults").doc(quizId).get();
-      if (resultDoc.exists) {
-        const resultData = resultDoc.data();
-        const score = resultData.score;
-        const date = resultData.date?.toDate().toLocaleDateString("ar-EG") || "غير محدد";
-
-        resultMsg.innerHTML = `
-          <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
-            <div class="flex items-center">
-              <svg class="h-8 w-8 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <div>
-                <h3 class="font-bold text-lg text-green-800">لقد أكملت هذا الاختبار سابقاً</h3>
-                <p class="text-green-700">النتيجة: ${score}% | التاريخ: ${date}</p>
-              </div>
-            </div>
-          </div>
-        `;
-        resultMsg.classList.remove("hidden");
-
-        showCertificate(student.fullName || 'طالب مجهول', quizId, score, date);
-      }
-
-      const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
-      if (questionsSnap.empty) {
-        quizContainer.innerHTML = `
-          <div class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 class="mt-2 text-lg font-medium text-gray-900">لا يوجد أسئلة متاحة حالياً</h3>
-            <p class="mt-1 text-gray-500">يرجى مراجعة المسؤول عن المنصة</p>
-          </div>
-        `;
-        submitBtn.style.display = "none";
+      if (!user) {
+        window.location.href = "index.html";
         return;
       }
+      currentUser = user;
 
-      totalQuestions = questionsSnap.size;
+      try {
+        // Get user data
+        const userDoc = await db.collection("students").doc(user.uid).get();
+        if (!userDoc.exists) {
+          alert("حساب غير صالح");
+          return;
+        }
+        student = userDoc.data();
 
-      questionsSnap.forEach((doc, idx) => {
-        const q = doc.data();
-        const box = document.createElement("div");
-        box.className = "question-card bg-white p-6 rounded-lg shadow border border-gray-200";
+        // Get quiz title
+        const quizDoc = await db.collection("quizzes").doc(quizId).get();
+        if (quizDoc.exists) {
+          quizTitleElement.textContent = quizDoc.data().title || quizId;
+        }
 
-        let imgHTML = q.imageURL ? `
-          <div class="mb-4 flex justify-center">
-            <img src="${q.imageURL}" class="max-w-full h-auto rounded-lg border border-gray-200 max-h-60" />
-          </div>
-        ` : "";
+        // Check if user already took this quiz
+        const resultDoc = await db.collection("students").doc(user.uid).collection("quizResults").doc(quizId).get();
+        if (resultDoc.exists) {
+          const resultData = resultDoc.data();
+          const score = resultData.score;
+          const date = resultData.date?.toDate().toLocaleDateString("ar-EG") || "غير محدد";
 
-        box.innerHTML = `
-          ${imgHTML}
-          <h2 class="font-bold text-xl text-gray-800 mb-4 flex items-start">
-            <span class="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center mr-3">${idx + 1}</span>
-            <span>${q.question}</span>
-          </h2>
-          <div class="space-y-3">
-            ${['A', 'B', 'C', 'D'].map(opt => `
-              <label class="flex items-start p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 cursor-pointer transition-colors duration-200">
-                <input type="radio" name="q${doc.id}" value="${opt}" class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
-                <span class="mr-3 text-gray-700">${q.options?.[opt] || ""}</span>
-              </label>
-            `).join('')}
-          </div>
-        `;
-        quizContainer.appendChild(box);
-      });
+          resultMsg.innerHTML = `
+            <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+              <div class="flex items-center">
+                <svg class="h-8 w-8 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <h3 class="font-bold text-lg text-green-800">لقد أكملت هذا الاختبار سابقاً</h3>
+                  <p class="text-green-700">النتيجة: ${score}% | التاريخ: ${date}</p>
+                </div>
+              </div>
+            </div>
+          `;
+          resultMsg.classList.remove("hidden");
 
-      startTimer();
+          showCertificate(student.fullName || 'طالب مجهول', quizId, score, date);
+        }
+
+        // Load questions
+        const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
+        if (questionsSnap.empty) {
+          quizContainer.innerHTML = `
+            <div class="text-center py-12">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 class="mt-2 text-lg font-medium text-gray-900">لا يوجد أسئلة متاحة حالياً</h3>
+              <p class="mt-1 text-gray-500">يرجى مراجعة المسؤول عن المنصة</p>
+            </div>
+          `;
+          submitBtn.style.display = "none";
+          return;
+        }
+
+        totalQuestions = questionsSnap.size;
+
+        // Display questions
+        questionsSnap.forEach((doc, idx) => {
+          const q = doc.data();
+          const box = document.createElement("div");
+          box.className = "question-card bg-white p-6 rounded-lg shadow border border-gray-200";
+
+          let imgHTML = q.imageURL ? `
+            <div class="mb-4 flex justify-center">
+              <img src="${q.imageURL}" class="max-w-full h-auto rounded-lg border border-gray-200 max-h-60" />
+            </div>
+          ` : "";
+
+          box.innerHTML = `
+            ${imgHTML}
+            <h2 class="font-bold text-xl text-gray-800 mb-4 flex items-start">
+              <span class="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center mr-3">${idx + 1}</span>
+              <span>${q.question}</span>
+            </h2>
+            <div class="space-y-3">
+              ${['A', 'B', 'C', 'D'].map(opt => `
+                <label class="flex items-start p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 cursor-pointer transition-colors duration-200">
+                  <input type="radio" name="q${doc.id}" value="${opt}" class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                  <span class="mr-3 text-gray-700">${q.options?.[opt] || ""}</span>
+                </label>
+              `).join('')}
+            </div>
+          `;
+          quizContainer.appendChild(box);
+        });
+
+        startTimer();
+      } catch (error) {
+        console.error("Error loading quiz:", error);
+        alert("حدث خطأ أثناء تحميل الاختبار. يرجى المحاولة مرة أخرى.");
+      }
     });
 
+    // Timer function
     function startTimer() {
-      const duration = 3 * 60 * 60 * 1000; // 3 ساعات
+      const duration = 3 * 60 * 60 * 1000; // 3 hours
       const endTime = Date.now() + duration;
 
       const interval = setInterval(() => {
@@ -324,6 +337,7 @@
       }, 1000);
     }
 
+    // Submit quiz function
     submitBtn.addEventListener("click", () => submitQuiz());
 
     async function submitQuiz() {
@@ -336,80 +350,97 @@
         جاري تصحيح الإجابات...
       `;
 
-      const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
-      correctAnswers = 0;
+      try {
+        const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
+        correctAnswers = 0;
+        const answersList = [];
 
-      const answersList = [];
+        questionsSnap.forEach(doc => {
+          const q = doc.data();
+          const selected = document.querySelector(`input[name="q${doc.id}"]:checked`);
+          const selectedValue = selected?.value || "لم يجب";
+          const correctAnswer = q.correct;
 
-      questionsSnap.forEach(doc => {
-        const q = doc.data();
-        const selected = document.querySelector(`input[name="q${doc.id}"]:checked`);
-        const selectedValue = selected?.value || "لم يجب";
-        const correctAnswer = q.correct;
+          if (selectedValue === correctAnswer) correctAnswers++;
 
-        if (selectedValue === correctAnswer) correctAnswers++;
-
-        answersList.push({
-          question: q.question,
-          correct: correctAnswer,
-          selected: selectedValue,
-          options: q.options
+          answersList.push({
+            question: q.question,
+            correct: correctAnswer,
+            selected: selectedValue,
+            options: q.options
+          });
         });
-      });
 
-      const score = Math.round((correctAnswers / totalQuestions) * 100);
+        const score = Math.round((correctAnswers / totalQuestions) * 100);
 
-      await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
-        score,
-        date: firebase.firestore.FieldValue.serverTimestamp()
-      });
+        // Save results to Firestore
+        await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
+          score,
+          date: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-      resultMsg.innerHTML = `
-        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-          <div class="flex items-center">
-            <svg class="h-8 w-8 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <h3 class="font-bold text-lg text-blue-800">تم إرسال الاختبار بنجاح</h3>
-              <p class="text-blue-700">نسبة نجاحك: <span class="font-bold">${score}%</span></p>
-              <button onclick="showCertificate('${student.fullName || 'طالب مجهول'}', '${quizId}', '${score}', '${new Date().toLocaleDateString("ar-EG")}')" class="mt-2 text-blue-600 hover:text-blue-800 font-medium">
-                عرض الشهادة →
-              </button>
+        // Show results
+        resultMsg.innerHTML = `
+          <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+            <div class="flex items-center">
+              <svg class="h-8 w-8 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 class="font-bold text-lg text-blue-800">تم إرسال الاختبار بنجاح</h3>
+                <p class="text-blue-700">نسبة نجاحك: <span class="font-bold">${score}%</span></p>
+                <button onclick="showCertificate('${student.fullName || 'طالب مجهول'}', '${quizId}', '${score}', '${new Date().toLocaleDateString("ar-EG")}')" class="mt-2 text-blue-600 hover:text-blue-800 font-medium">
+                  عرض الشهادة →
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      `;
-      resultMsg.classList.remove("hidden");
-
-      quizContainer.innerHTML = "";
-      answersList.forEach((item, i) => {
-        const box = document.createElement("div");
-        box.className = "bg-white p-6 rounded-lg shadow border border-gray-200 mb-4";
-        box.innerHTML = `
-          <h3 class="font-bold text-xl text-gray-800 mb-3 flex items-start">
-            <span class="bg-${item.selected === item.correct ? 'green' : 'red'}-100 text-${item.selected === item.correct ? 'green' : 'red'}-800 rounded-full w-8 h-8 flex items-center justify-center mr-3">${i + 1}</span>
-            <span>${item.question}</span>
-          </h3>
-          <div class="bg-gray-50 p-4 rounded-lg">
-            <p class="text-lg mb-2">
-              إجابتك: 
-              <span class="font-bold ${item.selected === item.correct ? 'text-green-600' : 'text-red-600'}">
-                ${item.selected} ${item.selected === item.correct ? '✓' : '✗'}
-              </span>
-            </p>
-            <p class="text-lg">
-              الإجابة الصحيحة: 
-              <span class="font-bold text-green-600">${item.correct}</span>
-            </p>
-          </div>
         `;
-        quizContainer.appendChild(box);
-      });
+        resultMsg.classList.remove("hidden");
 
-      showCertificate(student.fullName || 'طالب مجهول', quizId, score, new Date().toLocaleDateString("ar-EG"));
+        // Show correct answers
+        quizContainer.innerHTML = "";
+        answersList.forEach((item, i) => {
+          const box = document.createElement("div");
+          box.className = "bg-white p-6 rounded-lg shadow border border-gray-200 mb-4";
+          box.innerHTML = `
+            <h3 class="font-bold text-xl text-gray-800 mb-3 flex items-start">
+              <span class="bg-${item.selected === item.correct ? 'green' : 'red'}-100 text-${item.selected === item.correct ? 'green' : 'red'}-800 rounded-full w-8 h-8 flex items-center justify-center mr-3">${i + 1}</span>
+              <span>${item.question}</span>
+            </h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <p class="text-lg mb-2">
+                إجابتك: 
+                <span class="font-bold ${item.selected === item.correct ? 'text-green-600' : 'text-red-600'}">
+                  ${item.selected} ${item.selected === item.correct ? '✓' : '✗'}
+                </span>
+              </p>
+              <p class="text-lg">
+                الإجابة الصحيحة: 
+                <span class="font-bold text-green-600">${item.correct}</span>
+              </p>
+            </div>
+          `;
+          quizContainer.appendChild(box);
+        });
+
+        // Show certificate
+        showCertificate(student.fullName || 'طالب مجهول', quizId, score, new Date().toLocaleDateString("ar-EG"));
+      } catch (error) {
+        console.error("Error submitting quiz:", error);
+        alert("حدث خطأ أثناء إرسال الاختبار. يرجى المحاولة مرة أخرى.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          إنهاء الاختبار وإرسال الإجابات
+        `;
+      }
     }
 
+    // Certificate functions
     function showCertificate(name, quizName, score, date) {
       document.getElementById("certStudentName").textContent = name;
       document.getElementById("certQuizName").textContent = quizName;
@@ -425,7 +456,6 @@
     function downloadCertificate() {
       const certificate = document.getElementById("certificateBox");
       
-      // إضافة مؤقت بسيط لضمان أن كل المحتوى قد تم تحميله
       setTimeout(() => {
         html2canvas(certificate, {
           scale: 2,
@@ -439,6 +469,9 @@
           link.download = `شهادة-${quizId}-${date}.png`;
           link.href = canvas.toDataURL("image/png", 1.0);
           link.click();
+        }).catch(error => {
+          console.error("Error generating certificate:", error);
+          alert("حدث خطأ أثناء إنشاء الشهادة. يرجى المحاولة مرة أخرى.");
         });
       }, 500);
     }
