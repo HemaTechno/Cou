@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>بدء الاختبار | المنصة التعليمية</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     body { font-family: 'Tajawal', sans-serif; }
-    .review-box.correct { background-color: #dcfce7; border-color: #22c55e; }
-    .review-box.wrong { background-color: #fee2e2; border-color: #ef4444; }
-    .review-box .correct-answer { font-weight: bold; color: #16a34a; }
+    .cert-box { background-image: url('https://i.imgur.com/gg1xROs.png'); background-repeat: no-repeat; background-position: center bottom; background-size: 80px; }
   </style>
 </head>
 <body class="bg-gray-100 p-6">
@@ -22,8 +21,15 @@
     <div id="quizContainer" class="space-y-6"></div>
     <button id="submitBtn" class="mt-6 w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">إنهاء وإرسال</button>
     <p id="resultMsg" class="text-center font-bold text-green-600 mt-6 hidden"></p>
-    <div id="reviewContainer" class="mt-8 space-y-4 hidden">
-      <h2 class="text-xl font-bold text-gray-700">📋 مراجعة الإجابات</h2>
+
+    <!-- الشهادة -->
+    <div id="certificateBox" class="hidden mt-8 p-6 bg-white rounded-xl shadow text-center border border-dashed border-indigo-600 cert-box">
+      <h2 class="text-xl font-bold text-indigo-700 mb-2">🎉 شهادة إتمام اختبار</h2>
+      <p class="mb-2 text-lg" id="certStudentName"></p>
+      <p class="mb-2">اختبار: <span id="certQuizName"></span></p>
+      <p class="mb-2">النتيجة: <span id="certScore"></span>%</p>
+      <p class="mb-4">التاريخ: <span id="certDate"></span></p>
+      <button onclick="downloadCertificate()" class="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">📥 تحميل الشهادة</button>
     </div>
   </div>
 
@@ -43,10 +49,8 @@
     const submitBtn = document.getElementById("submitBtn");
     const resultMsg = document.getElementById("resultMsg");
     const timerElement = document.getElementById("timer");
-    const reviewContainer = document.getElementById("reviewContainer");
 
-    let currentUser, correctAnswers = 0, totalQuestions = 0;
-    let userAnswers = {};
+    let currentUser, student, correctAnswers = 0, totalQuestions = 0;
 
     auth.onAuthStateChanged(async user => {
       if (!user) return window.location.href = "index.html";
@@ -54,7 +58,9 @@
 
       const userDoc = await db.collection("students").doc(user.uid).get();
       if (!userDoc.exists) return alert("حساب غير صالح");
+      student = userDoc.data();
 
+      // منع إعادة الاختبار
       const attemptDoc = await db.collection("quizAttempts").doc(user.uid + "_" + quizId).get();
       if (attemptDoc.exists) {
         alert("لقد قمت بحل هذا الاختبار من قبل.");
@@ -63,6 +69,7 @@
         return;
       }
 
+      // جلب الأسئلة
       const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
       if (questionsSnap.empty) {
         quizContainer.innerHTML = `<p class="text-center text-gray-500">لا يوجد أسئلة حالياً.</p>`;
@@ -78,14 +85,13 @@
         box.className = "border p-4 rounded-lg bg-gray-50";
 
         let imgHTML = q.imageURL ? `<img src="${q.imageURL}" class="w-40 mb-2 rounded border" />` : "";
-
         box.innerHTML = `
           ${imgHTML}
           <h2 class="font-bold text-lg mb-2">${idx + 1}. ${q.question}</h2>
           <div class="space-y-2">
-            ${['a', 'b', 'c', 'd'].map(opt => `
+            ${['A', 'B', 'C', 'D'].map(opt => `
               <label class="block">
-                <input type="radio" name="q${doc.id}" value="${opt}" class="mr-2"> ${q[opt]}
+                <input type="radio" name="q${doc.id}" value="${opt}" class="mr-2"> ${q.options[opt]}
               </label>
             `).join('')}
           </div>
@@ -97,8 +103,9 @@
     });
 
     function startTimer() {
-      const duration = 3 * 60 * 60 * 1000;
+      const duration = 3 * 60 * 60 * 1000; // 3 ساعات
       const endTime = Date.now() + duration;
+
       const interval = setInterval(() => {
         const remaining = endTime - Date.now();
         if (remaining <= 0) {
@@ -114,27 +121,28 @@
       }, 1000);
     }
 
+    submitBtn.addEventListener("click", () => submitQuiz());
+
     async function submitQuiz() {
+      submitBtn.disabled = true;
       const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
       correctAnswers = 0;
-      reviewContainer.innerHTML = '<h2 class="text-xl font-bold text-gray-700">📋 مراجعة الإجابات</h2>';
+      let answerReview = "";
 
-      questionsSnap.forEach((doc, idx) => {
+      questionsSnap.forEach(doc => {
         const q = doc.data();
         const selected = document.querySelector(`input[name="q${doc.id}"]:checked`);
-        const userAnswer = selected ? selected.value : "لم يتم الاختيار";
-        if (userAnswer === q.correct) correctAnswers++;
+        const selectedVal = selected ? selected.value : "لم يتم الإجابة";
+        const correctVal = q.correct;
+        if (selected && selected.value === correctVal) correctAnswers++;
 
-        const review = document.createElement("div");
-        review.className = `review-box border p-4 rounded ${userAnswer === q.correct ? 'correct' : 'wrong'}`;
-
-        review.innerHTML = `
-          <h3 class="font-bold mb-1">${idx + 1}. ${q.question}</h3>
-          ${q.imageURL ? `<img src="${q.imageURL}" class="w-40 mb-2 rounded border" />` : ""}
-          <p><strong>إجابتك:</strong> ${userAnswer}</p>
-          <p class="correct-answer">الإجابة الصحيحة: ${q.correct}</p>
+        answerReview += `
+          <div class="bg-white border p-4 my-3 rounded shadow-sm">
+            <p class="font-bold text-gray-800 mb-1">${q.question}</p>
+            <p class="text-sm text-gray-600">إجابتك: ${selectedVal}</p>
+            <p class="text-sm text-green-600">الإجابة الصحيحة: ${correctVal}</p>
+          </div>
         `;
-        reviewContainer.appendChild(review);
       });
 
       const score = Math.round((correctAnswers / totalQuestions) * 100);
@@ -151,17 +159,28 @@
 
       resultMsg.textContent = `✅ تم إنهاء الاختبار. نتيجتك: ${score}%`;
       resultMsg.classList.remove("hidden");
-      submitBtn.disabled = true;
-      reviewContainer.classList.remove("hidden");
+
+      // عرض الأسئلة مع التصحيح
+      const reviewDiv = document.createElement("div");
+      reviewDiv.innerHTML = `<h3 class="text-xl font-bold text-indigo-700 mt-8 mb-4">📋 مراجعة الأسئلة:</h3>` + answerReview;
+      quizContainer.appendChild(reviewDiv);
+
+      // عرض الشهادة
+      document.getElementById("certStudentName").textContent = `الطالب: ${student.fullName || 'طالب مجهول'}`;
+      document.getElementById("certQuizName").textContent = quizId;
+      document.getElementById("certScore").textContent = score;
+      document.getElementById("certDate").textContent = new Date().toLocaleDateString("ar-EG");
+      document.getElementById("certificateBox").classList.remove("hidden");
     }
 
-    submitBtn.addEventListener("click", submitQuiz);
-
-    // منع الإغلاق أو التحديث
-    window.addEventListener("beforeunload", function (e) {
-      e.preventDefault();
-      e.returnValue = "هل أنت متأكد أنك تريد مغادرة الصفحة؟ سيتم إرسال الاختبار تلقائياً.";
-    });
+    function downloadCertificate() {
+      html2canvas(document.getElementById("certificateBox")).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "شهادة-الاختبار.png";
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
   </script>
 </body>
 </html>
