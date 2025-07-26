@@ -1,142 +1,132 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>مشاهدة الفيديو</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <title>مشغل الفيديو</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <style>
     body {
-      background-color: #111827;
-      color: white;
+      margin: 0;
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
       font-family: 'Tajawal', sans-serif;
+      overflow: hidden;
     }
     .video-container {
       position: relative;
-      padding-top: 56.25%;
+      width: 90%;
+      max-width: 1100px;
+      aspect-ratio: 16/9;
+      border-radius: 12px;
       overflow: hidden;
-      border-radius: 1rem;
-      box-shadow: 0 0 50px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
-    .video-container iframe {
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .protection-layer {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      border: none;
+      z-index: 10;
+      cursor: not-allowed;
     }
     .watermark {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      font-size: 16px;
-      background-color: rgba(255,255,255,0.1);
-      padding: 6px 12px;
-      border-radius: 12px;
-      animation: moveWatermark 5s infinite alternate;
-    }
-    @keyframes moveWatermark {
-      0% { top: 10px; left: 10px; }
-      100% { top: 90%; left: 80%; }
-    }
-    .screenshot-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 9999;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: rgba(255,255,255,0.2);
+      animation: move 20s linear infinite;
+      z-index: 15;
       pointer-events: none;
+    }
+    @keyframes move {
+      0%   { transform: translate(0%, 0%); }
+      25%  { transform: translate(100%, 50%); }
+      50%  { transform: translate(50%, 100%); }
+      75%  { transform: translate(-50%, 50%); }
+      100% { transform: translate(0%, 0%); }
     }
   </style>
 </head>
-<body class="p-6">
+<body>
 
-  <div class="max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6">مشاهدة الفيديو</h1>
+<div class="video-container" id="videoContainer">
+  <div class="protection-layer"></div>
+  <div class="watermark">HEMA TECH</div>
+  <iframe id="videoFrame" allow="autoplay" allowfullscreen></iframe>
+</div>
 
-    <div class="video-container mb-6">
-      <iframe id="videoFrame" allow="autoplay" allowfullscreen></iframe>
-      <div class="watermark">حقوق الأستاذ السقا</div>
-    </div>
+<script>
+  // Firebase Init
+  firebase.initializeApp({
+    apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+    authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+    projectId: "hhhhhh-d4fb8"
+  });
 
-    <div class="flex gap-4 flex-wrap">
-      <button onclick="playVideo()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-xl">تشغيل</button>
-      <button onclick="pauseVideo()" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-xl">إيقاف</button>
-      <button onclick="setSpeed(0.75)" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-xl">تبطيء</button>
-      <button onclick="setSpeed(1.25)" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-xl">تسريع</button>
-      <button onclick="fullscreenVideo()" class="bg-gray-700 hover:bg-gray-800 px-4 py-2 rounded-xl">ملء الشاشة</button>
-    </div>
-  </div>
+  const db = firebase.firestore();
+  const auth = firebase.auth();
 
-  <div id="screenshotOverlay" class="screenshot-overlay"></div>
+  const urlParams = new URLSearchParams(window.location.search);
+  const courseId = urlParams.get("courseId");
+  const contentId = urlParams.get("contentId");
 
-  <script>
-    // Firebase Init
-    firebase.initializeApp({
-      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
-      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-      projectId: "hhhhhh-d4fb8"
-    });
-    const db = firebase.firestore();
+  const iframe = document.getElementById("videoFrame");
 
-    // Check auth and enrollment
-    firebase.auth().onAuthStateChanged(async user => {
-      if (!user) return location.href = "login.html";
+  auth.onAuthStateChanged(async user => {
+    if (!user) return window.location.href = "index.html";
 
-      const params = new URLSearchParams(window.location.search);
-      const url = decodeURIComponent(params.get("url"));
-      const courseId = params.get("courseId");
+    try {
+      const studentSnap = await db.collection("students").doc(user.uid).get();
+      const student = studentSnap.data();
 
-      const studentRef = await db.collection("students").doc(user.uid).get();
-      const data = studentRef.data();
-      if (!data || !data.enrolledCourses || !data.enrolledCourses.includes(courseId)) {
-        return location.href = "not-authorized.html";
+      if (!student || student.status !== "تمت الموافقة" || !student.enrolledCourses?.includes(courseId)) {
+        alert("❌ غير مسموح لك بمشاهدة هذا الفيديو.");
+        return window.location.href = "index.html";
       }
 
-      const videoId = extractVideoId(url);
-      if (!videoId) return alert("رابط الفيديو غير صحيح");
+      const contentSnap = await db.collection("lectureContent").doc(contentId).get();
+      const content = contentSnap.data();
 
-      const iframe = document.getElementById("videoFrame");
-      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
-
-      // Anti DevTools
-      document.addEventListener('keydown', e => {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
-          e.preventDefault();
-        }
-      });
-    });
-
-    function extractVideoId(url) {
-      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w\-]+)/);
-      return match ? match[1] : null;
-    }
-
-    // Video API Access
-    function postMessageToIframe(cmd) {
-      const iframe = document.getElementById("videoFrame");
-      iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd }), '*');
-    }
-
-    function playVideo() { postMessageToIframe('playVideo'); }
-    function pauseVideo() { postMessageToIframe('pauseVideo'); }
-    function setSpeed(speed) { postMessageToIframe(`setPlaybackRate`, speed); }
-    function fullscreenVideo() {
-      const iframe = document.getElementById("videoFrame");
-      if (iframe.requestFullscreen) iframe.requestFullscreen();
-    }
-
-    // Anti screenshot (blur on PrtSc)
-    window.addEventListener("keyup", (e) => {
-      if (e.key === "PrintScreen") {
-        document.getElementById("screenshotOverlay").style.display = "block";
-        setTimeout(() => {
-          document.getElementById("screenshotOverlay").style.display = "none";
-        }, 1500);
+      if (!content || content.type !== "video") {
+        alert("❌ لا يوجد فيديو لعرضه.");
+        return window.location.href = "index.html";
       }
-    });
-  </script>
+
+      const ytUrl = content.url;
+      const embedUrl = convertToEmbedUrl(ytUrl);
+
+      iframe.src = `${embedUrl}?autoplay=1&controls=1&modestbranding=1&rel=0&playsinline=1`;
+    } catch (err) {
+      console.error(err);
+      alert("حدث خطأ في تحميل الفيديو.");
+    }
+  });
+
+  function convertToEmbedUrl(url) {
+    const id = url.split("v=")[1] || url.split("/").pop();
+    return `https://www.youtube.com/embed/${id}`;
+  }
+
+  // حماية من أدوات المطور
+  document.addEventListener('keydown', function(e) {
+    if (
+      e.key === 'F12' ||
+      (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
+      (e.ctrlKey && e.key === 'U')
+    ) {
+      e.preventDefault();
+    }
+  });
+</script>
 </body>
 </html>
