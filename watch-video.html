@@ -2,96 +2,94 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>📺 مشاهدة الفيديو</title>
+  <title>مشاهدة الفيديو</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
     body {
       font-family: 'Tajawal', sans-serif;
       margin: 0;
-      background: linear-gradient(135deg, #0f0e17, #1a1a2e);
-      color: white;
-      overflow: hidden;
-    }
-    .video-container {
-      position: relative;
-      width: 100%;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       height: 100vh;
       overflow: hidden;
     }
+
+    .video-wrapper {
+      position: relative;
+      width: 90%;
+      max-width: 960px;
+      aspect-ratio: 16 / 9;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
     iframe {
       width: 100%;
       height: 100%;
       border: none;
       pointer-events: none;
     }
+
     .protection-layer {
       position: absolute;
       inset: 0;
       background: transparent;
-      z-index: 10;
+      z-index: 5;
+      cursor: not-allowed;
     }
-    .watermark {
-      position: absolute;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: rgba(255,255,255,0.15);
-      z-index: 15;
-      pointer-events: none;
-      animation: moveWatermark 20s linear infinite;
-    }
-    @keyframes moveWatermark {
-      0% { transform: translate(0%, 0%); }
-      25% { transform: translate(80%, 20%); }
-      50% { transform: translate(60%, 80%); }
-      75% { transform: translate(10%, 60%); }
-      100% { transform: translate(0%, 0%); }
-    }
+
     .controls {
       position: absolute;
-      bottom: 20px;
-      right: 20px;
-      z-index: 20;
+      bottom: 12px;
+      left: 12px;
+      z-index: 10;
       display: flex;
       gap: 10px;
     }
+
     .controls button {
-      background: rgba(0, 0, 0, 0.5);
-      border: none;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
       cursor: pointer;
-      font-weight: bold;
+      backdrop-filter: blur(4px);
     }
+
     #errorBox {
-      padding: 50px;
+      position: absolute;
+      top: 20px;
       text-align: center;
-      color: red;
-      font-size: 1.3rem;
-      background-color: white;
-      color: #c0392b;
+      color: #f87171;
+      font-size: 1.2rem;
+      background: rgba(0,0,0,0.4);
+      padding: 10px 20px;
+      border-radius: 8px;
+      z-index: 100;
     }
   </style>
 </head>
 <body>
-  <div id="errorBox" style="display:none;"></div>
-  <div class="video-container" id="videoContainer" style="display:none;">
-    <div class="watermark">🚫 منصة HEMA TECH</div>
-    <div id="player"></div>
+  <div id="errorBox" style="display: none;"></div>
+  <div class="video-wrapper" id="videoContainer" style="display: none;">
+    <iframe id="videoFrame" allowfullscreen></iframe>
     <div class="protection-layer"></div>
     <div class="controls">
-      <button id="playPause">⏸ إيقاف</button>
+      <button id="togglePlay">⏸ إيقاف</button>
       <button id="fullscreen">⛶ ملء الشاشة</button>
     </div>
   </div>
 
   <script>
-    // Firebase init
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -103,86 +101,75 @@
 
     const params = new URLSearchParams(window.location.search);
     const videoUrl = decodeURIComponent(params.get("url"));
-    const videoId = extractYouTubeID(videoUrl);
-
-    let player;
-
-    function extractYouTubeID(url) {
-      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/);
-      return match ? match[1] : null;
-    }
+    const iframe = document.getElementById("videoFrame");
+    const errorBox = document.getElementById("errorBox");
+    const videoContainer = document.getElementById("videoContainer");
+    let isPaused = false;
 
     auth.onAuthStateChanged(async user => {
-      if (!user) return showError("يجب تسجيل الدخول.");
+      if (!user) {
+        errorBox.textContent = "يجب تسجيل الدخول أولاً.";
+        errorBox.style.display = "block";
+        return;
+      }
+
       try {
         const userDoc = await db.collection("students").doc(user.uid).get();
+        if (!userDoc.exists) throw new Error("المستخدم غير موجود.");
+
         const student = userDoc.data();
-        if (!student) throw new Error("لا يوجد بيانات.");
+        const enrolledCourses = student.enrolledCourses || [];
 
         const videoSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
-        if (videoSnap.empty) throw new Error("الفيديو غير موجود.");
-        const lectureId = videoSnap.docs[0].data().lectureId;
+        if (videoSnap.empty) throw new Error("لم يتم العثور على الفيديو.");
+
+        const videoData = videoSnap.docs[0].data();
+        const lectureId = videoData.lectureId;
 
         const lectureSnap = await db.collection("lectures").doc(lectureId).get();
+        if (!lectureSnap.exists) throw new Error("لم يتم العثور على المحاضرة.");
+
         const courseId = lectureSnap.data().courseId;
 
-        if (!(student.enrolledCourses || []).includes(courseId)) {
-          throw new Error("🚫 غير مشترك في هذا الكورس.");
+        if (!enrolledCourses.includes(courseId)) {
+          throw new Error("أنت غير مشترك في هذا الكورس.");
         }
 
-        document.getElementById("videoContainer").style.display = "block";
-        loadPlayer();
-      } catch (e) {
-        showError(e.message);
+        const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?enablejsapi=1&autoplay=1&controls=1";
+        iframe.src = embedUrl;
+        videoContainer.style.display = "block";
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = "block";
       }
     });
 
-    function showError(msg) {
-      const e = document.getElementById("errorBox");
-      e.innerText = msg;
-      e.style.display = "block";
-    }
+    document.getElementById("fullscreen").addEventListener("click", () => {
+      const el = document.getElementById("videoContainer");
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    });
 
-    function loadPlayer() {
-      player = new YT.Player('player', {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: {
-          autoplay: 1,
-          controls: 0,
-          modestbranding: 1,
-          rel: 0,
-        },
-        events: {
-          onReady: onPlayerReady
-        }
-      });
-    }
+    document.getElementById("togglePlay").addEventListener("click", () => {
+      const iframeWindow = iframe.contentWindow;
+      if (!iframeWindow) return;
+      isPaused = !isPaused;
+      iframeWindow.postMessage(JSON.stringify({
+        event: "command",
+        func: isPaused ? "pauseVideo" : "playVideo",
+        args: []
+      }), "*");
+      document.getElementById("togglePlay").innerText = isPaused ? "▶️ تشغيل" : "⏸ إيقاف";
+    });
 
-    function onPlayerReady(event) {
-      document.getElementById("playPause").addEventListener("click", () => {
-        const state = player.getPlayerState();
-        if (state === 1) {
-          player.pauseVideo();
-          event.target.innerText = "▶️ تشغيل";
-        } else {
-          player.playVideo();
-          event.target.innerText = "⏸ إيقاف";
-        }
-      });
-
-      document.getElementById("fullscreen").addEventListener("click", () => {
-        const elem = document.getElementById("videoContainer");
-        if (elem.requestFullscreen) elem.requestFullscreen();
-      });
-    }
-
-    // منع أدوات المطور
-    document.addEventListener("keydown", function(e) {
-      if (["F12", "I", "J", "C", "U", "PrintScreen"].includes(e.key) || (e.ctrlKey && e.shiftKey)) {
+    document.addEventListener("keydown", e => {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
+        (e.ctrlKey && e.key === "U")
+      ) {
         e.preventDefault();
-        alert("❌ غير مسموح!");
       }
     });
   </script>
