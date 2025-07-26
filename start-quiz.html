@@ -72,10 +72,13 @@
           <h1 class="text-3xl font-bold">📚 المنصة التعليمية</h1>
           <p class="mt-2 opacity-90">نظام الاختبارات الإلكترونية</p>
         </div>
-        <div class="bg-white/20 p-3 rounded-full">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
+        <div id="userInfo" class="flex items-center space-x-3">
+          <span id="userName" class="font-medium"></span>
+          <button onclick="logout()" class="bg-white/10 hover:bg-white/20 p-2 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
       </div>
     </header>
@@ -109,6 +112,14 @@
         </button>
 
         <div id="resultMsg" class="hidden mt-8"></div>
+        
+        <!-- زر عرض الشهادة (يظهر بعد الانتهاء) -->
+        <button id="showCertificateBtn" onclick="showCertificateModal()" class="hidden mt-6 w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-bold py-3 px-6 rounded-lg shadow transition-all duration-300 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          عرض شهادة الإنجاز
+        </button>
       </div>
     </main>
 
@@ -220,24 +231,38 @@
 
     const params = new URLSearchParams(window.location.search);
     const quizId = params.get("id");
+    const courseId = params.get("courseId"); // إضافة معلمة الكورس
     const quizContainer = document.getElementById("quizContainer");
     const submitBtn = document.getElementById("submitBtn");
     const resultMsg = document.getElementById("resultMsg");
     const timerElement = document.getElementById("timer");
     const quizTitleElement = document.getElementById("quizTitle");
     const certificateModal = document.getElementById("certificateModal");
+    const showCertificateBtn = document.getElementById("showCertificateBtn");
+    const userNameElement = document.getElementById("userName");
 
-    let currentUser, correctAnswers = 0, totalQuestions = 0, student;
+    let currentUser, correctAnswers = 0, totalQuestions = 0, student, quizData;
 
     // Handle authentication state
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        window.location.href = "index.html";
+        window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.pathname + window.location.search);
         return;
       }
       currentUser = user;
+      userNameElement.textContent = user.displayName || user.email;
 
       try {
+        // التحقق من اشتراك الطالب في الكورس
+        const courseEnrollment = await db.collection("students").doc(user.uid)
+          .collection("enrollments").doc(courseId).get();
+        
+        if (!courseEnrollment.exists) {
+          alert("⚠️ يجب الاشتراك في الكورس أولاً للوصول إلى هذا الاختبار");
+          window.location.href = `course.html?id=${courseId}`;
+          return;
+        }
+
         // Get user data
         const userDoc = await db.collection("students").doc(user.uid).get();
         if (!userDoc.exists) {
@@ -246,14 +271,20 @@
         }
         student = userDoc.data();
 
-        // Get quiz title
+        // Get quiz data
         const quizDoc = await db.collection("quizzes").doc(quizId).get();
-        if (quizDoc.exists) {
-          quizTitleElement.textContent = quizDoc.data().title || quizId;
+        if (!quizDoc.exists) {
+          alert("الاختبار غير موجود");
+          window.location.href = `course.html?id=${courseId}`;
+          return;
         }
+        quizData = quizDoc.data();
+        quizTitleElement.textContent = quizData.title || quizId;
 
         // Check if user already took this quiz
-        const resultDoc = await db.collection("students").doc(user.uid).collection("quizResults").doc(quizId).get();
+        const resultDoc = await db.collection("students").doc(user.uid)
+          .collection("quizResults").doc(quizId).get();
+        
         if (resultDoc.exists) {
           const resultData = resultDoc.data();
           const score = resultData.score;
@@ -273,8 +304,7 @@
             </div>
           `;
           resultMsg.classList.remove("hidden");
-
-          showCertificate(student.fullName || 'طالب مجهول', quizId, score, date);
+          showCertificateBtn.classList.remove("hidden");
         }
 
         // Load questions
@@ -334,7 +364,7 @@
 
     // Timer function
     function startTimer() {
-      const duration = 3 * 60 * 60 * 1000; // 3 hours
+      const duration = quizData.duration || 3 * 60 * 60 * 1000; // 3 hours default
       const endTime = Date.now() + duration;
 
       const interval = setInterval(() => {
@@ -394,7 +424,8 @@
         // Save results to Firestore
         await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
           score,
-          date: firebase.firestore.FieldValue.serverTimestamp()
+          date: firebase.firestore.FieldValue.serverTimestamp(),
+          courseId: courseId
         });
 
         // Show results
@@ -407,14 +438,12 @@
               <div>
                 <h3 class="font-bold text-lg text-blue-800">تم إرسال الاختبار بنجاح</h3>
                 <p class="text-blue-700">نسبة نجاحك: <span class="font-bold">${score}%</span></p>
-                <button onclick="showCertificate('${student.fullName || 'طالب مجهول'}', '${quizId}', '${score}', '${new Date().toLocaleDateString("ar-EG")}')" class="mt-2 text-blue-600 hover:text-blue-800 font-medium">
-                  عرض الشهادة →
-                </button>
               </div>
             </div>
           </div>
         `;
         resultMsg.classList.remove("hidden");
+        showCertificateBtn.classList.remove("hidden");
 
         // Show correct answers
         quizContainer.innerHTML = "";
@@ -442,8 +471,6 @@
           quizContainer.appendChild(box);
         });
 
-        // Show certificate
-        showCertificate(student.fullName || 'طالب مجهول', quizId, score, new Date().toLocaleDateString("ar-EG"));
       } catch (error) {
         console.error("Error submitting quiz:", error);
         alert("حدث خطأ أثناء إرسال الاختبار. يرجى المحاولة مرة أخرى.");
@@ -459,12 +486,28 @@
     }
 
     // Certificate functions
-    function showCertificate(name, quizName, score, date) {
-      document.getElementById("certStudentName").textContent = name;
-      document.getElementById("certQuizName").textContent = quizName;
-      document.getElementById("certScore").textContent = `${score}%`;
-      document.getElementById("certDate").textContent = date;
-      certificateModal.classList.remove("hidden");
+    function showCertificateModal() {
+      const resultDoc = db.collection("students").doc(currentUser.uid)
+        .collection("quizResults").doc(quizId).get()
+        .then(resultDoc => {
+          if (resultDoc.exists) {
+            const resultData = resultDoc.data();
+            const score = resultData.score;
+            const date = resultData.date?.toDate().toLocaleDateString("ar-EG") || "غير محدد";
+            
+            document.getElementById("certStudentName").textContent = student.fullName || currentUser.email;
+            document.getElementById("certQuizName").textContent = quizData.title || quizId;
+            document.getElementById("certScore").textContent = `${score}%`;
+            document.getElementById("certDate").textContent = date;
+            certificateModal.classList.remove("hidden");
+          } else {
+            alert("يجب إكمال الاختبار أولاً للحصول على الشهادة");
+          }
+        })
+        .catch(error => {
+          console.error("Error loading certificate:", error);
+          alert("حدث خطأ أثناء تحميل الشهادة. يرجى المحاولة مرة أخرى.");
+        });
     }
 
     function closeCertificateModal() {
@@ -480,13 +523,20 @@
           logging: false,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: null
+          backgroundColor: null,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: certificate.scrollWidth,
+          windowHeight: certificate.scrollHeight
         }).then(canvas => {
           const link = document.createElement("a");
           const date = new Date().toLocaleDateString("ar-EG").replace(/\//g, '-');
-          link.download = `شهادة-${quizId}-${date}.png`;
+          link.download = `شهادة_${quizId}_${date}.png`;
           link.href = canvas.toDataURL("image/png", 1.0);
+          
+          document.body.appendChild(link);
           link.click();
+          document.body.removeChild(link);
         }).catch(error => {
           console.error("Error generating certificate:", error);
           alert("حدث خطأ أثناء إنشاء الشهادة. يرجى المحاولة مرة أخرى.");
@@ -496,20 +546,15 @@
 
     function printCertificate() {
       try {
-        // Clone the certificate element
         const certificate = document.getElementById("certificateBox").cloneNode(true);
-        
-        // Remove any buttons if present
         const buttons = certificate.querySelectorAll('button');
         buttons.forEach(button => button.remove());
 
-        // Create print window
-        const printWindow = window.open('', '_blank');
+        const printWindow = window.open('', '_blank', 'width=1000,height=700');
         if (!printWindow) {
-          throw new Error("تم حظر النافذة المنبثقة. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.");
+          throw new Error("المرجو السماح بالنوافذ المنبثقة لهذا الموقع");
         }
 
-        // Prepare HTML content
         const htmlContent = `
           <!DOCTYPE html>
           <html dir="rtl" lang="ar">
@@ -517,14 +562,11 @@
             <title>طباعة الشهادة</title>
             <meta charset="UTF-8">
             <style>
-              body { 
-                margin: 0; 
-                padding: 0; 
+              body {
+                margin: 0;
+                padding: 0;
                 font-family: 'Tajawal', sans-serif;
-              }
-              @page { 
-                size: landscape; 
-                margin: 5mm;
+                background-color: white;
               }
               .certificate-container {
                 width: 100%;
@@ -532,47 +574,67 @@
                 margin: 0;
                 padding: 40px;
                 box-sizing: border-box;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              @page {
+                size: landscape;
+                margin: 0;
               }
             </style>
             <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
           </head>
           <body>
             ${certificate.outerHTML}
-            <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                  window.close();
-                }, 500);
-              };
-            </script>
           </body>
           </html>
         `;
 
-        // Write content to print window
         printWindow.document.open();
         printWindow.document.write(htmlContent);
         printWindow.document.close();
 
-        // Fallback in case print doesn't trigger automatically
         printWindow.onload = function() {
-          setTimeout(function() {
+          setTimeout(() => {
             try {
               printWindow.print();
-            } catch (e) {
-              console.error("Print error:", e);
-              alert("حدث خطأ أثناء الطباعة. يرجى استخدام زر التحميل بدلاً من ذلك.");
+              setTimeout(() => printWindow.close(), 3000);
+            } catch (printError) {
+              console.error("خطأ في الطباعة:", printError);
+              printWindow.document.body.innerHTML = `
+                <div style="padding: 20px; text-align: center; font-family: 'Tajawal'">
+                  <h2 style="color: red">حدث خطأ في الطباعة</h2>
+                  <p>المرجو استخدام زر "تحميل الشهادة" ثم طباعتها يدوياً</p>
+                  <button onclick="window.close()" style="
+                    background: #4f46e5;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    margin-top: 20px;
+                    cursor: pointer;
+                  ">
+                    إغلاق النافذة
+                  </button>
+                </div>
+              `;
             }
           }, 1000);
         };
 
       } catch (error) {
-        console.error("Print setup error:", error);
-        alert(`لا يمكن فتح نافذة الطباعة: ${error.message}`);
+        console.error("خطأ في إعداد الطباعة:", error);
+        alert(`❌ خطأ: ${error.message}\n\nالمرجو استخدام زر التحميل بدلاً من ذلك.`);
       }
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      }).catch(error => {
+        console.error("Error signing out:", error);
+        alert("حدث خطأ أثناء تسجيل الخروج");
+      });
     }
   </script>
 </body>
