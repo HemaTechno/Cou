@@ -2,94 +2,37 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>مشاهدة الفيديو</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مشغل الفيديو</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Tajawal', sans-serif;
-      margin: 0;
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .video-wrapper {
-      position: relative;
-      width: 90%;
-      max-width: 960px;
-      aspect-ratio: 16 / 9;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      pointer-events: none;
-    }
-
-    .protection-layer {
-      position: absolute;
-      inset: 0;
-      background: transparent;
-      z-index: 5;
-      cursor: not-allowed;
-    }
-
-    .controls {
-      position: absolute;
-      bottom: 12px;
-      left: 12px;
-      z-index: 10;
-      display: flex;
-      gap: 10px;
-    }
-
-    .controls button {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      backdrop-filter: blur(4px);
-    }
-
-    #errorBox {
-      position: absolute;
-      top: 20px;
-      text-align: center;
-      color: #f87171;
-      font-size: 1.2rem;
-      background: rgba(0,0,0,0.4);
-      padding: 10px 20px;
-      border-radius: 8px;
-      z-index: 100;
-    }
+    body { margin: 0; background: #0f0e17; font-family: 'Tajawal', sans-serif; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+    .video-wrapper { position: relative; width: 90%; max-width: 960px; aspect-ratio: 16/9; background: #000; border: 3px solid #e53170; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); }
+    iframe { width: 100%; height: 100%; border: none; pointer-events: none; }
+    .protection-layer { position: absolute; inset: 0; background: transparent; z-index: 10; }
+    .controls { margin-top: 20px; display: flex; gap: 12px; }
+    .controls button { padding: 10px 20px; background: #e53170; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .controls button:hover { background: #c61d5d; }
+    #errorBox { color: red; margin-top: 20px; font-size: 1.2rem; text-align: center; }
   </style>
 </head>
 <body>
   <div id="errorBox" style="display: none;"></div>
-  <div class="video-wrapper" id="videoContainer" style="display: none;">
+
+  <div class="video-wrapper" id="videoBox">
     <iframe id="videoFrame" allowfullscreen></iframe>
     <div class="protection-layer"></div>
-    <div class="controls">
-      <button id="togglePlay">⏸ إيقاف</button>
-      <button id="fullscreen">⛶ ملء الشاشة</button>
-    </div>
+  </div>
+
+  <div class="controls">
+    <button id="togglePlay">⏯ تشغيل / إيقاف</button>
+    <button id="fullscreen">⛶ ملء الشاشة</button>
   </div>
 
   <script>
+    // Firebase config
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -103,8 +46,55 @@
     const videoUrl = decodeURIComponent(params.get("url"));
     const iframe = document.getElementById("videoFrame");
     const errorBox = document.getElementById("errorBox");
-    const videoContainer = document.getElementById("videoContainer");
-    let isPaused = false;
+
+    let player;
+
+    // زر التحكم في التشغيل والإيقاف
+    document.getElementById("togglePlay").addEventListener("click", () => {
+      if (player) {
+        const state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+        } else {
+          player.playVideo();
+        }
+      }
+    });
+
+    // زر ملء الشاشة
+    document.getElementById("fullscreen").addEventListener("click", () => {
+      const box = document.getElementById("videoBox");
+      if (box.requestFullscreen) box.requestFullscreen();
+      else if (box.webkitRequestFullscreen) box.webkitRequestFullscreen();
+      else if (box.msRequestFullscreen) box.msRequestFullscreen();
+    });
+
+    function loadYouTubeAPI() {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+    }
+
+    window.onYouTubeIframeAPIReady = function () {
+      player = new YT.Player('videoFrame', {
+        videoId: getYouTubeVideoId(videoUrl),
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          modestbranding: 1,
+          rel: 0,
+          showinfo: 0
+        },
+        events: {
+          onReady: (event) => event.target.playVideo()
+        }
+      });
+    };
+
+    function getYouTubeVideoId(url) {
+      const match = url.match(/(?:youtu.be\/|v=)([\w-]{11})/);
+      return match ? match[1] : null;
+    }
 
     auth.onAuthStateChanged(async user => {
       if (!user) {
@@ -115,60 +105,35 @@
 
       try {
         const userDoc = await db.collection("students").doc(user.uid).get();
-        if (!userDoc.exists) throw new Error("المستخدم غير موجود.");
+        if (!userDoc.exists) throw new Error("بيانات المستخدم غير موجودة.");
 
-        const student = userDoc.data();
-        const enrolledCourses = student.enrolledCourses || [];
+        const enrolledCourses = userDoc.data().enrolledCourses || [];
 
-        const videoSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
-        if (videoSnap.empty) throw new Error("لم يتم العثور على الفيديو.");
+        const contentSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
+        if (contentSnap.empty) throw new Error("الفيديو غير موجود.");
 
-        const videoData = videoSnap.docs[0].data();
-        const lectureId = videoData.lectureId;
+        const contentData = contentSnap.docs[0].data();
+        const lectureId = contentData.lectureId;
 
-        const lectureSnap = await db.collection("lectures").doc(lectureId).get();
-        if (!lectureSnap.exists) throw new Error("لم يتم العثور على المحاضرة.");
+        const lectureDoc = await db.collection("lectures").doc(lectureId).get();
+        if (!lectureDoc.exists) throw new Error("المحاضرة غير موجودة.");
 
-        const courseId = lectureSnap.data().courseId;
-
+        const courseId = lectureDoc.data().courseId;
         if (!enrolledCourses.includes(courseId)) {
-          throw new Error("أنت غير مشترك في هذا الكورس.");
+          throw new Error("❌ غير مسموح لك بمشاهدة هذا المحتوى.");
         }
 
-        const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?enablejsapi=1&autoplay=1&controls=1";
-        iframe.src = embedUrl;
-        videoContainer.style.display = "block";
+        loadYouTubeAPI();
+
       } catch (err) {
         errorBox.textContent = err.message;
         errorBox.style.display = "block";
       }
     });
 
-    document.getElementById("fullscreen").addEventListener("click", () => {
-      const el = document.getElementById("videoContainer");
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.msRequestFullscreen) el.msRequestFullscreen();
-    });
-
-    document.getElementById("togglePlay").addEventListener("click", () => {
-      const iframeWindow = iframe.contentWindow;
-      if (!iframeWindow) return;
-      isPaused = !isPaused;
-      iframeWindow.postMessage(JSON.stringify({
-        event: "command",
-        func: isPaused ? "pauseVideo" : "playVideo",
-        args: []
-      }), "*");
-      document.getElementById("togglePlay").innerText = isPaused ? "▶️ تشغيل" : "⏸ إيقاف";
-    });
-
+    // تعطيل اختصارات المطور
     document.addEventListener("keydown", e => {
-      if (
-        e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
-        (e.ctrlKey && e.key === "U")
-      ) {
+      if (e.key === "F12" || (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) || (e.ctrlKey && e.key === "U")) {
         e.preventDefault();
       }
     });
