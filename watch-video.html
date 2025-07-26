@@ -17,6 +17,7 @@
       --light-color: #f0f4f8;
       --accent-color: #f72585;
       --success-color: #4cc9f0;
+      --video-border: #e2e8f0;
     }
     
     * {
@@ -86,6 +87,21 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       background: #000;
       transition: all 0.3s ease;
+      border: 8px solid var(--video-border);
+      box-sizing: content-box;
+    }
+    
+    .video-wrapper::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border: 4px solid rgba(67, 97, 238, 0.3);
+      border-radius: 20px;
+      pointer-events: none;
+      z-index: 1;
     }
     
     .video-wrapper.fullscreen {
@@ -97,6 +113,7 @@
       z-index: 1000;
       border-radius: 0;
       margin: 0;
+      border: none;
     }
     
     .video-wrapper.portrait {
@@ -317,6 +334,10 @@
       .back-btn {
         padding: 6px 12px;
         font-size: 0.8rem;
+      }
+      
+      .video-wrapper {
+        border-width: 5px;
       }
     }
     
