@@ -1,353 +1,152 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HEMA TECH | مشغل الفيديو</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>مشغل الفيديو</title>
+
+  <!-- Tailwind + Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+  <!-- يوتيوب -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
   <style>
-    :root {
-      --primary-color: #0f0e17;
-      --secondary-color: #1a1a2e;
-      --accent-color: #e53170;
-      --text-color: #fffffe;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      user-select: none;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-    }
-
     body {
-      margin: 0;
-      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
       font-family: 'Tajawal', sans-serif;
-      color: var(--text-color);
+      background: linear-gradient(135deg, #0f0e17, #1a1a2e);
+      color: #fff;
+      min-height: 100vh;
+      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      overflow: hidden;
     }
 
     .video-container {
       position: relative;
       width: 90%;
-      max-width: 1100px;
-      aspect-ratio: 16/9;
-      border-radius: 12px;
+      max-width: 1000px;
+      aspect-ratio: 16 / 9;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: var(--shadow);
-      transition: transform 0.3s ease;
-    }
-
-    .video-wrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
     iframe {
       width: 100%;
       height: 100%;
       border: none;
-      pointer-events: none;
     }
 
-    /* طبقة الحماية لمنع اللمس */
-    .protection-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 20;
-      cursor: not-allowed;
-    }
-
-    /* العلامة المائية الصغيرة */
-    .watermark {
-      position: absolute;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.25);
-      z-index: 15;
-      pointer-events: none;
-      text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
-      font-family: 'Tajawal', sans-serif;
-      animation: watermarkFlow 20s infinite linear;
-      white-space: nowrap;
-    }
-
-    @keyframes watermarkFlow {
-      0% {
-        transform: translateX(-20%) translateY(10%) rotate(-5deg);
-        opacity: 0.6;
-      }
-      25% {
-        transform: translateX(120%) translateY(50%) rotate(3deg);
-        opacity: 0.8;
-      }
-      50% {
-        transform: translateX(80%) translateY(80%) rotate(8deg);
-        opacity: 0.5;
-      }
-      75% {
-        transform: translateX(-20%) translateY(40%) rotate(-3deg);
-        opacity: 0.7;
-      }
-      100% {
-        transform: translateX(-20%) translateY(10%) rotate(-5deg);
-        opacity: 0.6;
-      }
-    }
-
-    /* أزرار التحكم الشفافة */
-    .controls {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      gap: 12px;
-      z-index: 30;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .video-container:hover .controls {
-      opacity: 1;
-    }
-
-    .controls button {
-      background: rgba(30, 30, 50, 0.5);
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 500;
-      backdrop-filter: blur(8px);
-      transition: all 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .controls button:hover {
-      background: rgba(50, 50, 70, 0.7);
-    }
-
-    /* شعار التطبيق */
-    .brand-logo {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--text-color);
-      z-index: 5;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .brand-logo::before {
-      content: '';
-      width: 6px;
-      height: 25px;
-      background: var(--accent-color);
-      border-radius: 3px;
-    }
-
-    /* شاشة التحميل */
     .loading-screen {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: var(--primary-color);
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #0f0e17;
+      z-index: 9999;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 1000;
-      transition: opacity 0.5s ease;
+      flex-direction: column;
+      color: #ccc;
+      font-size: 1.2rem;
     }
 
     .loader {
       width: 60px;
       height: 60px;
       border: 5px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #e53170;
       border-radius: 50%;
-      border-top-color: var(--accent-color);
-      animation: spin 1.5s linear infinite;
+      animation: spin 1s linear infinite;
       margin-bottom: 20px;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
-    .loading-text {
-      font-size: 1.1rem;
-      color: rgba(255, 255, 255, 0.7);
-      text-align: center;
-    }
   </style>
 </head>
 <body>
-  <div class="brand-logo">
-    <span>HEMA TECH</span>
-  </div>
 
   <div class="loading-screen" id="loadingScreen">
     <div class="loader"></div>
-    <div class="loading-text">جاري تحميل المحتوى...</div>
+    جاري تحميل الفيديو...
   </div>
 
-  <div class="video-container" id="videoContainer">
-    <!-- طبقة الحماية لمنع اللمس -->
-    <div class="protection-layer"></div>
-    
-    <!-- علامة مائية صغيرة -->
-    <div class="watermark">HEMA TECH</div>
-    
-    <div class="video-wrapper">
-      <iframe id="yt-video"
-        src="https://www.youtube.com/embed/DRLWIjUqgGE?autoplay=1&controls=0&rel=0&modestbranding=1&enablejsapi=1&playsinline=1"
-        allow="autoplay; encrypted-media; accelerometer; gyroscope; picture-in-picture"
-        allowfullscreen
-      ></iframe>
-    </div>
-
-    <div class="controls">
-      <button id="playPause">
-        <span id="playIcon">⏸</span>
-        <span id="playText">إيقاف</span>
-      </button>
-      <button id="fullscreen">
-        <span>⛶</span>
-        <span>ملء الشاشة</span>
-      </button>
-      <button id="volumeBtn">
-        <span id="volumeIcon">🔊</span>
-      </button>
-    </div>
+  <div class="video-container">
+    <iframe id="yt-video"
+      src=""
+      allow="autoplay; encrypted-media"
+      allowfullscreen
+    ></iframe>
   </div>
 
   <script>
-    // تحميل API من يوتيوب
-    let player;
-    let isMuted = false;
-    
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('yt-video', {
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
+    // 1. إعداد Firebase
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8"
+    });
+
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // 2. جلب البيانات من الرابط
+    const courseId = new URLSearchParams(window.location.search).get("courseId");
+    const contentId = new URLSearchParams(window.location.search).get("contentId");
+
+    // 3. التحقق من الدخول والاشتراك
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        alert("يجب تسجيل الدخول.");
+        return window.location.href = "login.html";
+      }
+
+      try {
+        const userDoc = await db.collection("students").doc(user.uid).get();
+        const student = userDoc.data();
+
+        if (!student || !student.enrolledCourses || !student.enrolledCourses.includes(courseId)) {
+          alert("❌ هذا الفيديو متاح فقط للمشتركين في الكورس.");
+          return window.location.href = "courses.html";
         }
-      });
-    }
 
-    function onPlayerReady(event) {
-      // إخفاء شاشة التحميل
-      const loadingScreen = document.getElementById('loadingScreen');
-      if (loadingScreen) {
-        loadingScreen.style.opacity = '0';
-        setTimeout(() => {
-          loadingScreen.style.display = 'none';
-        }, 500);
-      }
-      
-      // بدء تشغيل الفيديو تلقائيًا
-      event.target.playVideo();
-    }
+        const contentDoc = await db.collection("lectureContent").doc(contentId).get();
+        if (!contentDoc.exists) {
+          alert("المحتوى غير موجود.");
+          return;
+        }
 
-    function onPlayerStateChange(event) {
-      const playPauseBtn = document.getElementById('playPause');
-      if (!playPauseBtn) return;
-      
-      if (event.data === YT.PlayerState.PLAYING) {
-        document.getElementById('playIcon').textContent = '⏸';
-        document.getElementById('playText').textContent = 'إيقاف';
-      } else if (event.data === YT.PlayerState.PAUSED) {
-        document.getElementById('playIcon').textContent = '▶️';
-        document.getElementById('playText').textContent = 'تشغيل';
-      }
-    }
+        const content = contentDoc.data();
+        if (content.type !== "video") {
+          alert("هذا المحتوى ليس فيديو.");
+          return;
+        }
 
-    // أزرار التحكم
-    document.getElementById("playPause").addEventListener("click", function() {
-      if (player) {
-        const state = player.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) {
-          player.pauseVideo();
+        const match = content.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^\s&]+)/);
+        const videoId = match ? match[1] : null;
+
+        if (videoId) {
+          document.getElementById("yt-video").src =
+            `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1`;
         } else {
-          player.playVideo();
+          alert("رابط الفيديو غير صالح.");
         }
-      }
-    });
 
-    document.getElementById("fullscreen").addEventListener("click", function() {
-      const container = document.getElementById("videoContainer");
-      if (container.requestFullscreen) {
-        container.requestFullscreen();
-      } else if (container.webkitRequestFullscreen) {
-        container.webkitRequestFullscreen();
-      } else if (container.msRequestFullscreen) {
-        container.msRequestFullscreen();
-      }
-    });
-
-    document.getElementById("volumeBtn").addEventListener("click", function() {
-      if (player) {
-        isMuted = !isMuted;
-        if (isMuted) {
-          player.mute();
-          document.getElementById("volumeIcon").textContent = "🔇";
-        } else {
-          player.unMute();
-          document.getElementById("volumeIcon").textContent = "🔊";
-        }
-      }
-    });
-
-    // تهيئة الصفحة
-    window.addEventListener('DOMContentLoaded', () => {
-      // تحميل YouTube IFrame API
-      const tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      
-      // منع أي تفاعل مع طبقة الحماية
-      document.querySelector('.protection-layer').addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-    });
-
-    // منع اختصارات لوحة المفاتيح
-    document.addEventListener('keydown', function(e) {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
-        (e.ctrlKey && e.key === 'U') ||
-        (e.key === 'PrintScreen')
-      ) {
-        e.preventDefault();
+        // إخفاء شاشة التحميل
+        document.getElementById("loadingScreen").style.display = "none";
+      } catch (err) {
+        console.error(err);
+        alert("حدث خطأ أثناء تحميل الفيديو.");
       }
     });
   </script>
