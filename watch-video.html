@@ -1,753 +1,188 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>منصة التعليم - مشغل الفيديو</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <title>📺 مشاهدة الفيديو</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
-    :root {
-      --primary-color: #4f46e5;
-      --secondary-color: #6366f1;
-      --dark-color: #1e293b;
-      --light-color: #f8fafc;
-      --danger-color: #ef4444;
-      --success-color: #10b981;
-      --border-radius: 8px;
-      --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-    
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
     body {
       font-family: 'Tajawal', sans-serif;
-      background-color: #000;
-      color: var(--light-color);
-      line-height: 1.6;
+      margin: 0;
+      background: linear-gradient(135deg, #0f0e17, #1a1a2e);
+      color: white;
+      overflow: hidden;
     }
-    
-    /* Video Container */
-    .video-main-container {
+    .video-container {
       position: relative;
       width: 100%;
       height: 100vh;
       overflow: hidden;
     }
-    
-    .video-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
+    iframe {
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.85);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 20;
-      transition: opacity 0.3s ease;
-    }
-    
-    .video-overlay.hidden {
-      opacity: 0;
+      border: none;
       pointer-events: none;
     }
-    
-    .video-player-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    
-    #videoPlayer {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      background-color: #000;
-    }
-    
-    /* Video Controls */
-    .video-controls-container {
+    .protection-layer {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
+      inset: 0;
+      background: transparent;
       z-index: 10;
-      opacity: 0;
-      transition: opacity 0.3s ease;
     }
-    
-    .video-main-container:hover .video-controls-container {
-      opacity: 1;
+    .watermark {
+      position: absolute;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: rgba(255,255,255,0.15);
+      z-index: 15;
+      pointer-events: none;
+      animation: moveWatermark 20s linear infinite;
     }
-    
-    .progress-controls {
-      width: 100%;
+    @keyframes moveWatermark {
+      0% { transform: translate(0%, 0%); }
+      25% { transform: translate(80%, 20%); }
+      50% { transform: translate(60%, 80%); }
+      75% { transform: translate(10%, 60%); }
+      100% { transform: translate(0%, 0%); }
+    }
+    .controls {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      z-index: 20;
       display: flex;
-      align-items: center;
       gap: 10px;
-      margin-bottom: 10px;
     }
-    
-    .time-display {
+    .controls button {
+      background: rgba(0, 0, 0, 0.5);
+      border: none;
       color: white;
-      font-size: 14px;
-      min-width: 50px;
-      text-align: center;
-    }
-    
-    .progress-bar-container {
-      flex-grow: 1;
-      height: 5px;
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
+      padding: 10px 15px;
+      border-radius: 5px;
       cursor: pointer;
-      position: relative;
+      font-weight: bold;
     }
-    
-    .progress-bar {
-      height: 100%;
-      background-color: var(--primary-color);
-      border-radius: 3px;
-      position: relative;
-    }
-    
-    .progress-bar::after {
-      content: '';
-      position: absolute;
-      right: -5px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 10px;
-      height: 10px;
+    #errorBox {
+      padding: 50px;
+      text-align: center;
+      color: red;
+      font-size: 1.3rem;
       background-color: white;
-      border-radius: 50%;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    
-    .progress-bar-container:hover .progress-bar::after {
-      opacity: 1;
-    }
-    
-    .main-controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-    
-    .left-controls, .right-controls {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    
-    .control-btn {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 18px;
-      cursor: pointer;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-    }
-    
-    .control-btn:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      transform: scale(1.1);
-    }
-    
-    .control-btn:active {
-      transform: scale(0.95);
-    }
-    
-    .play-pause-btn {
-      background-color: var(--primary-color);
-    }
-    
-    .play-pause-btn:hover {
-      background-color: var(--secondary-color);
-    }
-    
-    /* Access Layer */
-    .access-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.95);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 30;
-      padding: 20px;
-      text-align: center;
-    }
-    
-    .access-content {
-      max-width: 500px;
-      width: 100%;
-      background-color: rgba(30, 41, 59, 0.9);
-      border-radius: var(--border-radius);
-      padding: 30px;
-      box-shadow: var(--box-shadow);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .access-icon {
-      font-size: 50px;
-      color: var(--primary-color);
-      margin-bottom: 20px;
-    }
-    
-    .access-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 15px;
-    }
-    
-    .access-message {
-      font-size: 16px;
-      margin-bottom: 25px;
-      line-height: 1.7;
-      opacity: 0.9;
-    }
-    
-    .action-btn {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: var(--border-radius);
-      font-size: 16px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .action-btn:hover {
-      background-color: var(--secondary-color);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-    
-    /* Loading Spinner */
-    .spinner {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-radius: 50%;
-      border-top-color: var(--primary-color);
-      animation: spin 1s ease-in-out infinite;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .loading-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: rgba(0, 0, 0, 0.8);
-      z-index: 100;
-    }
-    
-    /* Responsive */
-    @media (max-width: 768px) {
-      .video-controls-container {
-        opacity: 1;
-        padding: 10px;
-      }
-      
-      .control-btn {
-        font-size: 16px;
-        width: 35px;
-        height: 35px;
-      }
-      
-      .access-content {
-        padding: 20px;
-      }
-      
-      .access-title {
-        font-size: 20px;
-      }
-      
-      .access-message {
-        font-size: 14px;
-      }
+      color: #c0392b;
     }
   </style>
 </head>
 <body>
-  <!-- Loading State -->
-  <div id="loadingContainer" class="loading-container">
-    <div class="spinner"></div>
-  </div>
-
-  <!-- Video Container -->
-  <div class="video-main-container" id="videoMainContainer">
-    <!-- Access Layer -->
-    <div id="accessLayer" class="access-layer">
-      <div class="access-content">
-        <div class="access-icon">
-          <i class="fas fa-lock" id="accessIcon"></i>
-        </div>
-        <h2 class="access-title" id="accessTitle">يجب تسجيل الدخول</h2>
-        <p class="access-message" id="accessMessage">يجب عليك تسجيل الدخول لمشاهدة هذا الفيديو</p>
-        <button class="action-btn" id="accessActionBtn">
-          <i class="fas fa-sign-in-alt" id="accessActionIcon"></i>
-          <span id="accessActionText">تسجيل الدخول</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Video Overlay -->
-    <div class="video-overlay hidden" id="videoOverlay">
-      <button id="overlayPlayBtn" class="control-btn play-pause-btn" style="width: 80px; height: 80px; font-size: 30px;">
-        <i class="fas fa-play"></i>
-      </button>
-    </div>
-
-    <!-- Video Player -->
-    <div class="video-player-container">
-      <iframe id="videoPlayer" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-      
-      <!-- Video Controls -->
-      <div class="video-controls-container">
-        <div class="progress-controls">
-          <span class="time-display" id="currentTime">00:00</span>
-          <div class="progress-bar-container" id="progressBarContainer">
-            <div class="progress-bar" id="progressBar"></div>
-          </div>
-          <span class="time-display" id="duration">00:00</span>
-        </div>
-        
-        <div class="main-controls">
-          <div class="left-controls">
-            <button class="control-btn play-pause-btn" id="playPauseBtn">
-              <i class="fas fa-pause" id="playPauseIcon"></i>
-            </button>
-            <button class="control-btn" id="volumeBtn">
-              <i class="fas fa-volume-up" id="volumeIcon"></i>
-            </button>
-          </div>
-          
-          <div class="right-controls">
-            <button class="control-btn" id="fullscreenBtn">
-              <i class="fas fa-expand"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+  <div id="errorBox" style="display:none;"></div>
+  <div class="video-container" id="videoContainer" style="display:none;">
+    <div class="watermark">🚫 منصة HEMA TECH</div>
+    <div id="player"></div>
+    <div class="protection-layer"></div>
+    <div class="controls">
+      <button id="playPause">⏸ إيقاف</button>
+      <button id="fullscreen">⛶ ملء الشاشة</button>
     </div>
   </div>
 
   <script>
-    // Firebase config
-    const firebaseConfig = {
+    // Firebase init
+    firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8"
-    };
+    });
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // DOM Elements
-    const loadingContainer = document.getElementById("loadingContainer");
-    const videoMainContainer = document.getElementById("videoMainContainer");
-    const videoPlayer = document.getElementById("videoPlayer");
-    const videoOverlay = document.getElementById("videoOverlay");
-    const overlayPlayBtn = document.getElementById("overlayPlayBtn");
-    const accessLayer = document.getElementById("accessLayer");
-    const accessTitle = document.getElementById("accessTitle");
-    const accessMessage = document.getElementById("accessMessage");
-    const accessActionBtn = document.getElementById("accessActionBtn");
-    const accessActionText = document.getElementById("accessActionText");
-    const accessActionIcon = document.getElementById("accessActionIcon");
-    const accessIcon = document.getElementById("accessIcon");
-
-    // Video Controls
-    const playPauseBtn = document.getElementById("playPauseBtn");
-    const playPauseIcon = document.getElementById("playPauseIcon");
-    const currentTimeDisplay = document.getElementById("currentTime");
-    const durationDisplay = document.getElementById("duration");
-    const progressBarContainer = document.getElementById("progressBarContainer");
-    const progressBar = document.getElementById("progressBar");
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
-    const volumeBtn = document.getElementById("volumeBtn");
-    const volumeIcon = document.getElementById("volumeIcon");
-
-    // Get URL parameters
     const params = new URLSearchParams(window.location.search);
     const videoUrl = decodeURIComponent(params.get("url"));
-    const videoTitleParam = decodeURIComponent(params.get("title") || "فيديو تعليمي");
+    const videoId = extractYouTubeID(videoUrl);
 
-    // Video state
-    let isPlaying = false;
-    let isMuted = false;
-    let videoDuration = 0;
-    let currentVideoTime = 0;
-    let isDraggingProgress = false;
-    let hideControlsTimeout;
+    let player;
 
-    // Initialize video player
-    function initVideoPlayer(url) {
-      const embedUrl = convertToEmbedUrl(url) + "?autoplay=1&rel=0&modestbranding=1&controls=0";
-      videoPlayer.src = embedUrl;
-      
-      // Listen for messages from the iframe (for YouTube API)
-      window.addEventListener('message', onMessageReceived);
-      
-      // Set up controls
-      setupControls();
-      
-      // Hide loading container
-      loadingContainer.style.display = "none";
+    function extractYouTubeID(url) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{11})/);
+      return match ? match[1] : null;
     }
 
-    // Setup video controls
-    function setupControls() {
-      // Play/Pause buttons
-      playPauseBtn.addEventListener('click', togglePlayPause);
-      overlayPlayBtn.addEventListener('click', togglePlayPause);
-      
-      // Fullscreen button
-      fullscreenBtn.addEventListener('click', toggleFullscreen);
-      
-      // Volume button
-      volumeBtn.addEventListener('click', toggleMute);
-      
-      // Progress bar
-      progressBarContainer.addEventListener('click', seekVideo);
-      progressBarContainer.addEventListener('mousedown', startDragProgress);
-      document.addEventListener('mousemove', dragProgress);
-      document.addEventListener('mouseup', endDragProgress);
-      
-      // Video overlay events
-      videoPlayer.addEventListener('mouseenter', showOverlayControls);
-      videoPlayer.addEventListener('mouseleave', hideOverlayControls);
-      
-      // Update time periodically
-      setInterval(updateTimeDisplay, 500);
-      
-      // Auto-hide controls
-      setupControlsAutoHide();
-    }
+    auth.onAuthStateChanged(async user => {
+      if (!user) return showError("يجب تسجيل الدخول.");
+      try {
+        const userDoc = await db.collection("students").doc(user.uid).get();
+        const student = userDoc.data();
+        if (!student) throw new Error("لا يوجد بيانات.");
 
-    // Toggle play/pause
-    function togglePlayPause() {
-      if (isPlaying) {
-        pauseVideo();
-      } else {
-        playVideo();
-      }
-    }
+        const videoSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
+        if (videoSnap.empty) throw new Error("الفيديو غير موجود.");
+        const lectureId = videoSnap.docs[0].data().lectureId;
 
-    function playVideo() {
-      postMessageToPlayer('playVideo');
-      playPauseIcon.className = 'fas fa-pause';
-      overlayPlayBtn.style.display = 'none';
-      videoOverlay.classList.add('hidden');
-      isPlaying = true;
-      resetControlsAutoHide();
-    }
+        const lectureSnap = await db.collection("lectures").doc(lectureId).get();
+        const courseId = lectureSnap.data().courseId;
 
-    function pauseVideo() {
-      postMessageToPlayer('pauseVideo');
-      playPauseIcon.className = 'fas fa-play';
-      overlayPlayBtn.style.display = 'flex';
-      videoOverlay.classList.remove('hidden');
-      isPlaying = false;
-      resetControlsAutoHide();
-    }
-
-    // Toggle fullscreen
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        videoMainContainer.requestFullscreen().catch(err => {
-          console.error('Error attempting to enable fullscreen:', err);
-        });
-      } else {
-        document.exitFullscreen();
-      }
-      resetControlsAutoHide();
-    }
-
-    // Toggle mute
-    function toggleMute() {
-      isMuted = !isMuted;
-      postMessageToPlayer(isMuted ? 'mute' : 'unMute');
-      volumeIcon.className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-      resetControlsAutoHide();
-    }
-
-    // Seek video
-    function seekVideo(e) {
-      if (isDraggingProgress) return;
-      
-      const rect = progressBarContainer.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      const seekTime = percent * videoDuration;
-      postMessageToPlayer('seekTo', seekTime, true);
-      resetControlsAutoHide();
-    }
-
-    // Progress bar dragging
-    function startDragProgress(e) {
-      isDraggingProgress = true;
-      dragProgress(e);
-    }
-
-    function dragProgress(e) {
-      if (!isDraggingProgress) return;
-      
-      const rect = progressBarContainer.getBoundingClientRect();
-      let percent = (e.clientX - rect.left) / rect.width;
-      percent = Math.max(0, Math.min(1, percent));
-      
-      progressBar.style.width = (percent * 100) + '%';
-      currentTimeDisplay.textContent = formatTime(percent * videoDuration);
-    }
-
-    function endDragProgress(e) {
-      if (!isDraggingProgress) return;
-      isDraggingProgress = false;
-      
-      const rect = progressBarContainer.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      const seekTime = percent * videoDuration;
-      postMessageToPlayer('seekTo', seekTime, true);
-      resetControlsAutoHide();
-    }
-
-    // Update time display
-    function updateTimeDisplay() {
-      if (isDraggingProgress) return;
-      
-      postMessageToPlayer('getCurrentTime');
-      postMessageToPlayer('getDuration');
-    }
-
-    // Show/hide overlay controls
-    function showOverlayControls() {
-      if (!isPlaying) {
-        videoOverlay.classList.remove('hidden');
-      }
-      resetControlsAutoHide();
-    }
-
-    function hideOverlayControls() {
-      if (!isPlaying) return;
-      videoOverlay.classList.add('hidden');
-    }
-
-    // Auto-hide controls
-    function setupControlsAutoHide() {
-      videoMainContainer.addEventListener('mousemove', resetControlsAutoHide);
-    }
-
-    function resetControlsAutoHide() {
-      clearTimeout(hideControlsTimeout);
-      const controls = document.querySelector('.video-controls-container');
-      controls.style.opacity = '1';
-      
-      hideControlsTimeout = setTimeout(() => {
-        if (isPlaying && document.fullscreenElement) {
-          controls.style.opacity = '0';
+        if (!(student.enrolledCourses || []).includes(courseId)) {
+          throw new Error("🚫 غير مشترك في هذا الكورس.");
         }
-      }, 3000);
-    }
 
-    // Handle messages from iframe
-    function onMessageReceived(event) {
-      const data = event.data;
-      
-      // Handle YouTube player messages
-      if (data.event === 'timeupdate') {
-        currentVideoTime = data.currentTime;
-        videoDuration = data.duration || videoDuration;
-        
-        // Update progress bar if not dragging
-        if (!isDraggingProgress) {
-          const percent = (currentVideoTime / videoDuration) * 100;
-          progressBar.style.width = percent + '%';
-        }
-        
-        // Update time displays
-        currentTimeDisplay.textContent = formatTime(currentVideoTime);
-        durationDisplay.textContent = formatTime(videoDuration);
-      } else if (data.event === 'playbackStatus') {
-        isPlaying = data.isPlaying;
-        playPauseIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
-        
-        if (isPlaying) {
-          overlayPlayBtn.style.display = 'none';
-          videoOverlay.classList.add('hidden');
-        } else {
-          overlayPlayBtn.style.display = 'flex';
-          videoOverlay.classList.remove('hidden');
-        }
-      } else if (data.event === 'volumeChange') {
-        isMuted = data.isMuted;
-        volumeIcon.className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-      }
-    }
-
-    // Post message to player (YouTube API)
-    function postMessageToPlayer(action, value, immediate = false) {
-      if (!videoPlayer.contentWindow) return;
-      
-      videoPlayer.contentWindow.postMessage({
-        event: 'command',
-        func: action,
-        args: value !== undefined ? [value] : null,
-        immediate: immediate
-      }, '*');
-    }
-
-    // Format time (seconds to MM:SS)
-    function formatTime(seconds) {
-      const mins = Math.floor(seconds / 60);
-      const secs = Math.floor(seconds % 60);
-      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    // Show access layer
-    function showAccessLayer(title, message, actionText, icon) {
-      accessTitle.textContent = title;
-      accessMessage.textContent = message;
-      accessActionText.textContent = actionText;
-      
-      if (icon === 'lock') {
-        accessIcon.className = 'fas fa-lock';
-        accessActionIcon.className = 'fas fa-sign-in-alt';
-      } else if (icon === 'warning') {
-        accessIcon.className = 'fas fa-exclamation-triangle';
-        accessActionIcon.className = 'fas fa-redo';
-      }
-      
-      loadingContainer.style.display = "none";
-    }
-
-    // Handle access action button
-    accessActionBtn.addEventListener('click', () => {
-      if (auth.currentUser) {
-        window.location.reload();
-      } else {
-        window.location.href = "/login?redirect=" + encodeURIComponent(window.location.href);
+        document.getElementById("videoContainer").style.display = "block";
+        loadPlayer();
+      } catch (e) {
+        showError(e.message);
       }
     });
 
-    // Convert to embed URL
-    function convertToEmbedUrl(url) {
-      // Handle YouTube URLs
-      if (url.includes("youtube.com") || url.includes("youtu.be")) {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-        const videoId = (match && match[2].length === 11) ? match[2] : null;
-        return `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
-      }
-      
-      // Handle Vimeo URLs
-      if (url.includes("vimeo.com")) {
-        const regExp = /^.*(vimeo.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/;
-        const match = url.match(regExp);
-        const videoId = match ? match[5] : null;
-        return `https://player.vimeo.com/video/${videoId}`;
-      }
-      
-      // Default case (direct video URL)
-      return url;
+    function showError(msg) {
+      const e = document.getElementById("errorBox");
+      e.innerText = msg;
+      e.style.display = "block";
     }
 
-    // Auth state listener
-    auth.onAuthStateChanged(async user => {
-      try {
-        if (!user) {
-          showAccessLayer("يجب تسجيل الدخول", "يجب عليك تسجيل الدخول لمشاهدة هذا الفيديو", "تسجيل الدخول", "lock");
-          return;
+    function loadPlayer() {
+      player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          modestbranding: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: onPlayerReady
         }
+      });
+    }
 
-        // Check user access
-        const userDoc = await db.collection("students").doc(user.uid).get();
-        if (!userDoc.exists) {
-          throw new Error("لا يوجد بيانات للمستخدم في نظامنا.");
+    function onPlayerReady(event) {
+      document.getElementById("playPause").addEventListener("click", () => {
+        const state = player.getPlayerState();
+        if (state === 1) {
+          player.pauseVideo();
+          event.target.innerText = "▶️ تشغيل";
+        } else {
+          player.playVideo();
+          event.target.innerText = "⏸ إيقاف";
         }
+      });
 
-        const studentData = userDoc.data();
-        const enrolledCourses = studentData.enrolledCourses || [];
+      document.getElementById("fullscreen").addEventListener("click", () => {
+        const elem = document.getElementById("videoContainer");
+        if (elem.requestFullscreen) elem.requestFullscreen();
+      });
+    }
 
-        // Get video data from Firestore
-        const videoSnapshot = await db.collection("lectureContent").where("url", "==", videoUrl).get();
-        if (videoSnapshot.empty) {
-          throw new Error("عذراً، لا يمكن العثور على الفيديو المطلوب.");
-        }
-
-        const videoData = videoSnapshot.docs[0].data();
-        const lectureId = videoData.lectureId;
-
-        const lectureSnapshot = await db.collection("lectures").doc(lectureId).get();
-        if (!lectureSnapshot.exists) {
-          throw new Error("عذراً، لا يمكن العثور على المحاضرة المرتبطة بهذا الفيديو.");
-        }
-
-        const courseId = lectureSnapshot.data().courseId;
-
-        // Check if user is enrolled in the course
-        if (!enrolledCourses.includes(courseId)) {
-          showAccessLayer(
-            "غير مسموح بالوصول", 
-            "عذراً، يجب عليك الاشتراك في هذه الدورة التدريبية لمشاهدة هذا الفيديو.", 
-            "الذهاب للدورة",
-            "warning"
-          );
-          return;
-        }
-
-        // Initialize video player
-        initVideoPlayer(videoUrl);
-        accessLayer.style.display = "none";
-        
-      } catch (err) {
-        console.error("Error:", err);
-        showAccessLayer("حدث خطأ", err.message || "حدث خطأ غير متوقع أثناء تحميل الفيديو.", "حاول مرة أخرى", "warning");
+    // منع أدوات المطور
+    document.addEventListener("keydown", function(e) {
+      if (["F12", "I", "J", "C", "U", "PrintScreen"].includes(e.key) || (e.ctrlKey && e.shiftKey)) {
+        e.preventDefault();
+        alert("❌ غير مسموح!");
       }
     });
   </script>
