@@ -2,131 +2,90 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>مشغل الفيديو</title>
+  <title>مشاهدة الفيديو</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <style>
-    body {
-      margin: 0;
-      background: black;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      font-family: 'Tajawal', sans-serif;
-      overflow: hidden;
-    }
-    .video-container {
-      position: relative;
-      width: 90%;
-      max-width: 1100px;
-      aspect-ratio: 16/9;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-    .protection-layer {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 10;
-      cursor: not-allowed;
-    }
-    .watermark {
-      position: absolute;
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: rgba(255,255,255,0.2);
-      animation: move 20s linear infinite;
-      z-index: 15;
-      pointer-events: none;
-    }
-    @keyframes move {
-      0%   { transform: translate(0%, 0%); }
-      25%  { transform: translate(100%, 50%); }
-      50%  { transform: translate(50%, 100%); }
-      75%  { transform: translate(-50%, 50%); }
-      100% { transform: translate(0%, 0%); }
-    }
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="https://cdn.tailwindcss.com">
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div id="video-container" class="w-full max-w-3xl p-4 bg-white rounded-xl shadow-lg hidden">
+    <div class="relative pt-[56.25%]">
+      <iframe id="videoFrame" class="absolute top-0 left-0 w-full h-full rounded-xl" 
+              frameborder="0" allowfullscreen allow="autoplay"></iframe>
+    </div>
+  </div>
+  <div id="error" class="text-center text-red-600 font-bold text-xl hidden mt-10"></div>
 
-<div class="video-container" id="videoContainer">
-  <div class="protection-layer"></div>
-  <div class="watermark">HEMA TECH</div>
-  <iframe id="videoFrame" allow="autoplay" allowfullscreen></iframe>
-</div>
+  <script>
+    // إعداد Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-<script>
-  // Firebase Init
-  firebase.initializeApp({
-    apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
-    authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-    projectId: "hhhhhh-d4fb8"
-  });
+    const errorDiv = document.getElementById("error");
+    const videoContainer = document.getElementById("video-container");
+    const videoFrame = document.getElementById("videoFrame");
 
-  const db = firebase.firestore();
-  const auth = firebase.auth();
+    const urlParams = new URLSearchParams(window.location.search);
+    const contentId = urlParams.get("id"); // تأكد أن الرابط يحتوي على ?id=xxxx
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const courseId = urlParams.get("courseId");
-  const contentId = urlParams.get("contentId");
-
-  const iframe = document.getElementById("videoFrame");
-
-  auth.onAuthStateChanged(async user => {
-    if (!user) return window.location.href = "index.html";
-
-    try {
-      const studentSnap = await db.collection("students").doc(user.uid).get();
-      const student = studentSnap.data();
-
-      if (!student || student.status !== "تمت الموافقة" || !student.enrolledCourses?.includes(courseId)) {
-        alert("❌ غير مسموح لك بمشاهدة هذا الفيديو.");
-        return window.location.href = "index.html";
-      }
-
-      const contentSnap = await db.collection("lectureContent").doc(contentId).get();
-      const content = contentSnap.data();
-
-      if (!content || content.type !== "video") {
-        alert("❌ لا يوجد فيديو لعرضه.");
-        return window.location.href = "index.html";
-      }
-
-      const ytUrl = content.url;
-      const embedUrl = convertToEmbedUrl(ytUrl);
-
-      iframe.src = `${embedUrl}?autoplay=1&controls=1&modestbranding=1&rel=0&playsinline=1`;
-    } catch (err) {
-      console.error(err);
-      alert("حدث خطأ في تحميل الفيديو.");
+    if (!contentId) {
+      showError("رابط غير صالح");
     }
-  });
 
-  function convertToEmbedUrl(url) {
-    const id = url.split("v=")[1] || url.split("/").pop();
-    return `https://www.youtube.com/embed/${id}`;
-  }
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) return showError("يجب تسجيل الدخول أولاً");
 
-  // حماية من أدوات المطور
-  document.addEventListener('keydown', function(e) {
-    if (
-      e.key === 'F12' ||
-      (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
-      (e.ctrlKey && e.key === 'U')
-    ) {
-      e.preventDefault();
+      try {
+        // جلب بيانات الطالب
+        const studentDoc = await db.collection("students").doc(user.uid).get();
+        const studentData = studentDoc.data();
+        if (!studentData || !studentData.enrolledCourses) return showError("أنت غير مشترك في أي كورس");
+
+        // جلب المحتوى
+        const contentDoc = await db.collection("lectureContent").doc(contentId).get();
+        if (!contentDoc.exists) return showError("المحتوى غير موجود");
+
+        const contentData = contentDoc.data();
+        if (contentData.type !== "video") return showError("هذا ليس فيديو");
+
+        // التحقق من الاشتراك في الكورس
+        const lectureSnapshot = await db.collection("lectures").doc(contentData.lectureId).get();
+        const lectureData = lectureSnapshot.data();
+        if (!lectureData || !studentData.enrolledCourses.includes(lectureData.courseId)) {
+          return showError("غير مسموح لك بمشاهدة هذا الفيديو");
+        }
+
+        // استخراج ID الفيديو من رابط YouTube
+        const videoId = extractYouTubeId(contentData.url);
+        if (!videoId) return showError("رابط الفيديو غير صالح");
+
+        videoFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&rel=0`;
+        videoContainer.classList.remove("hidden");
+
+      } catch (err) {
+        console.error(err);
+        showError("حدث خطأ أثناء تحميل الفيديو");
+      }
+    });
+
+    function extractYouTubeId(url) {
+      const regex = /(?:youtube\.com.*(?:v=|\/embed\/)|youtu\.be\/)([^"&?/ ]{11})/;
+      const match = url.match(regex);
+      return match ? match[1] : null;
     }
-  });
-</script>
+
+    function showError(message) {
+      errorDiv.textContent = message;
+      errorDiv.classList.remove("hidden");
+    }
+  </script>
 </body>
 </html>
