@@ -11,7 +11,6 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     body { font-family: 'Tajawal', sans-serif; }
-    .cert-box { background-image: url('https://i.imgur.com/gg1xROs.png'); background-repeat: no-repeat; background-position: center bottom; background-size: 80px; }
   </style>
 </head>
 <body class="bg-gray-100 p-6">
@@ -23,8 +22,9 @@
     <p id="resultMsg" class="text-center font-bold text-green-600 mt-6 hidden"></p>
 
     <!-- الشهادة -->
-    <div id="certificateBox" class="hidden mt-8 p-6 bg-white rounded-xl shadow text-center border border-dashed border-indigo-600 cert-box">
+    <div id="certificateBox" class="hidden mt-8 p-6 bg-white rounded-xl shadow text-center border border-dashed border-indigo-600 relative">
       <h2 class="text-xl font-bold text-indigo-700 mb-2">🎉 شهادة إتمام اختبار</h2>
+      <img src="https://i.imgur.com/Ii1V9Ic.png" alt="ختم" class="absolute w-20 opacity-30 bottom-4 left-4 rotate-[-10deg]">
       <p class="mb-2 text-lg" id="certStudentName"></p>
       <p class="mb-2">اختبار: <span id="certQuizName"></span></p>
       <p class="mb-2">النتيجة: <span id="certScore"></span>%</p>
@@ -50,7 +50,7 @@
     const resultMsg = document.getElementById("resultMsg");
     const timerElement = document.getElementById("timer");
 
-    let currentUser, student, correctAnswers = 0, totalQuestions = 0;
+    let currentUser, correctAnswers = 0, totalQuestions = 0, student;
 
     auth.onAuthStateChanged(async user => {
       if (!user) return window.location.href = "index.html";
@@ -60,16 +60,23 @@
       if (!userDoc.exists) return alert("حساب غير صالح");
       student = userDoc.data();
 
-      // منع إعادة الاختبار
-      const attemptDoc = await db.collection("quizAttempts").doc(user.uid + "_" + quizId).get();
-      if (attemptDoc.exists) {
-        alert("لقد قمت بحل هذا الاختبار من قبل.");
-        submitBtn.disabled = true;
-        timerElement.textContent = "تم إنهاء هذا الاختبار مسبقاً.";
-        return;
+      // عرض النتيجة السابقة إذا وجدت
+      const resultDoc = await db.collection("students").doc(user.uid).collection("quizResults").doc(quizId).get();
+      if (resultDoc.exists) {
+        const resultData = resultDoc.data();
+        const score = resultData.score;
+        const date = resultData.date?.toDate().toLocaleDateString("ar-EG") || "غير محدد";
+
+        resultMsg.innerHTML = `✅ لقد قمت بحل هذا الاختبار سابقًا.<br>النتيجة: ${score}%<br>التاريخ: ${date}`;
+        resultMsg.classList.remove("hidden");
+
+        document.getElementById("certStudentName").textContent = `الطالب: ${student.fullName || 'طالب مجهول'}`;
+        document.getElementById("certQuizName").textContent = quizId;
+        document.getElementById("certScore").textContent = score;
+        document.getElementById("certDate").textContent = date;
+        document.getElementById("certificateBox").classList.remove("hidden");
       }
 
-      // جلب الأسئلة
       const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
       if (questionsSnap.empty) {
         quizContainer.innerHTML = `<p class="text-center text-gray-500">لا يوجد أسئلة حالياً.</p>`;
@@ -85,13 +92,14 @@
         box.className = "border p-4 rounded-lg bg-gray-50";
 
         let imgHTML = q.imageURL ? `<img src="${q.imageURL}" class="w-40 mb-2 rounded border" />` : "";
+
         box.innerHTML = `
           ${imgHTML}
           <h2 class="font-bold text-lg mb-2">${idx + 1}. ${q.question}</h2>
           <div class="space-y-2">
             ${['A', 'B', 'C', 'D'].map(opt => `
               <label class="block">
-                <input type="radio" name="q${doc.id}" value="${opt}" class="mr-2"> ${q.options[opt]}
+                <input type="radio" name="q${doc.id}" value="${opt}" class="mr-2"> ${q.options?.[opt] || ""}
               </label>
             `).join('')}
           </div>
@@ -108,15 +116,18 @@
 
       const interval = setInterval(() => {
         const remaining = endTime - Date.now();
+
         if (remaining <= 0) {
           clearInterval(interval);
           timerElement.textContent = "انتهى الوقت! سيتم إرسال الاختبار تلقائياً.";
           submitQuiz();
           return;
         }
+
         const h = Math.floor(remaining / (1000 * 60 * 60));
         const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
         const s = Math.floor((remaining % (1000 * 60)) / 1000);
+
         timerElement.textContent = `الوقت المتبقي: ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
       }, 1000);
     }
@@ -124,46 +135,37 @@
     submitBtn.addEventListener("click", () => submitQuiz());
 
     async function submitQuiz() {
-      submitBtn.disabled = true;
       const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
       correctAnswers = 0;
-      let answerReview = "";
+
+      const answersList = [];
 
       questionsSnap.forEach(doc => {
         const q = doc.data();
         const selected = document.querySelector(`input[name="q${doc.id}"]:checked`);
-        const selectedVal = selected ? selected.value : "لم يتم الإجابة";
-        const correctVal = q.correct;
-        if (selected && selected.value === correctVal) correctAnswers++;
+        const selectedValue = selected?.value || "لم يجب";
+        const correctAnswer = q.correct;
 
-        answerReview += `
-          <div class="bg-white border p-4 my-3 rounded shadow-sm">
-            <p class="font-bold text-gray-800 mb-1">${q.question}</p>
-            <p class="text-sm text-gray-600">إجابتك: ${selectedVal}</p>
-            <p class="text-sm text-green-600">الإجابة الصحيحة: ${correctVal}</p>
-          </div>
-        `;
+        if (selectedValue === correctAnswer) correctAnswers++;
+
+        answersList.push({
+          question: q.question,
+          correct: correctAnswer,
+          selected: selectedValue,
+          options: q.options
+        });
       });
 
       const score = Math.round((correctAnswers / totalQuestions) * 100);
+
       await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
         score,
         date: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      await db.collection("quizAttempts").doc(currentUser.uid + "_" + quizId).set({
-        studentId: currentUser.uid,
-        quizId,
-        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      resultMsg.textContent = `✅ تم إنهاء الاختبار. نتيجتك: ${score}%`;
+      resultMsg.innerHTML = `✅ تم إنهاء الاختبار. نتيجتك: ${score}%`;
       resultMsg.classList.remove("hidden");
-
-      // عرض الأسئلة مع التصحيح
-      const reviewDiv = document.createElement("div");
-      reviewDiv.innerHTML = `<h3 class="text-xl font-bold text-indigo-700 mt-8 mb-4">📋 مراجعة الأسئلة:</h3>` + answerReview;
-      quizContainer.appendChild(reviewDiv);
+      submitBtn.disabled = true;
 
       // عرض الشهادة
       document.getElementById("certStudentName").textContent = `الطالب: ${student.fullName || 'طالب مجهول'}`;
@@ -171,6 +173,19 @@
       document.getElementById("certScore").textContent = score;
       document.getElementById("certDate").textContent = new Date().toLocaleDateString("ar-EG");
       document.getElementById("certificateBox").classList.remove("hidden");
+
+      // عرض الأسئلة بعد الحل
+      quizContainer.innerHTML = "";
+      answersList.forEach((item, i) => {
+        const box = document.createElement("div");
+        box.className = "border p-4 rounded bg-gray-50 mb-4";
+        box.innerHTML = `
+          <h3 class="font-bold">${i + 1}. ${item.question}</h3>
+          <p class="text-sm">إجابتك: <span class="${item.selected === item.correct ? 'text-green-600' : 'text-red-600'}">${item.selected}</span></p>
+          <p class="text-sm">الإجابة الصحيحة: <span class="text-green-600">${item.correct}</span></p>
+        `;
+        quizContainer.appendChild(box);
+      });
     }
 
     function downloadCertificate() {
