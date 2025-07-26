@@ -1,91 +1,89 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>مشاهدة الفيديو</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="https://cdn.tailwindcss.com">
+  <style>
+    body { font-family: 'Tajawal', sans-serif; margin: 0; background-color: #f9fafb; }
+    #videoFrame { width: 100%; height: 100vh; border: none; }
+    #errorBox { color: red; text-align: center; margin-top: 50px; font-size: 1.2rem; }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <div id="video-container" class="w-full max-w-3xl p-4 bg-white rounded-xl shadow-lg hidden">
-    <div class="relative pt-[56.25%]">
-      <iframe id="videoFrame" class="absolute top-0 left-0 w-full h-full rounded-xl" 
-              frameborder="0" allowfullscreen allow="autoplay"></iframe>
-    </div>
-  </div>
-  <div id="error" class="text-center text-red-600 font-bold text-xl hidden mt-10"></div>
+<body>
+  <div id="errorBox" style="display: none;"></div>
+  <iframe id="videoFrame" allowfullscreen style="display: none;"></iframe>
 
   <script>
-    // إعداد Firebase
-    const firebaseConfig = {
+    // Firebase config
+    firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-      projectId: "hhhhhh-d4fb8",
-    };
-    firebase.initializeApp(firebaseConfig);
+      projectId: "hhhhhh-d4fb8"
+    });
+
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const errorDiv = document.getElementById("error");
-    const videoContainer = document.getElementById("video-container");
-    const videoFrame = document.getElementById("videoFrame");
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = decodeURIComponent(params.get("url"));
+    const videoTitle = decodeURIComponent(params.get("title"));
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const contentId = urlParams.get("id"); // تأكد أن الرابط يحتوي على ?id=xxxx
+    const iframe = document.getElementById("videoFrame");
+    const errorBox = document.getElementById("errorBox");
 
-    if (!contentId) {
-      showError("رابط غير صالح");
-    }
-
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) return showError("يجب تسجيل الدخول أولاً");
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        errorBox.textContent = "يجب تسجيل الدخول أولاً.";
+        errorBox.style.display = "block";
+        return;
+      }
 
       try {
-        // جلب بيانات الطالب
-        const studentDoc = await db.collection("students").doc(user.uid).get();
-        const studentData = studentDoc.data();
-        if (!studentData || !studentData.enrolledCourses) return showError("أنت غير مشترك في أي كورس");
-
-        // جلب المحتوى
-        const contentDoc = await db.collection("lectureContent").doc(contentId).get();
-        if (!contentDoc.exists) return showError("المحتوى غير موجود");
-
-        const contentData = contentDoc.data();
-        if (contentData.type !== "video") return showError("هذا ليس فيديو");
-
-        // التحقق من الاشتراك في الكورس
-        const lectureSnapshot = await db.collection("lectures").doc(contentData.lectureId).get();
-        const lectureData = lectureSnapshot.data();
-        if (!lectureData || !studentData.enrolledCourses.includes(lectureData.courseId)) {
-          return showError("غير مسموح لك بمشاهدة هذا الفيديو");
+        const userDoc = await db.collection("students").doc(user.uid).get();
+        if (!userDoc.exists) {
+          throw new Error("لا يوجد بيانات للمستخدم.");
         }
 
-        // استخراج ID الفيديو من رابط YouTube
-        const videoId = extractYouTubeId(contentData.url);
-        if (!videoId) return showError("رابط الفيديو غير صالح");
+        const studentData = userDoc.data();
+        const enrolledCourses = studentData.enrolledCourses || [];
 
-        videoFrame.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&rel=0`;
-        videoContainer.classList.remove("hidden");
+        // جلب الكورس المرتبط برابط الفيديو
+        const videoSnapshot = await db.collection("lectureContent").where("url", "==", videoUrl).get();
+        if (videoSnapshot.empty) {
+          throw new Error("لا يمكن العثور على هذا الفيديو.");
+        }
+
+        const videoData = videoSnapshot.docs[0].data();
+        const lectureId = videoData.lectureId;
+
+        const lectureSnapshot = await db.collection("lectures").doc(lectureId).get();
+        if (!lectureSnapshot.exists) {
+          throw new Error("لا يمكن العثور على المحاضرة.");
+        }
+
+        const courseId = lectureSnapshot.data().courseId;
+
+        // التحقق من اشتراك الطالب في الكورس
+        if (!enrolledCourses.includes(courseId)) {
+          errorBox.textContent = "غير مسموح لك بمشاهدة هذا الفيديو. يرجى الاشتراك أولاً.";
+          errorBox.style.display = "block";
+          return;
+        }
+
+        // عرض الفيديو
+        iframe.src = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1";
+        iframe.style.display = "block";
 
       } catch (err) {
         console.error(err);
-        showError("حدث خطأ أثناء تحميل الفيديو");
+        errorBox.textContent = err.message || "حدث خطأ أثناء تحميل الفيديو.";
+        errorBox.style.display = "block";
       }
     });
-
-    function extractYouTubeId(url) {
-      const regex = /(?:youtube\.com.*(?:v=|\/embed\/)|youtu\.be\/)([^"&?/ ]{11})/;
-      const match = url.match(regex);
-      return match ? match[1] : null;
-    }
-
-    function showError(message) {
-      errorDiv.textContent = message;
-      errorDiv.classList.remove("hidden");
-    }
   </script>
 </body>
 </html>
