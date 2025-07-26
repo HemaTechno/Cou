@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>منصة التعليم - مشاهدة الفيديو</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
@@ -31,8 +31,8 @@
     
     body {
       font-family: 'Tajawal', sans-serif;
-      background-color: var(--light-color);
-      color: var(--dark-color);
+      background-color: var(--dark-color);
+      color: var(--light-color);
       line-height: 1.6;
     }
     
@@ -44,12 +44,12 @@
     
     /* Header Styles */
     .header {
-      background-color: white;
-      box-shadow: var(--box-shadow);
+      background-color: rgba(0, 0, 0, 0.8);
       padding: 1rem 0;
       position: sticky;
       top: 0;
       z-index: 100;
+      backdrop-filter: blur(5px);
     }
     
     .header-content {
@@ -61,7 +61,7 @@
     .logo {
       font-size: 1.5rem;
       font-weight: 700;
-      color: var(--primary-color);
+      color: white;
       text-decoration: none;
       display: flex;
       align-items: center;
@@ -90,81 +90,149 @@
       font-weight: bold;
     }
     
-    /* Video Container */
-    .video-container {
+    /* Video Wrapper */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1200px;
+      margin: 2rem auto;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
       background-color: black;
-      height: calc(100vh - 80px);
-      display: flex;
-      flex-direction: column;
     }
     
-    .video-header {
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+      height: 0;
+    }
+    
+    #videoPlayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    /* Video Controls */
+    .video-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
       padding: 1rem;
-      background-color: rgba(0, 0, 0, 0.7);
-      color: white;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 10;
     }
     
-    .video-title {
-      font-size: 1.2rem;
-      font-weight: 500;
+    .video-wrapper:hover .video-controls {
+      opacity: 1;
     }
     
-    .back-btn {
-      background-color: transparent;
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .control-btn {
+      background: none;
       border: none;
       color: white;
-      font-size: 1rem;
+      font-size: 1.2rem;
       cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    #videoFrame {
-      flex-grow: 1;
-      border: none;
-      width: 100%;
-    }
-    
-    /* Error Box */
-    .error-container {
-      display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      transition: all 0.2s ease;
+    }
+    
+    .control-btn:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: scale(1.1);
+    }
+    
+    .control-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .progress-container {
+      flex-grow: 1;
+      height: 5px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      margin: 0 1rem;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background-color: var(--primary-color);
+      border-radius: 5px;
+      position: relative;
+    }
+    
+    .time-display {
+      color: white;
+      font-size: 0.9rem;
+      min-width: 80px;
+      text-align: center;
+    }
+    
+    /* Access Layer */
+    .access-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
       padding: 2rem;
       text-align: center;
     }
     
-    .error-box {
-      background-color: white;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      padding: 2rem;
+    .access-content {
       max-width: 600px;
       width: 100%;
+      background-color: var(--dark-color);
+      border-radius: var(--border-radius);
+      padding: 2rem;
+      box-shadow: var(--box-shadow);
     }
     
-    .error-icon {
+    .access-icon {
       font-size: 3rem;
-      color: var(--danger-color);
+      color: var(--primary-color);
       margin-bottom: 1rem;
     }
     
-    .error-title {
-      font-size: 1.5rem;
+    .access-title {
+      font-size: 1.8rem;
       font-weight: 700;
       margin-bottom: 1rem;
-      color: var(--danger-color);
     }
     
-    .error-message {
+    .access-message {
       font-size: 1.1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      line-height: 1.8;
     }
     
     .action-btn {
@@ -215,14 +283,23 @@
     
     /* Responsive */
     @media (max-width: 768px) {
-      .video-header {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
+      .video-controls {
+        opacity: 1;
+        padding: 0.5rem;
       }
       
-      .error-box {
+      .control-btn {
+        font-size: 1rem;
+        width: 35px;
+        height: 35px;
+      }
+      
+      .access-content {
         padding: 1.5rem;
+      }
+      
+      .access-title {
+        font-size: 1.5rem;
       }
     }
   </style>
@@ -246,29 +323,43 @@
     </div>
   </header>
 
-  <!-- Video Container -->
-  <div id="videoContainer" class="video-container" style="display: none;">
-    <div class="video-header">
-      <button class="back-btn" id="backBtn">
-        <i class="fas fa-arrow-right"></i>
-        <span>العودة</span>
-      </button>
-      <h1 class="video-title" id="videoTitle"></h1>
+  <!-- Video Player -->
+  <div class="container">
+    <div class="video-wrapper" id="videoWrapper" style="display: none;">
+      <div class="video-container">
+        <iframe id="videoPlayer" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      </div>
+      <div class="video-controls">
+        <div class="control-group">
+          <button class="control-btn" id="playPauseBtn">
+            <i class="fas fa-pause" id="playPauseIcon"></i>
+          </button>
+          <span class="time-display" id="currentTime">00:00</span>
+        </div>
+        <div class="progress-container" id="progressContainer">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="control-group">
+          <span class="time-display" id="duration">00:00</span>
+          <button class="control-btn" id="fullscreenBtn">
+            <i class="fas fa-expand"></i>
+          </button>
+        </div>
+      </div>
     </div>
-    <iframe id="videoFrame" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
   </div>
 
-  <!-- Error Container -->
-  <div id="errorContainer" class="error-container" style="display: none;">
-    <div class="error-box">
-      <div class="error-icon">
-        <i class="fas fa-exclamation-triangle"></i>
+  <!-- Access Layer -->
+  <div id="accessLayer" class="access-layer" style="display: none;">
+    <div class="access-content">
+      <div class="access-icon">
+        <i class="fas fa-lock" id="accessIcon"></i>
       </div>
-      <h2 class="error-title" id="errorTitle">حدث خطأ</h2>
-      <p class="error-message" id="errorMessage"></p>
-      <button class="action-btn" id="actionBtn">
-        <i class="fas fa-sign-in-alt"></i>
-        <span>تسجيل الدخول</span>
+      <h2 class="access-title" id="accessTitle">يجب تسجيل الدخول</h2>
+      <p class="access-message" id="accessMessage">يجب عليك تسجيل الدخول لمشاهدة هذا الفيديو</p>
+      <button class="action-btn" id="accessActionBtn">
+        <i class="fas fa-sign-in-alt" id="accessActionIcon"></i>
+        <span id="accessActionText">تسجيل الدخول</span>
       </button>
     </div>
   </div>
@@ -291,39 +382,195 @@
     const header = document.getElementById("header");
     const userInfo = document.getElementById("userInfo");
     const userAvatar = document.getElementById("userAvatar");
-    const videoContainer = document.getElementById("videoContainer");
-    const videoTitle = document.getElementById("videoTitle");
-    const videoFrame = document.getElementById("videoFrame");
-    const backBtn = document.getElementById("backBtn");
-    const errorContainer = document.getElementById("errorContainer");
-    const errorTitle = document.getElementById("errorTitle");
-    const errorMessage = document.getElementById("errorMessage");
-    const actionBtn = document.getElementById("actionBtn");
+    const videoWrapper = document.getElementById("videoWrapper");
+    const videoPlayer = document.getElementById("videoPlayer");
+    const accessLayer = document.getElementById("accessLayer");
+    const accessTitle = document.getElementById("accessTitle");
+    const accessMessage = document.getElementById("accessMessage");
+    const accessActionBtn = document.getElementById("accessActionBtn");
+    const accessActionText = document.getElementById("accessActionText");
+    const accessActionIcon = document.getElementById("accessActionIcon");
+    const accessIcon = document.getElementById("accessIcon");
+
+    // Video Controls
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const playPauseIcon = document.getElementById("playPauseIcon");
+    const currentTimeDisplay = document.getElementById("currentTime");
+    const durationDisplay = document.getElementById("duration");
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
 
     // Get URL parameters
     const params = new URLSearchParams(window.location.search);
     const videoUrl = decodeURIComponent(params.get("url"));
     const videoTitleParam = decodeURIComponent(params.get("title") || "فيديو تعليمي");
 
-    // Handle back button
-    backBtn.addEventListener("click", () => {
-      window.history.back();
-    });
+    // Video state
+    let isPlaying = false;
+    let videoDuration = 0;
 
-    // Handle action button
-    actionBtn.addEventListener("click", () => {
+    // Initialize video player
+    function initVideoPlayer(url) {
+      const embedUrl = convertToEmbedUrl(url) + "?autoplay=1&rel=0&modestbranding=1";
+      videoPlayer.src = embedUrl;
+      
+      // Listen for messages from the iframe (for YouTube API)
+      window.addEventListener('message', onMessageReceived);
+      
+      // Show video wrapper
+      videoWrapper.style.display = "block";
+      
+      // Set up controls
+      setupControls();
+    }
+
+    // Setup video controls
+    function setupControls() {
+      // Play/Pause button
+      playPauseBtn.addEventListener('click', togglePlayPause);
+      
+      // Fullscreen button
+      fullscreenBtn.addEventListener('click', toggleFullscreen);
+      
+      // Progress bar
+      progressContainer.addEventListener('click', seekVideo);
+      
+      // Update time periodically
+      setInterval(updateTimeDisplay, 1000);
+    }
+
+    // Toggle play/pause
+    function togglePlayPause() {
+      if (isPlaying) {
+        postMessageToPlayer('pauseVideo');
+        playPauseIcon.className = 'fas fa-play';
+      } else {
+        postMessageToPlayer('playVideo');
+        playPauseIcon.className = 'fas fa-pause';
+      }
+      isPlaying = !isPlaying;
+    }
+
+    // Toggle fullscreen
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        videoWrapper.requestFullscreen().catch(err => {
+          console.error('Error attempting to enable fullscreen:', err);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Seek video
+    function seekVideo(e) {
+      const percent = e.offsetX / progressContainer.offsetWidth;
+      const seekTime = percent * videoDuration;
+      postMessageToPlayer('seekTo', seekTime);
+    }
+
+    // Update time display
+    function updateTimeDisplay() {
+      postMessageToPlayer('getCurrentTime');
+      postMessageToPlayer('getDuration');
+    }
+
+    // Handle messages from iframe
+    function onMessageReceived(event) {
+      const data = event.data;
+      
+      // Handle YouTube player messages
+      if (data.event === 'timeupdate') {
+        const currentTime = data.currentTime;
+        const duration = data.duration;
+        
+        // Update progress bar
+        const percent = (currentTime / duration) * 100;
+        progressBar.style.width = percent + '%';
+        
+        // Update time displays
+        currentTimeDisplay.textContent = formatTime(currentTime);
+        durationDisplay.textContent = formatTime(duration);
+        
+        // Update video duration
+        videoDuration = duration;
+      } else if (data.event === 'playbackStatus') {
+        isPlaying = data.isPlaying;
+        playPauseIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+      }
+    }
+
+    // Post message to player (YouTube API)
+    function postMessageToPlayer(action, value) {
+      videoPlayer.contentWindow.postMessage({
+        event: 'command',
+        func: action,
+        args: value !== undefined ? [value] : null
+      }, '*');
+    }
+
+    // Format time (seconds to MM:SS)
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Show access layer
+    function showAccessLayer(title, message, actionText, icon) {
+      accessTitle.textContent = title;
+      accessMessage.textContent = message;
+      accessActionText.textContent = actionText;
+      
+      if (icon === 'lock') {
+        accessIcon.className = 'fas fa-lock';
+        accessActionIcon.className = 'fas fa-sign-in-alt';
+      } else if (icon === 'warning') {
+        accessIcon.className = 'fas fa-exclamation-triangle';
+        accessActionIcon.className = 'fas fa-redo';
+      }
+      
+      accessLayer.style.display = "flex";
+      loadingContainer.style.display = "none";
+    }
+
+    // Handle access action button
+    accessActionBtn.addEventListener('click', () => {
       if (auth.currentUser) {
         window.location.reload();
       } else {
-        window.location.href = "/login";
+        window.location.href = "/login?redirect=" + encodeURIComponent(window.location.href);
       }
     });
+
+    // Convert to embed URL
+    function convertToEmbedUrl(url) {
+      // Handle YouTube URLs
+      if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+        const match = url.match(regExp);
+        const videoId = (match && match[2].length === 11) ? match[2] : null;
+        return `https://www.youtube.com/embed/${videoId}?enablejsapi=1`;
+      }
+      
+      // Handle Vimeo URLs
+      if (url.includes("vimeo.com")) {
+        const regExp = /^.*(vimeo.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/;
+        const match = url.match(regExp);
+        const videoId = match ? match[5] : null;
+        return `https://player.vimeo.com/video/${videoId}`;
+      }
+      
+      // Default case (direct video URL)
+      return url;
+    }
 
     // Auth state listener
     auth.onAuthStateChanged(async user => {
       try {
         if (!user) {
-          showError("يجب تسجيل الدخول", "يجب عليك تسجيل الدخول لمشاهدة هذا الفيديو", "تسجيل الدخول");
+          showAccessLayer("يجب تسجيل الدخول", "يجب عليك تسجيل الدخول لمشاهدة هذا الفيديو", "تسجيل الدخول", "lock");
           return;
         }
 
@@ -358,56 +605,25 @@
 
         // Check if user is enrolled in the course
         if (!enrolledCourses.includes(courseId)) {
-          showError(
+          showAccessLayer(
             "غير مسموح بالوصول", 
             "عذراً، يجب عليك الاشتراك في هذه الدورة التدريبية لمشاهدة هذا الفيديو.", 
-            "الذهاب للدورة"
+            "الذهاب للدورة",
+            "warning"
           );
           return;
         }
 
-        // Show video
-        videoTitle.textContent = videoTitleParam;
-        videoFrame.src = convertToEmbedUrl(videoUrl) + "?autoplay=1&rel=0&modestbranding=1";
-        videoContainer.style.display = "flex";
+        // Initialize video player
+        initVideoPlayer(videoUrl);
         
       } catch (err) {
         console.error("Error:", err);
-        showError("حدث خطأ", err.message || "حدث خطأ غير متوقع أثناء تحميل الفيديو.", "حاول مرة أخرى");
+        showAccessLayer("حدث خطأ", err.message || "حدث خطأ غير متوقع أثناء تحميل الفيديو.", "حاول مرة أخرى", "warning");
       } finally {
         loadingContainer.style.display = "none";
       }
     });
-
-    // Helper functions
-    function showError(title, message, actionText) {
-      errorTitle.textContent = title;
-      errorMessage.textContent = message;
-      actionBtn.innerHTML = `<i class="fas fa-redo"></i><span>${actionText}</span>`;
-      errorContainer.style.display = "flex";
-      loadingContainer.style.display = "none";
-    }
-
-    function convertToEmbedUrl(url) {
-      // Handle YouTube URLs
-      if (url.includes("youtube.com") || url.includes("youtu.be")) {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-        const videoId = (match && match[2].length === 11) ? match[2] : null;
-        return `https://www.youtube.com/embed/${videoId}`;
-      }
-      
-      // Handle Vimeo URLs
-      if (url.includes("vimeo.com")) {
-        const regExp = /^.*(vimeo.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/;
-        const match = url.match(regExp);
-        const videoId = match ? match[5] : null;
-        return `https://player.vimeo.com/video/${videoId}`;
-      }
-      
-      // Default case (direct video URL)
-      return url;
-    }
   </script>
 </body>
 </html>
