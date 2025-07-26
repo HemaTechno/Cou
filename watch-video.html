@@ -3,67 +3,163 @@
 <head>
   <meta charset="UTF-8" />
   <title>منصة التعليم | مشاهدة الفيديو</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; margin: 0; background-color: #f0f4f8; }
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3a0ca3;
+      --dark-color: #1e293b;
+      --light-color: #f0f4f8;
+      --accent-color: #f72585;
+      --success-color: #4cc9f0;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Tajawal', sans-serif;
+      margin: 0;
+      background-color: var(--light-color);
+      color: #333;
+      line-height: 1.6;
+    }
+    
     .header {
-      background-color: #1e293b;
+      background: linear-gradient(135deg, var(--dark-color), var(--secondary-color));
       color: white;
       padding: 15px 25px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 100;
     }
+    
+    .header span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .video-container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    
     .video-wrapper {
       position: relative;
-      max-width: 1000px;
-      margin: 30px auto;
-      border-radius: 12px;
+      width: 100%;
+      border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      background: #000;
+      transition: all 0.3s ease;
     }
+    
+    .video-wrapper.fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      border-radius: 0;
+      margin: 0;
+    }
+    
+    .video-wrapper.portrait {
+      max-width: 400px;
+      margin: 30px auto;
+    }
+    
     iframe {
       width: 100%;
       aspect-ratio: 16/9;
       border: none;
       display: block;
     }
+    
+    .portrait iframe {
+      aspect-ratio: 9/16;
+    }
+    
     .overlay {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0; 
+      left: 0;
+      width: 100%; 
+      height: 100%;
       z-index: 10;
       background: transparent;
     }
+    
     .controls {
       position: absolute;
-      bottom: 10px;
-      left: 10px;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
       z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
+    
+    .video-wrapper:hover .controls {
+      opacity: 1;
+    }
+    
     .controls button {
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.7);
       color: white;
-      padding: 8px 16px;
+      padding: 10px 18px;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       cursor: pointer;
       font-weight: bold;
+      font-family: 'Tajawal', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
+    
+    .controls button:hover {
+      background: rgba(0,0,0,0.9);
+      transform: translateY(-2px);
+    }
+    
+    .controls button:active {
+      transform: translateY(0);
+    }
+    
     .watermark {
       position: absolute;
-      font-size: 1.2rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      color: rgba(255, 255, 255, 0.15);
+      color: rgba(255, 255, 255, 0.1);
       z-index: 15;
       pointer-events: none;
       animation: float 20s linear infinite;
       white-space: nowrap;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
+    
     @keyframes float {
       0% { transform: translateX(-10%) translateY(0%) rotate(0deg); }
       25% { transform: translateX(120%) translateY(30%) rotate(10deg); }
@@ -71,35 +167,115 @@
       75% { transform: translateX(-20%) translateY(40%) rotate(5deg); }
       100% { transform: translateX(-10%) translateY(0%) rotate(0deg); }
     }
+    
     .error-box {
       text-align: center;
-      margin-top: 30px;
-      color: red;
+      margin: 30px auto;
+      padding: 20px;
+      color: #fff;
+      background-color: #e63946;
+      border-radius: 10px;
       font-weight: bold;
+      max-width: 80%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
+    
     .info-bar {
       text-align: center;
-      margin-top: 15px;
-      font-size: 1rem;
-      color: #1e293b;
+      margin: 25px auto;
+      font-size: 1.1rem;
+      color: var(--dark-color);
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      max-width: 90%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    
+    .info-bar span {
+      margin: 0 10px;
+      display: inline-block;
+    }
+    
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(67, 97, 238, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+      .header {
+        padding: 12px 15px;
+        font-size: 1rem;
+      }
+      
+      .info-bar {
+        font-size: 0.9rem;
+        padding: 10px;
+      }
+      
+      .controls {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+      }
+      
+      .controls button {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+    }
+    
+    /* Portrait mode for mobile */
+    @media (max-width: 500px) and (orientation: portrait) {
+      .video-wrapper:not(.fullscreen) {
+        max-width: 100%;
+      }
+      
+      .video-wrapper:not(.fullscreen) iframe {
+        aspect-ratio: 9/16;
+      }
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <span>📚 منصة التعليم</span>
-    <span id="studentCoins">💰 تحميل...</span>
+    <span><i class="fas fa-book-open"></i> منصة التعليم</span>
+    <span id="studentCoins"><i class="fas fa-coins"></i> تحميل...</span>
   </div>
 
   <div class="info-bar" id="courseInfo"></div>
 
-  <div class="video-wrapper">
-    <iframe id="videoFrame" allowfullscreen allow="autoplay"></iframe>
-    <div class="overlay"></div>
-    <div class="controls">
-      <button id="playPause">⏸ إيقاف</button>
+  <div class="video-container">
+    <div class="video-wrapper" id="videoWrapper">
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+      </div>
+      <iframe id="videoFrame" allowfullscreen allow="autoplay"></iframe>
+      <div class="overlay"></div>
+      <div class="controls">
+        <button id="playPause"><i class="fas fa-pause"></i> إيقاف</button>
+        <div>
+          <button id="fullscreenBtn"><i class="fas fa-expand"></i> ملء الشاشة</button>
+          <button id="rotateBtn"><i class="fas fa-mobile-alt"></i> تدوير</button>
+        </div>
+      </div>
+      <div class="watermark" id="watermark">Student</div>
     </div>
-    <div class="watermark" id="watermark">Student</div>
   </div>
 
   <div class="error-box" id="errorBox" style="display: none;"></div>
@@ -124,8 +300,76 @@
     const courseInfo = document.getElementById("courseInfo");
     const studentCoins = document.getElementById("studentCoins");
     const playPauseBtn = document.getElementById("playPause");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const rotateBtn = document.getElementById("rotateBtn");
+    const videoWrapper = document.getElementById("videoWrapper");
+    const loadingElement = document.getElementById("loading");
 
     let isPlaying = true;
+    let isPortrait = false;
+    let player;
+
+    // Fullscreen functionality
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        videoWrapper.classList.add('fullscreen');
+        if (videoWrapper.requestFullscreen) {
+          videoWrapper.requestFullscreen();
+        } else if (videoWrapper.webkitRequestFullscreen) {
+          videoWrapper.webkitRequestFullscreen();
+        } else if (videoWrapper.msRequestFullscreen) {
+          videoWrapper.msRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+        videoWrapper.classList.remove('fullscreen');
+      }
+    }
+
+    // Rotate video for mobile
+    function togglePortrait() {
+      isPortrait = !isPortrait;
+      videoWrapper.classList.toggle('portrait', isPortrait);
+      
+      if (player) {
+        const width = isPortrait ? window.innerWidth : videoWrapper.clientWidth;
+        const height = isPortrait ? window.innerHeight : width * (9/16);
+        player.setSize(width, height);
+      }
+      
+      rotateBtn.innerHTML = isPortrait 
+        ? '<i class="fas fa-desktop"></i> أفقي' 
+        : '<i class="fas fa-mobile-alt"></i> عمودي';
+    }
+
+    // Event listeners
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+    rotateBtn.addEventListener('click', togglePortrait);
+
+    // Handle fullscreen change events
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        videoWrapper.classList.remove('fullscreen');
+      }
+    });
+
+    document.addEventListener('webkitfullscreenchange', () => {
+      if (!document.webkitFullscreenElement) {
+        videoWrapper.classList.remove('fullscreen');
+      }
+    });
+
+    document.addEventListener('msfullscreenchange', () => {
+      if (!document.msFullscreenElement) {
+        videoWrapper.classList.remove('fullscreen');
+      }
+    });
 
     auth.onAuthStateChanged(async user => {
       if (!user) {
@@ -138,8 +382,8 @@
         const userDoc = await db.collection("students").doc(user.uid).get();
         const studentData = userDoc.data();
 
-        watermark.textContent = `🎓 ${studentData.studentNumber || user.uid}`;
-        studentCoins.textContent = `💰 ${studentData.coins || 0} كوين`;
+        watermark.textContent = `🎓 ${studentData.studentNumber || user.uid.substring(0, 8)}`;
+        studentCoins.innerHTML = `<i class="fas fa-coins"></i> ${studentData.coins || 0} كوين`;
 
         const videoSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
         if (videoSnap.empty) throw new Error("❌ لا يمكن العثور على الفيديو.");
@@ -151,7 +395,10 @@
         const courseSnap = await db.collection("courses").doc(lectureData.courseId).get();
         const courseData = courseSnap.data();
 
-        courseInfo.textContent = `📘 الكورس: ${courseData.name} | 🎥 المحاضرة: ${lectureData.lectureTitle}`;
+        courseInfo.innerHTML = `
+          <span><i class="fas fa-book" style="color: var(--primary-color)"></i> الكورس: ${courseData.name}</span>
+          <span><i class="fas fa-video" style="color: var(--accent-color)"></i> المحاضرة: ${lectureData.lectureTitle}</span>
+        `;
 
         if (!studentData.enrolledCourses.includes(lectureData.courseId)) {
           errorBox.textContent = "❌ غير مشترك في هذا الكورس.";
@@ -159,7 +406,7 @@
           return;
         }
 
-        const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1&enablejsapi=1";
+        const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1&enablejsapi=1&rel=0&modestbranding=1";
         iframe.src = embedUrl;
 
         // YouTube API setup
@@ -168,24 +415,29 @@
         document.body.appendChild(tag);
 
         window.onYouTubeIframeAPIReady = () => {
-          window.player = new YT.Player("videoFrame", {
+          player = new YT.Player("videoFrame", {
             events: {
-              onReady: () => player.playVideo(),
+              onReady: (e) => {
+                e.target.playVideo();
+                loadingElement.style.display = 'none';
+              },
               onStateChange: (e) => {
                 const isPaused = e.data === YT.PlayerState.PAUSED;
-                playPauseBtn.textContent = isPaused ? "▶️ تشغيل" : "⏸ إيقاف";
+                playPauseBtn.innerHTML = isPaused 
+                  ? '<i class="fas fa-play"></i> تشغيل' 
+                  : '<i class="fas fa-pause"></i> إيقاف';
               }
             }
           });
         };
 
         playPauseBtn.onclick = () => {
-          if (window.player) {
-            const state = window.player.getPlayerState();
+          if (player) {
+            const state = player.getPlayerState();
             if (state === YT.PlayerState.PLAYING) {
-              window.player.pauseVideo();
+              player.pauseVideo();
             } else {
-              window.player.playVideo();
+              player.playVideo();
             }
           }
         };
@@ -196,10 +448,16 @@
             e.preventDefault();
           }
         });
+        
+        // Disable right click
+        document.addEventListener('contextmenu', e => {
+          e.preventDefault();
+        });
       } catch (err) {
         console.error(err);
         errorBox.textContent = err.message || "❌ حدث خطأ أثناء تحميل الفيديو.";
         errorBox.style.display = "block";
+        loadingElement.style.display = 'none';
       }
     });
   </script>
