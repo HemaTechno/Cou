@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>منصة التعليم - مشاهدة الفيديو</title>
+  <title>منصة التعليم - مشغل الفيديو</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,123 +31,138 @@
     
     body {
       font-family: 'Tajawal', sans-serif;
-      background-color: var(--dark-color);
+      background-color: #000;
       color: var(--light-color);
       line-height: 1.6;
     }
     
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 20px;
-    }
-    
-    /* Header Styles */
-    .header {
-      background-color: rgba(0, 0, 0, 0.8);
-      padding: 1rem 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(5px);
-    }
-    
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .logo {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: white;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .logo i {
-      font-size: 1.8rem;
-    }
-    
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background-color: var(--secondary-color);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-    
-    /* Video Wrapper */
-    .video-wrapper {
+    /* Video Container */
+    .video-main-container {
       position: relative;
       width: 100%;
-      max-width: 1200px;
-      margin: 2rem auto;
-      border-radius: var(--border-radius);
+      height: 100vh;
       overflow: hidden;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      background-color: black;
     }
     
-    .video-container {
-      position: relative;
-      padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-      height: 0;
-    }
-    
-    #videoPlayer {
+    .video-overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      border: none;
+      background-color: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      transition: opacity 0.3s ease;
+    }
+    
+    .video-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .video-player-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    
+    #videoPlayer {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background-color: #000;
     }
     
     /* Video Controls */
-    .video-controls {
+    .video-controls-container {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-      padding: 1rem;
+      padding: 15px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      z-index: 10;
       opacity: 0;
       transition: opacity 0.3s ease;
-      z-index: 10;
     }
     
-    .video-wrapper:hover .video-controls {
+    .video-main-container:hover .video-controls-container {
       opacity: 1;
     }
     
-    .control-group {
+    .progress-controls {
+      width: 100%;
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .time-display {
+      color: white;
+      font-size: 14px;
+      min-width: 50px;
+      text-align: center;
+    }
+    
+    .progress-bar-container {
+      flex-grow: 1;
+      height: 5px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background-color: var(--primary-color);
+      border-radius: 3px;
+      position: relative;
+    }
+    
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      right: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      background-color: white;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    .progress-bar-container:hover .progress-bar::after {
+      opacity: 1;
+    }
+    
+    .main-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    
+    .left-controls, .right-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
     }
     
     .control-btn {
       background: none;
       border: none;
       color: white;
-      font-size: 1.2rem;
+      font-size: 18px;
       cursor: pointer;
       width: 40px;
       height: 40px;
@@ -167,33 +182,17 @@
       transform: scale(0.95);
     }
     
-    .progress-container {
-      flex-grow: 1;
-      height: 5px;
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 5px;
-      margin: 0 1rem;
-      cursor: pointer;
-      position: relative;
-    }
-    
-    .progress-bar {
-      height: 100%;
+    .play-pause-btn {
       background-color: var(--primary-color);
-      border-radius: 5px;
-      position: relative;
     }
     
-    .time-display {
-      color: white;
-      font-size: 0.9rem;
-      min-width: 80px;
-      text-align: center;
+    .play-pause-btn:hover {
+      background-color: var(--secondary-color);
     }
     
     /* Access Layer */
     .access-layer {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       right: 0;
@@ -203,68 +202,67 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 1000;
-      padding: 2rem;
+      z-index: 30;
+      padding: 20px;
       text-align: center;
     }
     
     .access-content {
-      max-width: 600px;
+      max-width: 500px;
       width: 100%;
-      background-color: var(--dark-color);
+      background-color: rgba(30, 41, 59, 0.9);
       border-radius: var(--border-radius);
-      padding: 2rem;
+      padding: 30px;
       box-shadow: var(--box-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
     
     .access-icon {
-      font-size: 3rem;
+      font-size: 50px;
       color: var(--primary-color);
-      margin-bottom: 1rem;
+      margin-bottom: 20px;
     }
     
     .access-title {
-      font-size: 1.8rem;
+      font-size: 24px;
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 15px;
     }
     
     .access-message {
-      font-size: 1.1rem;
-      margin-bottom: 2rem;
-      line-height: 1.8;
+      font-size: 16px;
+      margin-bottom: 25px;
+      line-height: 1.7;
+      opacity: 0.9;
     }
     
     .action-btn {
       background-color: var(--primary-color);
       color: white;
       border: none;
-      padding: 0.75rem 1.5rem;
+      padding: 12px 25px;
       border-radius: var(--border-radius);
-      font-size: 1rem;
+      font-size: 16px;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 8px;
     }
     
     .action-btn:hover {
       background-color: var(--secondary-color);
       transform: translateY(-2px);
-    }
-    
-    .action-btn i {
-      font-size: 1rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
     
     /* Loading Spinner */
     .spinner {
       display: inline-block;
-      width: 30px;
-      height: 30px;
-      border: 3px solid rgba(255, 255, 255, 0.3);
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
       border-top-color: var(--primary-color);
       animation: spin 1s ease-in-out infinite;
@@ -275,31 +273,41 @@
     }
     
     .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 100;
     }
     
     /* Responsive */
     @media (max-width: 768px) {
-      .video-controls {
+      .video-controls-container {
         opacity: 1;
-        padding: 0.5rem;
+        padding: 10px;
       }
       
       .control-btn {
-        font-size: 1rem;
+        font-size: 16px;
         width: 35px;
         height: 35px;
       }
       
       .access-content {
-        padding: 1.5rem;
+        padding: 20px;
       }
       
       .access-title {
-        font-size: 1.5rem;
+        font-size: 20px;
+      }
+      
+      .access-message {
+        font-size: 14px;
       }
     }
   </style>
@@ -310,57 +318,61 @@
     <div class="spinner"></div>
   </div>
 
-  <!-- Header -->
-  <header class="header" id="header" style="display: none;">
-    <div class="container header-content">
-      <a href="/" class="logo">
-        <i class="fas fa-graduation-cap"></i>
-        <span>منصة التعليم</span>
-      </a>
-      <div class="user-info" id="userInfo">
-        <div class="user-avatar" id="userAvatar">?</div>
+  <!-- Video Container -->
+  <div class="video-main-container" id="videoMainContainer">
+    <!-- Access Layer -->
+    <div id="accessLayer" class="access-layer">
+      <div class="access-content">
+        <div class="access-icon">
+          <i class="fas fa-lock" id="accessIcon"></i>
+        </div>
+        <h2 class="access-title" id="accessTitle">يجب تسجيل الدخول</h2>
+        <p class="access-message" id="accessMessage">يجب عليك تسجيل الدخول لمشاهدة هذا الفيديو</p>
+        <button class="action-btn" id="accessActionBtn">
+          <i class="fas fa-sign-in-alt" id="accessActionIcon"></i>
+          <span id="accessActionText">تسجيل الدخول</span>
+        </button>
       </div>
     </div>
-  </header>
 
-  <!-- Video Player -->
-  <div class="container">
-    <div class="video-wrapper" id="videoWrapper" style="display: none;">
-      <div class="video-container">
-        <iframe id="videoPlayer" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
-      </div>
-      <div class="video-controls">
-        <div class="control-group">
-          <button class="control-btn" id="playPauseBtn">
-            <i class="fas fa-pause" id="playPauseIcon"></i>
-          </button>
-          <span class="time-display" id="currentTime">00:00</span>
-        </div>
-        <div class="progress-container" id="progressContainer">
-          <div class="progress-bar" id="progressBar"></div>
-        </div>
-        <div class="control-group">
-          <span class="time-display" id="duration">00:00</span>
-          <button class="control-btn" id="fullscreenBtn">
-            <i class="fas fa-expand"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Access Layer -->
-  <div id="accessLayer" class="access-layer" style="display: none;">
-    <div class="access-content">
-      <div class="access-icon">
-        <i class="fas fa-lock" id="accessIcon"></i>
-      </div>
-      <h2 class="access-title" id="accessTitle">يجب تسجيل الدخول</h2>
-      <p class="access-message" id="accessMessage">يجب عليك تسجيل الدخول لمشاهدة هذا الفيديو</p>
-      <button class="action-btn" id="accessActionBtn">
-        <i class="fas fa-sign-in-alt" id="accessActionIcon"></i>
-        <span id="accessActionText">تسجيل الدخول</span>
+    <!-- Video Overlay -->
+    <div class="video-overlay hidden" id="videoOverlay">
+      <button id="overlayPlayBtn" class="control-btn play-pause-btn" style="width: 80px; height: 80px; font-size: 30px;">
+        <i class="fas fa-play"></i>
       </button>
+    </div>
+
+    <!-- Video Player -->
+    <div class="video-player-container">
+      <iframe id="videoPlayer" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      
+      <!-- Video Controls -->
+      <div class="video-controls-container">
+        <div class="progress-controls">
+          <span class="time-display" id="currentTime">00:00</span>
+          <div class="progress-bar-container" id="progressBarContainer">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <span class="time-display" id="duration">00:00</span>
+        </div>
+        
+        <div class="main-controls">
+          <div class="left-controls">
+            <button class="control-btn play-pause-btn" id="playPauseBtn">
+              <i class="fas fa-pause" id="playPauseIcon"></i>
+            </button>
+            <button class="control-btn" id="volumeBtn">
+              <i class="fas fa-volume-up" id="volumeIcon"></i>
+            </button>
+          </div>
+          
+          <div class="right-controls">
+            <button class="control-btn" id="fullscreenBtn">
+              <i class="fas fa-expand"></i>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -379,11 +391,10 @@
 
     // DOM Elements
     const loadingContainer = document.getElementById("loadingContainer");
-    const header = document.getElementById("header");
-    const userInfo = document.getElementById("userInfo");
-    const userAvatar = document.getElementById("userAvatar");
-    const videoWrapper = document.getElementById("videoWrapper");
+    const videoMainContainer = document.getElementById("videoMainContainer");
     const videoPlayer = document.getElementById("videoPlayer");
+    const videoOverlay = document.getElementById("videoOverlay");
+    const overlayPlayBtn = document.getElementById("overlayPlayBtn");
     const accessLayer = document.getElementById("accessLayer");
     const accessTitle = document.getElementById("accessTitle");
     const accessMessage = document.getElementById("accessMessage");
@@ -397,9 +408,11 @@
     const playPauseIcon = document.getElementById("playPauseIcon");
     const currentTimeDisplay = document.getElementById("currentTime");
     const durationDisplay = document.getElementById("duration");
-    const progressContainer = document.getElementById("progressContainer");
+    const progressBarContainer = document.getElementById("progressBarContainer");
     const progressBar = document.getElementById("progressBar");
     const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const volumeBtn = document.getElementById("volumeBtn");
+    const volumeIcon = document.getElementById("volumeIcon");
 
     // Get URL parameters
     const params = new URLSearchParams(window.location.search);
@@ -408,72 +421,178 @@
 
     // Video state
     let isPlaying = false;
+    let isMuted = false;
     let videoDuration = 0;
+    let currentVideoTime = 0;
+    let isDraggingProgress = false;
+    let hideControlsTimeout;
 
     // Initialize video player
     function initVideoPlayer(url) {
-      const embedUrl = convertToEmbedUrl(url) + "?autoplay=1&rel=0&modestbranding=1";
+      const embedUrl = convertToEmbedUrl(url) + "?autoplay=1&rel=0&modestbranding=1&controls=0";
       videoPlayer.src = embedUrl;
       
       // Listen for messages from the iframe (for YouTube API)
       window.addEventListener('message', onMessageReceived);
       
-      // Show video wrapper
-      videoWrapper.style.display = "block";
-      
       // Set up controls
       setupControls();
+      
+      // Hide loading container
+      loadingContainer.style.display = "none";
     }
 
     // Setup video controls
     function setupControls() {
-      // Play/Pause button
+      // Play/Pause buttons
       playPauseBtn.addEventListener('click', togglePlayPause);
+      overlayPlayBtn.addEventListener('click', togglePlayPause);
       
       // Fullscreen button
       fullscreenBtn.addEventListener('click', toggleFullscreen);
       
+      // Volume button
+      volumeBtn.addEventListener('click', toggleMute);
+      
       // Progress bar
-      progressContainer.addEventListener('click', seekVideo);
+      progressBarContainer.addEventListener('click', seekVideo);
+      progressBarContainer.addEventListener('mousedown', startDragProgress);
+      document.addEventListener('mousemove', dragProgress);
+      document.addEventListener('mouseup', endDragProgress);
+      
+      // Video overlay events
+      videoPlayer.addEventListener('mouseenter', showOverlayControls);
+      videoPlayer.addEventListener('mouseleave', hideOverlayControls);
       
       // Update time periodically
-      setInterval(updateTimeDisplay, 1000);
+      setInterval(updateTimeDisplay, 500);
+      
+      // Auto-hide controls
+      setupControlsAutoHide();
     }
 
     // Toggle play/pause
     function togglePlayPause() {
       if (isPlaying) {
-        postMessageToPlayer('pauseVideo');
-        playPauseIcon.className = 'fas fa-play';
+        pauseVideo();
       } else {
-        postMessageToPlayer('playVideo');
-        playPauseIcon.className = 'fas fa-pause';
+        playVideo();
       }
-      isPlaying = !isPlaying;
+    }
+
+    function playVideo() {
+      postMessageToPlayer('playVideo');
+      playPauseIcon.className = 'fas fa-pause';
+      overlayPlayBtn.style.display = 'none';
+      videoOverlay.classList.add('hidden');
+      isPlaying = true;
+      resetControlsAutoHide();
+    }
+
+    function pauseVideo() {
+      postMessageToPlayer('pauseVideo');
+      playPauseIcon.className = 'fas fa-play';
+      overlayPlayBtn.style.display = 'flex';
+      videoOverlay.classList.remove('hidden');
+      isPlaying = false;
+      resetControlsAutoHide();
     }
 
     // Toggle fullscreen
     function toggleFullscreen() {
       if (!document.fullscreenElement) {
-        videoWrapper.requestFullscreen().catch(err => {
+        videoMainContainer.requestFullscreen().catch(err => {
           console.error('Error attempting to enable fullscreen:', err);
         });
       } else {
         document.exitFullscreen();
       }
+      resetControlsAutoHide();
+    }
+
+    // Toggle mute
+    function toggleMute() {
+      isMuted = !isMuted;
+      postMessageToPlayer(isMuted ? 'mute' : 'unMute');
+      volumeIcon.className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+      resetControlsAutoHide();
     }
 
     // Seek video
     function seekVideo(e) {
-      const percent = e.offsetX / progressContainer.offsetWidth;
+      if (isDraggingProgress) return;
+      
+      const rect = progressBarContainer.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
       const seekTime = percent * videoDuration;
-      postMessageToPlayer('seekTo', seekTime);
+      postMessageToPlayer('seekTo', seekTime, true);
+      resetControlsAutoHide();
+    }
+
+    // Progress bar dragging
+    function startDragProgress(e) {
+      isDraggingProgress = true;
+      dragProgress(e);
+    }
+
+    function dragProgress(e) {
+      if (!isDraggingProgress) return;
+      
+      const rect = progressBarContainer.getBoundingClientRect();
+      let percent = (e.clientX - rect.left) / rect.width;
+      percent = Math.max(0, Math.min(1, percent));
+      
+      progressBar.style.width = (percent * 100) + '%';
+      currentTimeDisplay.textContent = formatTime(percent * videoDuration);
+    }
+
+    function endDragProgress(e) {
+      if (!isDraggingProgress) return;
+      isDraggingProgress = false;
+      
+      const rect = progressBarContainer.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
+      const seekTime = percent * videoDuration;
+      postMessageToPlayer('seekTo', seekTime, true);
+      resetControlsAutoHide();
     }
 
     // Update time display
     function updateTimeDisplay() {
+      if (isDraggingProgress) return;
+      
       postMessageToPlayer('getCurrentTime');
       postMessageToPlayer('getDuration');
+    }
+
+    // Show/hide overlay controls
+    function showOverlayControls() {
+      if (!isPlaying) {
+        videoOverlay.classList.remove('hidden');
+      }
+      resetControlsAutoHide();
+    }
+
+    function hideOverlayControls() {
+      if (!isPlaying) return;
+      videoOverlay.classList.add('hidden');
+    }
+
+    // Auto-hide controls
+    function setupControlsAutoHide() {
+      videoMainContainer.addEventListener('mousemove', resetControlsAutoHide);
+    }
+
+    function resetControlsAutoHide() {
+      clearTimeout(hideControlsTimeout);
+      const controls = document.querySelector('.video-controls-container');
+      controls.style.opacity = '1';
+      
+      hideControlsTimeout = setTimeout(() => {
+        if (isPlaying && document.fullscreenElement) {
+          controls.style.opacity = '0';
+        }
+      }, 3000);
     }
 
     // Handle messages from iframe
@@ -482,31 +601,44 @@
       
       // Handle YouTube player messages
       if (data.event === 'timeupdate') {
-        const currentTime = data.currentTime;
-        const duration = data.duration;
+        currentVideoTime = data.currentTime;
+        videoDuration = data.duration || videoDuration;
         
-        // Update progress bar
-        const percent = (currentTime / duration) * 100;
-        progressBar.style.width = percent + '%';
+        // Update progress bar if not dragging
+        if (!isDraggingProgress) {
+          const percent = (currentVideoTime / videoDuration) * 100;
+          progressBar.style.width = percent + '%';
+        }
         
         // Update time displays
-        currentTimeDisplay.textContent = formatTime(currentTime);
-        durationDisplay.textContent = formatTime(duration);
-        
-        // Update video duration
-        videoDuration = duration;
+        currentTimeDisplay.textContent = formatTime(currentVideoTime);
+        durationDisplay.textContent = formatTime(videoDuration);
       } else if (data.event === 'playbackStatus') {
         isPlaying = data.isPlaying;
         playPauseIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        
+        if (isPlaying) {
+          overlayPlayBtn.style.display = 'none';
+          videoOverlay.classList.add('hidden');
+        } else {
+          overlayPlayBtn.style.display = 'flex';
+          videoOverlay.classList.remove('hidden');
+        }
+      } else if (data.event === 'volumeChange') {
+        isMuted = data.isMuted;
+        volumeIcon.className = isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
       }
     }
 
     // Post message to player (YouTube API)
-    function postMessageToPlayer(action, value) {
+    function postMessageToPlayer(action, value, immediate = false) {
+      if (!videoPlayer.contentWindow) return;
+      
       videoPlayer.contentWindow.postMessage({
         event: 'command',
         func: action,
-        args: value !== undefined ? [value] : null
+        args: value !== undefined ? [value] : null,
+        immediate: immediate
       }, '*');
     }
 
@@ -531,7 +663,6 @@
         accessActionIcon.className = 'fas fa-redo';
       }
       
-      accessLayer.style.display = "flex";
       loadingContainer.style.display = "none";
     }
 
@@ -574,10 +705,6 @@
           return;
         }
 
-        // Update user info in header
-        header.style.display = "block";
-        userAvatar.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
-        
         // Check user access
         const userDoc = await db.collection("students").doc(user.uid).get();
         if (!userDoc.exists) {
@@ -616,12 +743,11 @@
 
         // Initialize video player
         initVideoPlayer(videoUrl);
+        accessLayer.style.display = "none";
         
       } catch (err) {
         console.error("Error:", err);
         showAccessLayer("حدث خطأ", err.message || "حدث خطأ غير متوقع أثناء تحميل الفيديو.", "حاول مرة أخرى", "warning");
-      } finally {
-        loadingContainer.style.display = "none";
       }
     });
   </script>
