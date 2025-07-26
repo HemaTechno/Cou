@@ -60,7 +60,6 @@
       if (!userDoc.exists) return alert("حساب غير صالح");
       student = userDoc.data();
 
-      // عرض النتيجة السابقة إذا وجدت
       const resultDoc = await db.collection("students").doc(user.uid).collection("quizResults").doc(quizId).get();
       if (resultDoc.exists) {
         const resultData = resultDoc.data();
@@ -111,7 +110,7 @@
     });
 
     function startTimer() {
-      const duration = 3 * 60 * 60 * 1000; // 3 ساعات
+      const duration = 3 * 60 * 60 * 1000;
       const endTime = Date.now() + duration;
 
       const interval = setInterval(() => {
@@ -167,14 +166,12 @@
       resultMsg.classList.remove("hidden");
       submitBtn.disabled = true;
 
-      // عرض الشهادة
       document.getElementById("certStudentName").textContent = `الطالب: ${student.fullName || 'طالب مجهول'}`;
       document.getElementById("certQuizName").textContent = quizId;
       document.getElementById("certScore").textContent = score;
       document.getElementById("certDate").textContent = new Date().toLocaleDateString("ar-EG");
       document.getElementById("certificateBox").classList.remove("hidden");
 
-      // عرض الأسئلة بعد الحل
       quizContainer.innerHTML = "";
       answersList.forEach((item, i) => {
         const box = document.createElement("div");
