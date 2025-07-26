@@ -52,6 +52,26 @@
       gap: 8px;
     }
     
+    .back-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Tajawal', sans-serif;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.3s ease;
+    }
+    
+    .back-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateX(-3px);
+    }
+    
     .video-container {
       max-width: 1200px;
       margin: 30px auto;
@@ -293,6 +313,11 @@
       .watermark.center {
         font-size: 2rem;
       }
+      
+      .back-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+      }
     }
     
     /* Portrait mode for mobile */
@@ -309,7 +334,9 @@
 </head>
 <body>
   <div class="header">
-    <span><i class="fas fa-book-open"></i> منصة التعليم</span>
+    <button class="back-btn" id="backButton">
+      <i class="fas fa-arrow-right"></i> رجوع
+    </button>
     <span id="studentCoins"><i class="fas fa-coins"></i> تحميل...</span>
   </div>
 
@@ -365,10 +392,16 @@
     const rotateBtn = document.getElementById("rotateBtn");
     const videoWrapper = document.getElementById("videoWrapper");
     const loadingElement = document.getElementById("loading");
+    const backButton = document.getElementById("backButton");
 
     let isPlaying = true;
     let isPortrait = false;
     let player;
+
+    // زر الرجوع للصفحة السابقة
+    backButton.addEventListener('click', () => {
+      window.history.back();
+    });
 
     // Fullscreen functionality
     function toggleFullscreen() {
