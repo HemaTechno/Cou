@@ -8,107 +8,60 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Tajawal', sans-serif;
-      margin: 0;
-      background: linear-gradient(135deg, #0f0e17, #1a1a2e);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .video-container {
-      position: relative;
-      width: 90%;
-      max-width: 960px;
-      aspect-ratio: 16/9;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      background: #000;
-    }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      pointer-events: none;
-    }
-
-    .protection-layer {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: transparent;
-      z-index: 5;
-    }
-
-    .controls {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      gap: 12px;
-      z-index: 10;
-    }
-
+    body { font-family: 'Tajawal', sans-serif; margin: 0; background-color: #111827; color: white; }
+    .container { max-width: 1000px; margin: auto; padding: 20px; }
+    .video-box { position: relative; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 30px rgba(0,0,0,0.3); background: #000; }
+    iframe { width: 100%; height: 500px; border: none; pointer-events: none; }
+    .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: transparent; z-index: 3; pointer-events: auto; }
+    .controls { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
     .controls button {
-      background: rgba(30, 30, 50, 0.7);
+      padding: 10px 20px;
+      background: #2563eb;
       color: white;
       border: none;
-      padding: 8px 14px;
       border-radius: 8px;
+      font-size: 16px;
       cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
     }
-
+    .controls button:hover {
+      background: #1e40af;
+    }
     .watermark {
       position: absolute;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.2);
-      z-index: 7;
-      pointer-events: none;
-      text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
-      font-family: 'Tajawal', sans-serif;
-      animation: move 25s linear infinite;
+      top: 10px;
+      left: 10px;
+      z-index: 5;
+      font-size: 18px;
+      font-weight: bold;
+      color: rgba(255, 255, 255, 0.3);
+      animation: moveWatermark 20s infinite linear;
     }
-
-    @keyframes move {
-      0% { transform: translate(0%, 0%) rotate(0deg); }
-      25% { transform: translate(80%, 20%) rotate(15deg); }
-      50% { transform: translate(30%, 70%) rotate(-10deg); }
-      75% { transform: translate(-30%, 40%) rotate(5deg); }
-      100% { transform: translate(0%, 0%) rotate(0deg); }
+    @keyframes moveWatermark {
+      0%   { transform: translate(0%, 0%); }
+      25%  { transform: translate(80%, 20%); }
+      50%  { transform: translate(60%, 60%); }
+      75%  { transform: translate(20%, 80%); }
+      100% { transform: translate(0%, 0%); }
     }
-
-    #errorBox {
-      color: red;
-      text-align: center;
-      margin-top: 20px;
-      font-size: 1.2rem;
-    }
+    #errorBox { color: red; text-align: center; margin-top: 50px; font-size: 1.2rem; }
   </style>
 </head>
 <body>
-  <div class="video-container">
-    <iframe id="videoFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    <div class="protection-layer"></div>
-    <div class="watermark" id="watermark">جاري التحميل...</div>
-    <div class="controls">
-      <button id="playBtn">⏸ إيقاف</button>
+  <div class="container">
+    <div id="errorBox" style="display: none;"></div>
+    <div class="video-box" id="videoBox" style="display: none;">
+      <div class="watermark" id="watermark">طالب</div>
+      <iframe id="videoFrame" allowfullscreen></iframe>
+      <div class="overlay"></div>
+    </div>
+    <div class="controls" id="controlButtons" style="display: none;">
+      <button id="playPauseBtn">⏸ إيقاف</button>
       <button id="fullscreenBtn">⛶ ملء الشاشة</button>
     </div>
   </div>
-  <div id="errorBox" style="display:none"></div>
 
-  <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    // Firebase Init
+    // Firebase config
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -117,90 +70,99 @@
 
     const auth = firebase.auth();
     const db = firebase.firestore();
-    const errorBox = document.getElementById("errorBox");
-    const iframe = document.getElementById("videoFrame");
-    const watermark = document.getElementById("watermark");
 
     const params = new URLSearchParams(window.location.search);
     const videoUrl = decodeURIComponent(params.get("url"));
+    const videoId = videoUrl.split("/").pop();
+
+    const iframe = document.getElementById("videoFrame");
+    const errorBox = document.getElementById("errorBox");
+    const videoBox = document.getElementById("videoBox");
+    const controls = document.getElementById("controlButtons");
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const watermark = document.getElementById("watermark");
 
     let player;
 
-    function onYouTubeIframeAPIReady() {
-      // YouTube API جاهز
-    }
-
     auth.onAuthStateChanged(async user => {
-      if (!user) {
-        errorBox.textContent = "يجب تسجيل الدخول أولاً.";
-        errorBox.style.display = "block";
-        return;
-      }
+      if (!user) return showError("يجب تسجيل الدخول أولاً.");
 
       try {
         const userDoc = await db.collection("students").doc(user.uid).get();
-        const studentData = userDoc.data();
-        const enrolled = studentData.enrolledCourses || [];
+        if (!userDoc.exists) throw new Error("بيانات الطالب غير موجودة.");
+        const student = userDoc.data();
+        const enrolled = student.enrolledCourses || [];
 
-        watermark.textContent = studentData.name || user.uid;
+        const contentSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
+        if (contentSnap.empty) throw new Error("الفيديو غير متوفر.");
 
-        const videoSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
-        if (videoSnap.empty) throw new Error("لا يمكن العثور على الفيديو.");
+        const contentData = contentSnap.docs[0].data();
+        const lectureId = contentData.lectureId;
+        const lectureSnap = await db.collection("lectures").doc(lectureId).get();
+        const courseId = lectureSnap.data().courseId;
 
-        const contentData = videoSnap.docs[0].data();
-        const lectureDoc = await db.collection("lectures").doc(contentData.lectureId).get();
-        const courseId = lectureDoc.data().courseId;
+        if (!enrolled.includes(courseId)) return showError("أنت غير مشترك في هذا الكورس.");
 
-        if (!enrolled.includes(courseId)) {
-          errorBox.textContent = "❌ غير مسموح لك بمشاهدة هذا الفيديو.";
-          errorBox.style.display = "block";
-          return;
-        }
+        watermark.textContent = student.name || user.uid;
+        iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&controls=0&rel=0&modestbranding=1`;
+        videoBox.style.display = "block";
+        controls.style.display = "flex";
 
-        const finalUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1&enablejsapi=1";
-        iframe.src = finalUrl;
-
-        // تشغيل YouTube Player API بعد التحميل
-        window.onYouTubeIframeAPIReady = () => {
-          player = new YT.Player("videoFrame", {
-            events: {
-              'onReady': () => player.playVideo()
-            }
-          });
-        };
+        loadYouTubeAPI();
 
       } catch (err) {
-        errorBox.textContent = err.message || "حدث خطأ أثناء تحميل الفيديو.";
-        errorBox.style.display = "block";
+        console.error(err);
+        showError(err.message);
       }
     });
 
-    document.getElementById("playBtn").addEventListener("click", () => {
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = "block";
+    }
+
+    function loadYouTubeAPI() {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+    }
+
+    window.onYouTubeIframeAPIReady = () => {
+      player = new YT.Player("videoFrame", {
+        events: {
+          onReady: (event) => {
+            event.target.playVideo();
+          }
+        }
+      });
+    };
+
+    playPauseBtn.addEventListener("click", () => {
       if (!player) return;
       const state = player.getPlayerState();
       if (state === YT.PlayerState.PLAYING) {
         player.pauseVideo();
-        document.getElementById("playBtn").textContent = "▶️ تشغيل";
+        playPauseBtn.textContent = "▶️ تشغيل";
       } else {
         player.playVideo();
-        document.getElementById("playBtn").textContent = "⏸ إيقاف";
+        playPauseBtn.textContent = "⏸ إيقاف";
       }
     });
 
     document.getElementById("fullscreenBtn").addEventListener("click", () => {
-      const container = document.querySelector(".video-container");
-      if (container.requestFullscreen) container.requestFullscreen();
-      else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
-      else if (container.msRequestFullscreen) container.msRequestFullscreen();
+      const el = document.getElementById("videoBox");
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
     });
 
-    // حماية ضد أدوات المطور
-    document.addEventListener('keydown', function(e) {
+    // منع أدوات المطور
+    document.addEventListener("keydown", function(e) {
       if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) ||
-        (e.ctrlKey && e.key === 'U') ||
-        (e.key === 'PrintScreen')
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
+        (e.ctrlKey && e.key === "U") ||
+        (e.key === "PrintScreen")
       ) {
         e.preventDefault();
       }
