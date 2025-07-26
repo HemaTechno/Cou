@@ -3,150 +3,138 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>مشغل الفيديو</title>
-
-  <!-- Tailwind + Google Fonts -->
+  <title>مشاهدة الفيديو</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
-
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
-  <!-- يوتيوب -->
-  <script src="https://www.youtube.com/iframe_api"></script>
-
   <style>
     body {
+      background-color: #111827;
+      color: white;
       font-family: 'Tajawal', sans-serif;
-      background: linear-gradient(135deg, #0f0e17, #1a1a2e);
-      color: #fff;
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
-
     .video-container {
       position: relative;
-      width: 90%;
-      max-width: 1000px;
-      aspect-ratio: 16 / 9;
-      border-radius: 16px;
+      padding-top: 56.25%;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      border-radius: 1rem;
+      box-shadow: 0 0 50px rgba(0,0,0,0.5);
     }
-
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    .loading-screen {
-      position: fixed;
+    .video-container iframe {
+      position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: #0f0e17;
+      border: none;
+    }
+    .watermark {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 16px;
+      background-color: rgba(255,255,255,0.1);
+      padding: 6px 12px;
+      border-radius: 12px;
+      animation: moveWatermark 5s infinite alternate;
+    }
+    @keyframes moveWatermark {
+      0% { top: 10px; left: 10px; }
+      100% { top: 90%; left: 80%; }
+    }
+    .screenshot-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
       z-index: 9999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      color: #ccc;
-      font-size: 1.2rem;
-    }
-
-    .loader {
-      width: 60px;
-      height: 60px;
-      border: 5px solid rgba(255, 255, 255, 0.1);
-      border-top-color: #e53170;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+      pointer-events: none;
     }
   </style>
 </head>
-<body>
+<body class="p-6">
 
-  <div class="loading-screen" id="loadingScreen">
-    <div class="loader"></div>
-    جاري تحميل الفيديو...
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">مشاهدة الفيديو</h1>
+
+    <div class="video-container mb-6">
+      <iframe id="videoFrame" allow="autoplay" allowfullscreen></iframe>
+      <div class="watermark">حقوق الأستاذ السقا</div>
+    </div>
+
+    <div class="flex gap-4 flex-wrap">
+      <button onclick="playVideo()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-xl">تشغيل</button>
+      <button onclick="pauseVideo()" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-xl">إيقاف</button>
+      <button onclick="setSpeed(0.75)" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-xl">تبطيء</button>
+      <button onclick="setSpeed(1.25)" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-xl">تسريع</button>
+      <button onclick="fullscreenVideo()" class="bg-gray-700 hover:bg-gray-800 px-4 py-2 rounded-xl">ملء الشاشة</button>
+    </div>
   </div>
 
-  <div class="video-container">
-    <iframe id="yt-video"
-      src=""
-      allow="autoplay; encrypted-media"
-      allowfullscreen
-    ></iframe>
-  </div>
+  <div id="screenshotOverlay" class="screenshot-overlay"></div>
 
   <script>
-    // 1. إعداد Firebase
+    // Firebase Init
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8"
     });
-
     const db = firebase.firestore();
-    const auth = firebase.auth();
 
-    // 2. جلب البيانات من الرابط
-    const courseId = new URLSearchParams(window.location.search).get("courseId");
-    const contentId = new URLSearchParams(window.location.search).get("contentId");
+    // Check auth and enrollment
+    firebase.auth().onAuthStateChanged(async user => {
+      if (!user) return location.href = "login.html";
 
-    // 3. التحقق من الدخول والاشتراك
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        alert("يجب تسجيل الدخول.");
-        return window.location.href = "login.html";
+      const params = new URLSearchParams(window.location.search);
+      const url = decodeURIComponent(params.get("url"));
+      const courseId = params.get("courseId");
+
+      const studentRef = await db.collection("students").doc(user.uid).get();
+      const data = studentRef.data();
+      if (!data || !data.enrolledCourses || !data.enrolledCourses.includes(courseId)) {
+        return location.href = "not-authorized.html";
       }
 
-      try {
-        const userDoc = await db.collection("students").doc(user.uid).get();
-        const student = userDoc.data();
+      const videoId = extractVideoId(url);
+      if (!videoId) return alert("رابط الفيديو غير صحيح");
 
-        if (!student || !student.enrolledCourses || !student.enrolledCourses.includes(courseId)) {
-          alert("❌ هذا الفيديو متاح فقط للمشتركين في الكورس.");
-          return window.location.href = "courses.html";
+      const iframe = document.getElementById("videoFrame");
+      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
+
+      // Anti DevTools
+      document.addEventListener('keydown', e => {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+          e.preventDefault();
         }
+      });
+    });
 
-        const contentDoc = await db.collection("lectureContent").doc(contentId).get();
-        if (!contentDoc.exists) {
-          alert("المحتوى غير موجود.");
-          return;
-        }
+    function extractVideoId(url) {
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w\-]+)/);
+      return match ? match[1] : null;
+    }
 
-        const content = contentDoc.data();
-        if (content.type !== "video") {
-          alert("هذا المحتوى ليس فيديو.");
-          return;
-        }
+    // Video API Access
+    function postMessageToIframe(cmd) {
+      const iframe = document.getElementById("videoFrame");
+      iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd }), '*');
+    }
 
-        const match = content.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^\s&]+)/);
-        const videoId = match ? match[1] : null;
+    function playVideo() { postMessageToIframe('playVideo'); }
+    function pauseVideo() { postMessageToIframe('pauseVideo'); }
+    function setSpeed(speed) { postMessageToIframe(`setPlaybackRate`, speed); }
+    function fullscreenVideo() {
+      const iframe = document.getElementById("videoFrame");
+      if (iframe.requestFullscreen) iframe.requestFullscreen();
+    }
 
-        if (videoId) {
-          document.getElementById("yt-video").src =
-            `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&rel=0&modestbranding=1&enablejsapi=1&playsinline=1`;
-        } else {
-          alert("رابط الفيديو غير صالح.");
-        }
-
-        // إخفاء شاشة التحميل
-        document.getElementById("loadingScreen").style.display = "none";
-      } catch (err) {
-        console.error(err);
-        alert("حدث خطأ أثناء تحميل الفيديو.");
+    // Anti screenshot (blur on PrtSc)
+    window.addEventListener("keyup", (e) => {
+      if (e.key === "PrintScreen") {
+        document.getElementById("screenshotOverlay").style.display = "block";
+        setTimeout(() => {
+          document.getElementById("screenshotOverlay").style.display = "none";
+        }, 1500);
       }
     });
   </script>
