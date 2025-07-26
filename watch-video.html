@@ -2,23 +2,73 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>مشاهدة الفيديو</title>
+  <title>📺 مشاهدة الفيديو</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; margin: 0; background-color: #f9fafb; }
-    #videoFrame { width: 100%; height: 100vh; border: none; }
-    #errorBox { color: red; text-align: center; margin-top: 50px; font-size: 1.2rem; }
+    body {
+      font-family: 'Tajawal', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #0f0e17, #1a1a2e);
+      color: white;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      pointer-events: none; /* يمنع التفاعل */
+    }
+    .protection-layer {
+      position: absolute;
+      inset: 0;
+      background: transparent;
+      z-index: 10;
+    }
+    .watermark {
+      position: absolute;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: rgba(255,255,255,0.15);
+      z-index: 15;
+      pointer-events: none;
+      animation: moveWatermark 20s linear infinite;
+    }
+    @keyframes moveWatermark {
+      0% { transform: translate(0%, 0%); }
+      25% { transform: translate(80%, 20%); }
+      50% { transform: translate(60%, 80%); }
+      75% { transform: translate(10%, 60%); }
+      100% { transform: translate(0%, 0%); }
+    }
+    #errorBox {
+      padding: 50px;
+      text-align: center;
+      color: red;
+      font-size: 1.3rem;
+      background-color: white;
+      color: #c0392b;
+    }
   </style>
 </head>
 <body>
-  <div id="errorBox" style="display: none;"></div>
-  <iframe id="videoFrame" allowfullscreen style="display: none;"></iframe>
+  <div id="errorBox" style="display:none;"></div>
+
+  <div class="video-container" id="videoContainer" style="display:none;">
+    <iframe id="videoFrame" allowfullscreen></iframe>
+    <div class="protection-layer"></div>
+    <div class="watermark">🚫 يمنع النسخ | منصة HEMA TECH</div>
+  </div>
 
   <script>
-    // Firebase config
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -30,58 +80,60 @@
 
     const params = new URLSearchParams(window.location.search);
     const videoUrl = decodeURIComponent(params.get("url"));
-    const videoTitle = decodeURIComponent(params.get("title"));
 
     const iframe = document.getElementById("videoFrame");
     const errorBox = document.getElementById("errorBox");
+    const videoContainer = document.getElementById("videoContainer");
 
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        errorBox.textContent = "يجب تسجيل الدخول أولاً.";
-        errorBox.style.display = "block";
+        showError("❌ يجب تسجيل الدخول أولاً.");
         return;
       }
 
       try {
-        const userDoc = await db.collection("students").doc(user.uid).get();
-        if (!userDoc.exists) {
-          throw new Error("لا يوجد بيانات للمستخدم.");
-        }
+        const studentSnap = await db.collection("students").doc(user.uid).get();
+        if (!studentSnap.exists) throw new Error("لا يوجد بيانات للطالب.");
+        const student = studentSnap.data();
+        const enrolled = student.enrolledCourses || [];
 
-        const studentData = userDoc.data();
-        const enrolledCourses = studentData.enrolledCourses || [];
+        const videoSnap = await db.collection("lectureContent").where("url", "==", videoUrl).get();
+        if (videoSnap.empty) throw new Error("⚠️ لا يمكن العثور على هذا الفيديو.");
 
-        // جلب الكورس المرتبط برابط الفيديو
-        const videoSnapshot = await db.collection("lectureContent").where("url", "==", videoUrl).get();
-        if (videoSnapshot.empty) {
-          throw new Error("لا يمكن العثور على هذا الفيديو.");
-        }
-
-        const videoData = videoSnapshot.docs[0].data();
+        const videoData = videoSnap.docs[0].data();
         const lectureId = videoData.lectureId;
 
-        const lectureSnapshot = await db.collection("lectures").doc(lectureId).get();
-        if (!lectureSnapshot.exists) {
-          throw new Error("لا يمكن العثور على المحاضرة.");
-        }
+        const lectureSnap = await db.collection("lectures").doc(lectureId).get();
+        if (!lectureSnap.exists) throw new Error("⚠️ لا يمكن العثور على المحاضرة.");
+        const courseId = lectureSnap.data().courseId;
 
-        const courseId = lectureSnapshot.data().courseId;
-
-        // التحقق من اشتراك الطالب في الكورس
-        if (!enrolledCourses.includes(courseId)) {
-          errorBox.textContent = "غير مسموح لك بمشاهدة هذا الفيديو. يرجى الاشتراك أولاً.";
-          errorBox.style.display = "block";
+        if (!enrolled.includes(courseId)) {
+          showError("🚫 غير مسموح لك بمشاهدة هذا الفيديو. اشترك أولاً.");
           return;
         }
 
-        // عرض الفيديو
-        iframe.src = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1";
-        iframe.style.display = "block";
-
+        iframe.src = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1&controls=0&modestbranding=1&rel=0";
+        videoContainer.style.display = "block";
       } catch (err) {
-        console.error(err);
-        errorBox.textContent = err.message || "حدث خطأ أثناء تحميل الفيديو.";
-        errorBox.style.display = "block";
+        showError(err.message);
+      }
+    });
+
+    function showError(msg) {
+      errorBox.innerText = msg;
+      errorBox.style.display = "block";
+    }
+
+    // منع أدوات المطور واختصارات الطباعة
+    document.addEventListener("keydown", function(e) {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key)) ||
+        (e.ctrlKey && e.key === "U") ||
+        (e.key === "PrintScreen")
+      ) {
+        e.preventDefault();
+        alert("🚫 غير مسموح بذلك.");
       }
     });
   </script>
