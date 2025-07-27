@@ -276,21 +276,36 @@
           }
         }
 
-        // Load quiz data with error handling
-        const quizRef = db.collection("quizzes").doc(quizId);
-        const quizDoc = await quizRef.get();
+        // Load quiz data with error handling - التعديل هنا
+        let quizRef, quizDoc;
+        
+        // المحاولة الأولى: البحث في مجموعة quizzes
+        quizRef = db.collection("quizzes").doc(quizId);
+        quizDoc = await quizRef.get();
         
         if (!quizDoc.exists) {
-          // Try alternative collection if not found
-          const altQuizRef = db.collection("allQuizzes").doc(quizId);
-          const altQuizDoc = await altQuizRef.get();
+          // المحاولة الثانية: البحث في مجموعة questions باستخدام المعرف
+          const questionDoc = await db.collection("questions").doc(quizId).get();
           
-          if (!altQuizDoc.exists) {
-            alert("⚠️ الاختبار غير موجود أو تم حذفه");
-            window.location.href = courseId ? `course.html?id=${courseId}` : "courses.html";
-            return;
+          if (questionDoc.exists) {
+            // إذا وجدنا السؤال مباشرة، نستخدم بياناته
+            quizData = {
+              title: questionDoc.data().quizTitle || "اختبار بدون عنوان",
+              duration: 60 // قيمة افتراضية
+            };
           } else {
-            quizData = altQuizDoc.data();
+            // المحاولة الثالثة: البحث في مجموعة allQuizzes
+            const altQuizRef = db.collection("allQuizzes").doc(quizId);
+            const altQuizDoc = await altQuizRef.get();
+            
+            if (!altQuizDoc.exists) {
+              alert("⚠️ الاختبار غير موجود أو تم حذفه");
+              window.location.href = courseId ? `course.html?id=${courseId}` : "courses.html";
+              return;
+            } else {
+              quizData = altQuizDoc.data();
+              quizRef = altQuizRef;
+            }
           }
         } else {
           quizData = quizDoc.data();
@@ -332,32 +347,44 @@
           showCertificateBtn.classList.remove("hidden");
         }
 
-        // Load questions
-        const questionsRef = quizRef.collection("questions");
-        const questionsSnap = await questionsRef.get();
+        // Load questions - التعديل الرئيسي هنا
+        let questionsSnap;
         
-        if (questionsSnap.empty) {
-          // Try alternative questions collection
-          const altQuestionsRef = db.collection("allQuestions").where("quizId", "==", quizId);
-          const altQuestionsSnap = await altQuestionsRef.get();
-          
-          if (altQuestionsSnap.empty) {
-            quizContainer.innerHTML = `
-              <div class="text-center py-12">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 class="mt-2 text-lg font-medium text-gray-900">لا يوجد أسئلة متاحة حالياً</h3>
-                <p class="mt-1 text-gray-500">يرجى مراجعة المسؤول عن المنصة</p>
-              </div>
-            `;
-            submitBtn.style.display = "none";
-            return;
-          } else {
-            totalQuestions = altQuestionsSnap.size;
-            displayQuestions(altQuestionsSnap);
-          }
+        // المحاولة الأولى: البحث في مجموعة questions مع quizId كمعرف المستند
+        const questionDoc = await db.collection("questions").doc(quizId).get();
+        
+        if (questionDoc.exists) {
+          // إذا كان السؤال مخزناً كمستند منفرد
+          const q = questionDoc.data();
+          totalQuestions = 1;
+          displayQuestions([questionDoc]);
         } else {
+          // المحاولة الثانية: البحث في مجموعة questions حيث quizId هو حقل
+          questionsSnap = await db.collection("questions").where("quizId", "==", quizId).get();
+          
+          if (questionsSnap.empty) {
+            // المحاولة الثالثة: البحث في مجموعة الأسئلة الفرعية
+            try {
+              questionsSnap = await quizRef.collection("questions").get();
+            } catch (e) {
+              console.log("لا توجد مجموعة أسئلة فرعية");
+            }
+            
+            if (!questionsSnap || questionsSnap.empty) {
+              quizContainer.innerHTML = `
+                <div class="text-center py-12">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 class="mt-2 text-lg font-medium text-gray-900">لا يوجد أسئلة متاحة حالياً</h3>
+                  <p class="mt-1 text-gray-500">يرجى مراجعة المسؤول عن المنصة</p>
+                </div>
+              `;
+              submitBtn.style.display = "none";
+              return;
+            }
+          }
+          
           totalQuestions = questionsSnap.size;
           displayQuestions(questionsSnap);
         }
@@ -370,10 +397,15 @@
       }
     });
 
-    // Function to display questions
+    // Function to display questions (تعديل طفيف لدعم الهيكل الجديد)
     function displayQuestions(questionsSnap) {
-      questionsSnap.forEach((doc, idx) => {
-        const q = doc.data();
+      // تحويل DocumentSnapshot إلى مصفوفة إذا لزم الأمر
+      const questionsArray = questionsSnap.forEach ? Array.from(questionsSnap.docs || []) : [questionsSnap];
+      
+      questionsArray.forEach((doc, idx) => {
+        const q = doc.data ? doc.data() : doc;
+        const docId = doc.id || quizId; // استخدام معرف المستند أو معرف الاختبار إذا لم يكن موجوداً
+        
         const box = document.createElement("div");
         box.className = "question-card bg-white p-6 rounded-lg shadow border border-gray-200";
 
@@ -387,12 +419,12 @@
           ${imgHTML}
           <h2 class="font-bold text-xl text-gray-800 mb-4 flex items-start">
             <span class="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center mr-3">${idx + 1}</span>
-            <span>${q.question}</span>
+            <span>${q.question || q.text}</span>
           </h2>
           <div class="space-y-3">
             ${['A', 'B', 'C', 'D'].map(opt => q.options?.[opt] ? `
               <label class="flex items-start p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 cursor-pointer transition-colors duration-200">
-                <input type="radio" name="q${doc.id}" value="${opt}" class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                <input type="radio" name="q${docId}" value="${opt}" class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
                 <span class="mr-3 text-gray-700">${q.options[opt]}</span>
               </label>
             ` : '').join('')}
@@ -439,27 +471,44 @@
       `;
 
       try {
-        // Get questions from either collection
+        // Get questions - التعديل هنا ليتناسب مع الهيكل الجديد
         let questionsSnap;
-        try {
-          questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
-        } catch (e) {
-          questionsSnap = await db.collection("allQuestions").where("quizId", "==", quizId).get();
+        
+        // المحاولة الأولى: البحث في مجموعة questions مع quizId كمعرف المستند
+        const questionDoc = await db.collection("questions").doc(quizId).get();
+        
+        if (questionDoc.exists) {
+          questionsSnap = [questionDoc];
+        } else {
+          // المحاولة الثانية: البحث في مجموعة questions حيث quizId هو حقل
+          questionsSnap = await db.collection("questions").where("quizId", "==", quizId).get();
+          
+          if (questionsSnap.empty) {
+            // المحاولة الثالثة: البحث في مجموعة الأسئلة الفرعية
+            questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get().catch(() => null);
+            
+            if (!questionsSnap) {
+              throw new Error("لا يمكن العثور على أسئلة الاختبار");
+            }
+          }
         }
 
         correctAnswers = 0;
         const answersList = [];
 
-        questionsSnap.forEach(doc => {
-          const q = doc.data();
-          const selected = document.querySelector(`input[name="q${doc.id}"]:checked`);
+        const questionsArray = questionsSnap.forEach ? Array.from(questionsSnap.docs) : [questionsSnap];
+        
+        questionsArray.forEach(doc => {
+          const q = doc.data ? doc.data() : doc;
+          const docId = doc.id || quizId;
+          const selected = document.querySelector(`input[name="q${docId}"]:checked`);
           const selectedValue = selected?.value || "لم يجب";
           const correctAnswer = q.correct;
 
           if (selectedValue === correctAnswer) correctAnswers++;
 
           answersList.push({
-            question: q.question,
+            question: q.question || q.text,
             correct: correctAnswer,
             selected: selectedValue,
             options: q.options
