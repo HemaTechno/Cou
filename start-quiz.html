@@ -229,9 +229,19 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    // Get URL parameters with validation
     const params = new URLSearchParams(window.location.search);
     const quizId = params.get("id");
-    const courseId = params.get("courseId"); // إضافة معلمة الكورس
+    const courseId = params.get("courseId");
+
+    // Validate quizId
+    if (!quizId || quizId.trim() === "") {
+      alert("⚠️ خطأ: لم يتم تحديد اختبار. الرجاء العودة إلى صفحة الكورس.");
+      window.location.href = courseId ? `course.html?id=${courseId}` : "courses.html";
+      throw new Error("Quiz ID is required");
+    }
+
+    // DOM Elements
     const quizContainer = document.getElementById("quizContainer");
     const submitBtn = document.getElementById("submitBtn");
     const resultMsg = document.getElementById("resultMsg");
@@ -241,6 +251,7 @@
     const showCertificateBtn = document.getElementById("showCertificateBtn");
     const userNameElement = document.getElementById("userName");
 
+    // Global variables
     let currentUser, correctAnswers = 0, totalQuestions = 0, student, quizData;
 
     // Handle authentication state
@@ -250,36 +261,39 @@
         return;
       }
       currentUser = user;
-      userNameElement.textContent = user.displayName || user.email;
+      userNameElement.textContent = user.displayName || user.email.split('@')[0];
 
       try {
-        // التحقق من اشتراك الطالب في الكورس
-        const courseEnrollment = await db.collection("students").doc(user.uid)
-          .collection("enrollments").doc(courseId).get();
-        
-        if (!courseEnrollment.exists) {
-          alert("⚠️ يجب الاشتراك في الكورس أولاً للوصول إلى هذا الاختبار");
-          window.location.href = `course.html?id=${courseId}`;
-          return;
+        // Verify course enrollment if courseId exists
+        if (courseId) {
+          const enrollment = await db.collection("students").doc(user.uid)
+            .collection("enrollments").doc(courseId).get();
+          
+          if (!enrollment.exists) {
+            alert("⚠️ يجب الاشتراك في الكورس أولاً للوصول إلى هذا الاختبار");
+            window.location.href = `course.html?id=${courseId}`;
+            return;
+          }
         }
 
-        // Get user data
+        // Load quiz data with error handling
+        const quizDoc = await db.collection("quizzes").doc(quizId).get();
+        if (!quizDoc.exists) {
+          alert("⚠️ الاختبار غير موجود أو تم حذفه");
+          window.location.href = courseId ? `course.html?id=${courseId}` : "courses.html";
+          return;
+        }
+        
+        quizData = quizDoc.data();
+        quizTitleElement.textContent = quizData.title || "اختبار بدون عنوان";
+
+        // Load user data
         const userDoc = await db.collection("students").doc(user.uid).get();
         if (!userDoc.exists) {
-          alert("حساب غير صالح");
+          alert("⚠️ حساب الطالب غير موجود");
           return;
         }
         student = userDoc.data();
-
-        // Get quiz data
-        const quizDoc = await db.collection("quizzes").doc(quizId).get();
-        if (!quizDoc.exists) {
-          alert("الاختبار غير موجود");
-          window.location.href = `course.html?id=${courseId}`;
-          return;
-        }
-        quizData = quizDoc.data();
-        quizTitleElement.textContent = quizData.title || quizId;
 
         // Check if user already took this quiz
         const resultDoc = await db.collection("students").doc(user.uid)
@@ -333,7 +347,7 @@
 
           let imgHTML = q.imageURL ? `
             <div class="mb-4 flex justify-center">
-              <img src="${q.imageURL}" class="max-w-full h-auto rounded-lg border border-gray-200 max-h-60" />
+              <img src="${q.imageURL}" class="max-w-full h-auto rounded-lg border border-gray-200 max-h-60" alt="صورة السؤال"/>
             </div>
           ` : "";
 
@@ -344,12 +358,12 @@
               <span>${q.question}</span>
             </h2>
             <div class="space-y-3">
-              ${['A', 'B', 'C', 'D'].map(opt => `
+              ${['A', 'B', 'C', 'D'].map(opt => q.options?.[opt] ? `
                 <label class="flex items-start p-3 rounded-lg border border-gray-200 hover:bg-indigo-50 cursor-pointer transition-colors duration-200">
                   <input type="radio" name="q${doc.id}" value="${opt}" class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500">
-                  <span class="mr-3 text-gray-700">${q.options?.[opt] || ""}</span>
+                  <span class="mr-3 text-gray-700">${q.options[opt]}</span>
                 </label>
-              `).join('')}
+              ` : '').join('')}
             </div>
           `;
           quizContainer.appendChild(box);
@@ -358,13 +372,14 @@
         startTimer();
       } catch (error) {
         console.error("Error loading quiz:", error);
-        alert("حدث خطأ أثناء تحميل الاختبار. يرجى المحاولة مرة أخرى.");
+        alert(`❌ حدث خطأ أثناء تحميل الاختبار: ${error.message}`);
+        window.location.href = courseId ? `course.html?id=${courseId}` : "courses.html";
       }
     });
 
     // Timer function
     function startTimer() {
-      const duration = quizData.duration || 3 * 60 * 60 * 1000; // 3 hours default
+      const duration = (quizData?.duration || 3 * 60) * 60 * 1000; // Default 3 hours if not set
       const endTime = Date.now() + duration;
 
       const interval = setInterval(() => {
@@ -425,7 +440,8 @@
         await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
           score,
           date: firebase.firestore.FieldValue.serverTimestamp(),
-          courseId: courseId
+          courseId: courseId || null,
+          quizTitle: quizData.title || "اختبار بدون عنوان"
         });
 
         // Show results
@@ -473,7 +489,7 @@
 
       } catch (error) {
         console.error("Error submitting quiz:", error);
-        alert("حدث خطأ أثناء إرسال الاختبار. يرجى المحاولة مرة أخرى.");
+        alert(`❌ حدث خطأ أثناء إرسال الاختبار: ${error.message}`);
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = `
@@ -487,7 +503,7 @@
 
     // Certificate functions
     function showCertificateModal() {
-      const resultDoc = db.collection("students").doc(currentUser.uid)
+      db.collection("students").doc(currentUser.uid)
         .collection("quizResults").doc(quizId).get()
         .then(resultDoc => {
           if (resultDoc.exists) {
@@ -496,17 +512,17 @@
             const date = resultData.date?.toDate().toLocaleDateString("ar-EG") || "غير محدد";
             
             document.getElementById("certStudentName").textContent = student.fullName || currentUser.email;
-            document.getElementById("certQuizName").textContent = quizData.title || quizId;
+            document.getElementById("certQuizName").textContent = resultData.quizTitle || quizId;
             document.getElementById("certScore").textContent = `${score}%`;
             document.getElementById("certDate").textContent = date;
             certificateModal.classList.remove("hidden");
           } else {
-            alert("يجب إكمال الاختبار أولاً للحصول على الشهادة");
+            alert("⚠️ يجب إكمال الاختبار أولاً للحصول على الشهادة");
           }
         })
         .catch(error => {
           console.error("Error loading certificate:", error);
-          alert("حدث خطأ أثناء تحميل الشهادة. يرجى المحاولة مرة أخرى.");
+          alert(`❌ حدث خطأ أثناء تحميل الشهادة: ${error.message}`);
         });
     }
 
@@ -539,7 +555,7 @@
           document.body.removeChild(link);
         }).catch(error => {
           console.error("Error generating certificate:", error);
-          alert("حدث خطأ أثناء إنشاء الشهادة. يرجى المحاولة مرة أخرى.");
+          alert("❌ حدث خطأ أثناء إنشاء الشهادة. يرجى المحاولة مرة أخرى.");
         });
       }, 500);
     }
@@ -633,7 +649,7 @@
         window.location.href = "login.html";
       }).catch(error => {
         console.error("Error signing out:", error);
-        alert("حدث خطأ أثناء تسجيل الخروج");
+        alert("❌ حدث خطأ أثناء تسجيل الخروج");
       });
     }
   </script>
