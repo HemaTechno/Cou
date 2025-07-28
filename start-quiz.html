@@ -18,21 +18,23 @@
 <body class="bg-gray-100">
   <div class="bg-white shadow p-4 flex items-center justify-between sticky top-0 z-50">
     <img src="https://i.imgur.com/8Km9tLL.png" alt="Logo" class="h-10">
-    <div>
-      <span id="coinsCount" class="text-indigo-700 font-bold cursor-pointer">💰 0</span>
-    </div>
+    <span id="coinsCount" class="text-indigo-700 font-bold cursor-pointer">💰 0</span>
   </div>
 
   <div class="max-w-4xl mx-auto bg-white mt-6 p-6 rounded-xl shadow">
     <h1 class="text-2xl font-bold text-indigo-700 mb-2">📝 اختبار</h1>
     <p id="timer" class="text-right text-red-600 font-bold mb-4">تحميل المؤقت...</p>
+
     <div class="grid grid-cols-6 gap-4 mb-4" id="questionNumbers"></div>
+
     <div id="quizContainer" class="space-y-6"></div>
+
     <div class="flex justify-between mt-6">
       <button id="prevBtn" class="bg-gray-300 px-4 py-2 rounded">السابق</button>
       <button id="submitBtn" class="bg-red-600 text-white px-4 py-2 rounded">إرسال</button>
       <button id="nextBtn" class="bg-indigo-600 text-white px-4 py-2 rounded">التالي</button>
     </div>
+
     <p id="resultMsg" class="text-center font-bold text-green-600 mt-6 hidden"></p>
   </div>
 
@@ -79,13 +81,16 @@
       const quizDoc = await db.collection("quizzes").doc(quizId).get();
       if (!quizDoc.exists) return alert("الاختبار غير موجود.");
 
-      const quizLectureId = quizDoc.data().lectureId;
-      const lectureSnap = await db.collection("lectures").doc(quizLectureId).get();
-      if (!lectureSnap.exists) return alert("لم يتم العثور على المحاضرة المرتبطة.");
-      const courseId = lectureSnap.data().courseId;
+      const quizData = quizDoc.data();
+      const lectureId = quizData.lectureId;
 
-      const enrolled = studentData.enrolledCourses?.includes(courseId);
-      if (!enrolled) return alert("هذا الاختبار مخصص فقط للمشتركين في الكورس.");
+      if (!lectureId) return alert("لم يتم ربط الاختبار بمحاضرة.");
+      const lectureSnap = await db.collection("lectures").doc(lectureId).get();
+      const courseId = lectureSnap.data()?.courseId;
+
+      if (!courseId || !studentData.enrolledCourses?.includes(courseId)) {
+        return alert("هذا الاختبار مخصص فقط للمشتركين في الكورس.");
+      }
 
       const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
       if (questionsSnap.empty) {
@@ -158,13 +163,17 @@
 
       for (let q of questions) {
         const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
-        const ans = selected?.value || "لم يجب";
+        const ans = selected?.value;
         if (ans === q.correct) correct++;
-        answersList.push({ question: q.question, selected: ans, correct: q.correct });
+        answersList.push({
+          question: q.question,
+          correct: q.correct,
+          selected: ans || "لم يجب",
+          options: q.options
+        });
       }
 
       const score = Math.round((correct / questions.length) * 100);
-
       await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
         score,
         date: firebase.firestore.FieldValue.serverTimestamp()
@@ -176,7 +185,7 @@
       prevBtn.disabled = true;
       nextBtn.disabled = true;
 
-      quizContainer.innerHTML = "<h3 class='text-lg font-bold mb-4'>مراجعة الأسئلة:</h3>";
+      quizContainer.innerHTML = "";
       answersList.forEach((item, i) => {
         const box = document.createElement("div");
         box.className = "border p-4 rounded bg-gray-50 mb-4";
