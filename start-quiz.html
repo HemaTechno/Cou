@@ -2,8 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>بدء الاختبار | المنصة التعليمية</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بدء الاختبار | المنصة التعليمية</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -16,211 +16,196 @@
   </style>
 </head>
 <body class="bg-gray-100">
-
-<!-- Header -->
-<div class="bg-white shadow p-4 flex items-center justify-between sticky top-0 z-50">
-  <img src="https://i.imgur.com/8Km9tLL.png" alt="Logo" class="h-10">
-  <span id="coinsCount" class="text-indigo-700 font-bold cursor-pointer">💰 0</span>
-</div>
-
-<!-- Quiz Container -->
-<div class="max-w-4xl mx-auto bg-white mt-6 p-6 rounded-xl shadow">
-  <h1 class="text-2xl font-bold text-indigo-700 mb-2">📝 اختبار</h1>
-  <p id="timer" class="text-right text-red-600 font-bold mb-4">تحميل المؤقت...</p>
-
-  <div class="grid grid-cols-6 gap-2 mb-4" id="questionNumbers"></div>
-  <div id="quizContainer" class="space-y-6"></div>
-
-  <div class="flex justify-between mt-6">
-    <button id="prevBtn" class="bg-gray-300 px-4 py-2 rounded">السابق</button>
-    <button id="submitBtn" class="bg-red-600 text-white px-4 py-2 rounded">إرسال</button>
-    <button id="nextBtn" class="bg-indigo-600 text-white px-4 py-2 rounded">التالي</button>
+  <div class="bg-white shadow p-4 flex items-center justify-between sticky top-0 z-50">
+    <img src="https://i.imgur.com/8Km9tLL.png" alt="Logo" class="h-10">
+    <div>
+      <span id="coinsCount" class="text-indigo-700 font-bold cursor-pointer">💰 0</span>
+    </div>
   </div>
 
-  <p id="resultMsg" class="text-center font-bold text-green-600 mt-6 hidden"></p>
-</div>
-
-<script>
-firebase.initializeApp({
-  apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
-  authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-  projectId: "hhhhhh-d4fb8"
-});
-
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-const quizId = new URLSearchParams(location.search).get("id");
-const quizContainer = document.getElementById("quizContainer");
-const submitBtn = document.getElementById("submitBtn");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const resultMsg = document.getElementById("resultMsg");
-const timerElement = document.getElementById("timer");
-const questionNumbers = document.getElementById("questionNumbers");
-const coinsCount = document.getElementById("coinsCount");
-
-let questions = [], currentIndex = 0, currentUser = null, studentData = null;
-
-function shuffleArray(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-auth.onAuthStateChanged(async user => {
-  if (!user) return location.href = "index.html";
-  currentUser = user;
-
-  const studentRef = await db.collection("students").doc(user.uid).get();
-  if (!studentRef.exists) return alert("لم يتم العثور على حساب الطالب.");
-  studentData = studentRef.data();
-
-  coinsCount.textContent = `💰 ${studentData.coins || 0}`;
-  coinsCount.onclick = () => location.href = "wallet.html";
-
-  const quizRef = await db.collection("quizzes").doc(quizId).get();
-  if (!quizRef.exists) return alert("الاختبار غير موجود.");
-
-  const lectureId = quizRef.data().lectureId;
-  const lectureSnap = await db.collection("lectures").doc(lectureId).get();
-  const courseId = lectureSnap.data().courseId;
-
-  if (!studentData.enrolledCourses?.includes(courseId)) {
-    return alert("هذا الاختبار متاح فقط للمشتركين في الكورس.");
-  }
-
-  const qSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
-  if (qSnap.empty) {
-    quizContainer.innerHTML = "<p class='text-center text-gray-500'>لا يوجد أسئلة حالياً.</p>";
-    submitBtn.style.display = "none";
-    return;
-  }
-
-  questions = shuffleArray(qSnap.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  })));
-
-  renderQuestion(currentIndex);
-  renderNumbers();
-  startTimer();
-});
-
-function renderNumbers() {
-  questionNumbers.innerHTML = questions.map((_, i) => `
-    <button onclick="goTo(${i})" id="qnum${i}" class="p-2 rounded text-sm bg-gray-100"> ${i + 1} </button>
-  `).join('');
-}
-
-function renderQuestion(i) {
-  const q = questions[i];
-  const options = shuffleArray(Object.entries(q.options || {}));
-
-  quizContainer.innerHTML = `
-    <div class="border p-4 rounded-lg bg-gray-50">
-      ${q.imageURL ? `<img src="${q.imageURL}" class="w-40 mb-2 rounded border" />` : ""}
-      <h2 class="font-bold text-lg mb-2">${i + 1}. ${q.question}</h2>
-      <div class="space-y-2">
-        ${options.map(([key, val]) => `
-          <label class="block">
-            <input type="radio" name="q${q.id}" value="${key}" class="mr-2"> ${val}
-          </label>
-        `).join('')}
-      </div>
+  <div class="max-w-4xl mx-auto bg-white mt-6 p-6 rounded-xl shadow">
+    <h1 class="text-2xl font-bold text-indigo-700 mb-2">📝 اختبار</h1>
+    <p id="timer" class="text-right text-red-600 font-bold mb-4">تحميل المؤقت...</p>
+    <div class="grid grid-cols-6 gap-4 mb-4" id="questionNumbers"></div>
+    <div id="quizContainer" class="space-y-6"></div>
+    <div class="flex justify-between mt-6">
+      <button id="prevBtn" class="bg-gray-300 px-4 py-2 rounded">السابق</button>
+      <button id="submitBtn" class="bg-red-600 text-white px-4 py-2 rounded">إرسال</button>
+      <button id="nextBtn" class="bg-indigo-600 text-white px-4 py-2 rounded">التالي</button>
     </div>
-  `;
+    <p id="resultMsg" class="text-center font-bold text-green-600 mt-6 hidden"></p>
+  </div>
 
-  document.querySelectorAll('#questionNumbers button').forEach((btn, idx) => {
-    btn.classList.remove("current-question", "answered", "unanswered");
-    const selected = document.querySelector(`input[name="q${questions[idx].id}"]:checked`);
-    if (selected) btn.classList.add("answered");
-    else btn.classList.add("unanswered");
-    if (idx === i) btn.classList.add("current-question");
-  });
-}
-
-function goTo(i) {
-  currentIndex = i;
-  renderQuestion(i);
-}
-
-prevBtn.onclick = () => {
-  if (currentIndex > 0) {
-    currentIndex--;
-    renderQuestion(currentIndex);
-  }
-};
-
-nextBtn.onclick = () => {
-  if (currentIndex < questions.length - 1) {
-    currentIndex++;
-    renderQuestion(currentIndex);
-  }
-};
-
-submitBtn.onclick = async () => {
-  let correct = 0;
-  const resultDetails = [];
-
-  questions.forEach(q => {
-    const selected = document.querySelector(`input[name="q${q.id}"]:checked`)?.value;
-    const isCorrect = selected === q.correct;
-    if (isCorrect) correct++;
-
-    resultDetails.push({
-      question: q.question,
-      selected: selected || "لم يتم الإجابة",
-      correct: q.correct
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8"
     });
-  });
 
-  const score = Math.round((correct / questions.length) * 100);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
-    score,
-    date: firebase.firestore.FieldValue.serverTimestamp()
-  });
+    const quizId = new URLSearchParams(window.location.search).get("id");
+    const quizContainer = document.getElementById("quizContainer");
+    const submitBtn = document.getElementById("submitBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const resultMsg = document.getElementById("resultMsg");
+    const timerElement = document.getElementById("timer");
+    const questionNumbers = document.getElementById("questionNumbers");
+    const coinsCount = document.getElementById("coinsCount");
 
-  resultMsg.innerHTML = `✅ تم إنهاء الاختبار. نتيجتك: ${score}%`;
-  resultMsg.classList.remove("hidden");
-  submitBtn.disabled = true;
-  prevBtn.disabled = true;
-  nextBtn.disabled = true;
+    let questions = [], currentIndex = 0, currentUser = null, studentData = null;
 
-  quizContainer.innerHTML = "";
-  resultDetails.forEach((q, i) => {
-    const box = document.createElement("div");
-    box.className = "border p-4 mb-3 rounded bg-gray-50";
-    box.innerHTML = `
-      <h3 class="font-bold">${i + 1}. ${q.question}</h3>
-      <p class="text-sm">إجابتك: <span class="${q.selected === q.correct ? 'text-green-600' : 'text-red-600'}">${q.selected}</span></p>
-      <p class="text-sm">الإجابة الصحيحة: <span class="text-green-600">${q.correct}</span></p>
-    `;
-    quizContainer.appendChild(box);
-  });
-};
-
-function startTimer() {
-  const duration = 3 * 60 * 60 * 1000;
-  const end = Date.now() + duration;
-
-  const interval = setInterval(() => {
-    const left = end - Date.now();
-    if (left <= 0) {
-      clearInterval(interval);
-      timerElement.textContent = "انتهى الوقت! سيتم إرسال الاختبار تلقائياً.";
-      submitBtn.click();
-    } else {
-      const h = Math.floor(left / 3600000);
-      const m = Math.floor((left % 3600000) / 60000);
-      const s = Math.floor((left % 60000) / 1000);
-      timerElement.textContent = `الوقت المتبقي: ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
     }
-  }, 1000);
-}
-</script>
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) return location.href = "index.html";
+      currentUser = user;
+
+      const userDoc = await db.collection("students").doc(user.uid).get();
+      if (!userDoc.exists) return alert("لم يتم العثور على حساب الطالب.");
+      studentData = userDoc.data();
+      coinsCount.textContent = `💰 ${studentData.coins || 0}`;
+      coinsCount.onclick = () => location.href = "wallet.html";
+
+      const quizDoc = await db.collection("quizzes").doc(quizId).get();
+      if (!quizDoc.exists) return alert("الاختبار غير موجود.");
+
+      const quizLectureId = quizDoc.data().lectureId;
+      const lectureSnap = await db.collection("lectures").doc(quizLectureId).get();
+      if (!lectureSnap.exists) return alert("لم يتم العثور على المحاضرة المرتبطة.");
+      const courseId = lectureSnap.data().courseId;
+
+      const enrolled = studentData.enrolledCourses?.includes(courseId);
+      if (!enrolled) return alert("هذا الاختبار مخصص فقط للمشتركين في الكورس.");
+
+      const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
+      if (questionsSnap.empty) {
+        quizContainer.innerHTML = `<p class="text-center text-gray-500">لا يوجد أسئلة حالياً.</p>`;
+        submitBtn.style.display = "none";
+        return;
+      }
+
+      questions = shuffleArray(questionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      renderQuestion(currentIndex);
+      renderNumbers();
+      startTimer();
+    });
+
+    function renderNumbers() {
+      questionNumbers.innerHTML = questions.map((_, i) => `<button onclick="goTo(${i})" id="qnum${i}" class="p-2 rounded text-sm bg-gray-100">${i + 1}</button>`).join("");
+    }
+
+    function renderQuestion(i) {
+      const q = questions[i];
+      let options = Object.entries(q.options || {});
+      options = shuffleArray(options);
+
+      quizContainer.innerHTML = `
+        <div class="border p-4 rounded-lg bg-gray-50">
+          ${q.imageURL ? `<img src="${q.imageURL}" class="w-40 mb-2 rounded border" />` : ""}
+          <h2 class="font-bold text-lg mb-2">${i + 1}. ${q.question}</h2>
+          <div class="space-y-2">
+            ${options.map(([key, val]) => `
+              <label class="block">
+                <input type="radio" name="q${q.id}" value="${key}" class="mr-2"> ${val}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      document.querySelectorAll('#questionNumbers button').forEach((btn, idx) => {
+        btn.classList.remove("current-question", "answered", "unanswered");
+        const selected = document.querySelector(`input[name="q${questions[idx].id}"]:checked`);
+        if (selected) btn.classList.add("answered");
+        else btn.classList.add("unanswered");
+        if (idx === i) btn.classList.add("current-question");
+      });
+    }
+
+    function goTo(index) {
+      currentIndex = index;
+      renderQuestion(index);
+    }
+
+    prevBtn.onclick = () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderQuestion(currentIndex);
+      }
+    };
+
+    nextBtn.onclick = () => {
+      if (currentIndex < questions.length - 1) {
+        currentIndex++;
+        renderQuestion(currentIndex);
+      }
+    };
+
+    submitBtn.onclick = async () => {
+      let correct = 0;
+      const answersList = [];
+
+      for (let q of questions) {
+        const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+        const ans = selected?.value || "لم يجب";
+        if (ans === q.correct) correct++;
+        answersList.push({ question: q.question, selected: ans, correct: q.correct });
+      }
+
+      const score = Math.round((correct / questions.length) * 100);
+
+      await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
+        score,
+        date: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      resultMsg.textContent = `✅ تم إنهاء الاختبار. نتيجتك: ${score}%`;
+      resultMsg.classList.remove("hidden");
+      submitBtn.disabled = true;
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+
+      quizContainer.innerHTML = "<h3 class='text-lg font-bold mb-4'>مراجعة الأسئلة:</h3>";
+      answersList.forEach((item, i) => {
+        const box = document.createElement("div");
+        box.className = "border p-4 rounded bg-gray-50 mb-4";
+        box.innerHTML = `
+          <h3 class="font-bold">${i + 1}. ${item.question}</h3>
+          <p class="text-sm">إجابتك: <span class="${item.selected === item.correct ? 'text-green-600' : 'text-red-600'}">${item.selected}</span></p>
+          <p class="text-sm">الإجابة الصحيحة: <span class="text-green-600">${item.correct}</span></p>
+        `;
+        quizContainer.appendChild(box);
+      });
+    };
+
+    function startTimer() {
+      const duration = 3 * 60 * 60 * 1000;
+      const endTime = Date.now() + duration;
+      const interval = setInterval(() => {
+        const remaining = endTime - Date.now();
+        if (remaining <= 0) {
+          clearInterval(interval);
+          timerElement.textContent = "انتهى الوقت! سيتم إرسال الاختبار تلقائياً.";
+          submitBtn.click();
+        } else {
+          const h = Math.floor(remaining / 3600000);
+          const m = Math.floor((remaining % 3600000) / 60000);
+          const s = Math.floor((remaining % 60000) / 1000);
+          timerElement.textContent = `الوقت المتبقي: ${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+      }, 1000);
+    }
+  </script>
 </body>
 </html>
