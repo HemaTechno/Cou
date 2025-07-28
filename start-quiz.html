@@ -8,164 +8,190 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <style>body { font-family: 'Tajawal', sans-serif; }</style>
+  <style>
+    body { font-family: 'Tajawal', sans-serif; }
+    .current-question { background-color: #e0f2fe; }
+    .answered { border-right: 5px solid green; }
+    .unanswered { border-right: 5px solid red; }
+  </style>
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow">
-    <div class="flex justify-between items-center mb-4">
-      <img src="logo.png" alt="شعار" class="h-12">
-      <div class="cursor-pointer text-indigo-600 font-bold" id="coinsDisplay">💰 تحميل...</div>
+<body class="bg-gray-100">
+  <div class="bg-white shadow p-4 flex items-center justify-between sticky top-0 z-50">
+    <img src="https://i.imgur.com/8Km9tLL.png" alt="Logo" class="h-10">
+    <div>
+      <span id="coinsCount" class="text-indigo-700 font-bold cursor-pointer">💰 0</span>
     </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto bg-white mt-6 p-6 rounded-xl shadow">
     <h1 class="text-2xl font-bold text-indigo-700 mb-2">📝 اختبار</h1>
     <p id="timer" class="text-right text-red-600 font-bold mb-4">تحميل المؤقت...</p>
-    <div id="questionBox" class="space-y-6"></div>
+
+    <div class="grid grid-cols-6 gap-4 mb-4" id="questionNumbers"></div>
+
+    <div id="quizContainer" class="space-y-6"></div>
+
     <div class="flex justify-between mt-6">
       <button id="prevBtn" class="bg-gray-300 px-4 py-2 rounded">السابق</button>
-      <button id="nextBtn" class="bg-gray-300 px-4 py-2 rounded">التالي</button>
+      <button id="submitBtn" class="bg-red-600 text-white px-4 py-2 rounded">إرسال</button>
+      <button id="nextBtn" class="bg-indigo-600 text-white px-4 py-2 rounded">التالي</button>
     </div>
-    <button id="submitBtn" class="mt-6 w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700">إنهاء وإرسال</button>
+
     <p id="resultMsg" class="text-center font-bold text-green-600 mt-6 hidden"></p>
-    <div id="answersReview" class="mt-8 space-y-4"></div>
   </div>
+
   <script>
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8"
     });
+
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const params = new URLSearchParams(window.location.search);
-    const quizId = params.get("id");
-
-    const questionBox = document.getElementById("questionBox");
+    const quizId = new URLSearchParams(window.location.search).get("id");
+    const quizContainer = document.getElementById("quizContainer");
     const submitBtn = document.getElementById("submitBtn");
-    const resultMsg = document.getElementById("resultMsg");
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
-    const coinsDisplay = document.getElementById("coinsDisplay");
-    const answersReview = document.getElementById("answersReview");
+    const resultMsg = document.getElementById("resultMsg");
+    const timerElement = document.getElementById("timer");
+    const questionNumbers = document.getElementById("questionNumbers");
+    const coinsCount = document.getElementById("coinsCount");
 
-    let currentUser, student, questions = [], currentIndex = 0, answers = {}, totalQuestions = 0;
+    let questions = [], currentIndex = 0, currentUser = null, studentData = null;
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
 
     auth.onAuthStateChanged(async user => {
-      if (!user) return window.location.href = "index.html";
+      if (!user) return location.href = "index.html";
       currentUser = user;
 
       const userDoc = await db.collection("students").doc(user.uid).get();
-      if (!userDoc.exists) return alert("حساب غير صالح");
-      student = userDoc.data();
+      if (!userDoc.exists) return alert("لم يتم العثور على حساب الطالب.");
+      studentData = userDoc.data();
+      coinsCount.textContent = `💰 ${studentData.coins || 0}`;
+      coinsCount.onclick = () => location.href = "wallet.html";
 
-      coinsDisplay.textContent = `💰 ${student.coins || 0} كوين`;
-      coinsDisplay.onclick = () => window.location.href = "wallet.html";
+      const quizDoc = await db.collection("quizzes").doc(quizId).get();
+      if (!quizDoc.exists) return alert("الاختبار غير موجود.");
 
-      const snap = await db.collection("quizzes").doc(quizId).collection("questions").get();
-      if (snap.empty) {
-        questionBox.innerHTML = '<p class="text-center text-red-600">لا يوجد أسئلة.</p>';
+      const quizLectureId = quizDoc.data().lectureId;
+      const lectureSnap = await db.collection("lectures").doc(quizLectureId).get();
+      const courseId = lectureSnap.data().courseId;
+
+      const enrolled = studentData.enrolledCourses?.includes(courseId);
+      if (!enrolled) return alert("هذا الاختبار مخصص فقط للمشتركين في الكورس.");
+
+      const questionsSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
+      if (questionsSnap.empty) {
+        quizContainer.innerHTML = `<p class="text-center text-gray-500">لا يوجد أسئلة حالياً.</p>`;
+        submitBtn.style.display = "none";
         return;
       }
 
-      snap.forEach(doc => {
-        questions.push({ id: doc.id, ...doc.data() });
-      });
-      totalQuestions = questions.length;
-      showQuestion(currentIndex);
+      questions = shuffleArray(questionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      renderQuestion(currentIndex);
+      renderNumbers();
       startTimer();
     });
 
-    function showQuestion(index) {
-      const q = questions[index];
-      let optionsHTML = ['A','B','C','D'].map(opt => `
-        <label class="block">
-          <input type="radio" name="answer" value="${opt}" ${answers[q.id] === opt ? 'checked' : ''} class="mr-2">
-          ${q.options?.[opt] || ''}
-        </label>
-      `).join('');
-      questionBox.innerHTML = `
-        <div class="border p-4 rounded bg-gray-50">
-          <h2 class="font-bold text-lg mb-2">${index + 1}. ${q.question}</h2>
-          ${q.imageURL ? `<img src="${q.imageURL}" class="w-40 mb-2 rounded" />` : ''}
-          <div>${optionsHTML}</div>
-        </div>
-        <div class="flex justify-center space-x-2 mt-4">
-          ${questions.map((_, i) => `
-            <div class="w-8 h-8 rounded-full flex items-center justify-center cursor-pointer ${answers[questions[i].id] ? 'bg-green-300' : 'bg-red-200'} ${i === currentIndex ? 'border-2 border-indigo-600' : ''}"
-              onclick="gotoQuestion(${i})">${i + 1}</div>
-          `).join('')}
+    function renderNumbers() {
+      questionNumbers.innerHTML = questions.map((_, i) => `<button onclick="goTo(${i})" id="qnum${i}" class="p-2 rounded text-sm bg-gray-100">${i + 1}</button>`).join("");
+    }
+
+    function renderQuestion(i) {
+      const q = questions[i];
+      let options = Object.entries(q.options || {});
+      options = shuffleArray(options);
+
+      quizContainer.innerHTML = `
+        <div class="border p-4 rounded-lg bg-gray-50">
+          ${q.imageURL ? `<img src="${q.imageURL}" class="w-40 mb-2 rounded border" />` : ""}
+          <h2 class="font-bold text-lg mb-2">${i + 1}. ${q.question}</h2>
+          <div class="space-y-2">
+            ${options.map(([key, val]) => `
+              <label class="block">
+                <input type="radio" name="q${q.id}" value="${key}" class="mr-2"> ${val}
+              </label>
+            `).join('')}
+          </div>
         </div>
       `;
+
+      document.querySelectorAll('#questionNumbers button').forEach((btn, idx) => {
+        btn.classList.remove("current-question", "answered", "unanswered");
+        const selected = document.querySelector(`input[name="q${questions[idx].id}"]:checked`);
+        if (selected) btn.classList.add("answered");
+        else btn.classList.add("unanswered");
+        if (idx === i) btn.classList.add("current-question");
+      });
     }
 
-    function gotoQuestion(i) {
-      saveCurrentAnswer();
-      currentIndex = i;
-      showQuestion(i);
-    }
-
-    function saveCurrentAnswer() {
-      const selected = document.querySelector('input[name="answer"]:checked');
-      if (selected) answers[questions[currentIndex].id] = selected.value;
+    function goTo(index) {
+      currentIndex = index;
+      renderQuestion(index);
     }
 
     prevBtn.onclick = () => {
-      saveCurrentAnswer();
-      if (currentIndex > 0) currentIndex--;
-      showQuestion(currentIndex);
-    }
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderQuestion(currentIndex);
+      }
+    };
 
     nextBtn.onclick = () => {
-      saveCurrentAnswer();
-      if (currentIndex < questions.length - 1) currentIndex++;
-      showQuestion(currentIndex);
-    }
+      if (currentIndex < questions.length - 1) {
+        currentIndex++;
+        renderQuestion(currentIndex);
+      }
+    };
 
     submitBtn.onclick = async () => {
-      saveCurrentAnswer();
       let correct = 0;
-      const reviewList = [];
+      for (let q of questions) {
+        const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+        const ans = selected?.value;
+        if (ans === q.correct) correct++;
+      }
+      const score = Math.round((correct / questions.length) * 100);
 
-      questions.forEach(q => {
-        const ans = answers[q.id] || 'لم يجب';
-        const isCorrect = ans === q.correct;
-        if (isCorrect) correct++;
-        reviewList.push({ ...q, selected: ans, isCorrect });
-      });
-
-      const score = Math.round((correct / totalQuestions) * 100);
       await db.collection("students").doc(currentUser.uid).collection("quizResults").doc(quizId).set({
         score,
         date: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      resultMsg.textContent = `✅ نتيجتك: ${score}%`;
+      resultMsg.textContent = `✅ تم إنهاء الاختبار. نتيجتك: ${score}%`;
       resultMsg.classList.remove("hidden");
       submitBtn.disabled = true;
-
-      answersReview.innerHTML = reviewList.map((item, i) => `
-        <div class="border p-4 rounded ${item.isCorrect ? 'bg-green-50' : 'bg-red-50'}">
-          <p><strong>${i + 1}. ${item.question}</strong></p>
-          <p>إجابتك: <span class="${item.isCorrect ? 'text-green-600' : 'text-red-600'}">${item.selected}</span></p>
-          <p>الصحيحة: <span class="text-green-600">${item.correct}</span></p>
-        </div>`).join('');
-    }
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+    };
 
     function startTimer() {
       const duration = 3 * 60 * 60 * 1000;
       const endTime = Date.now() + duration;
-      const timerElement = document.getElementById("timer");
+
       const interval = setInterval(() => {
         const remaining = endTime - Date.now();
         if (remaining <= 0) {
           clearInterval(interval);
           timerElement.textContent = "انتهى الوقت! سيتم إرسال الاختبار تلقائياً.";
           submitBtn.click();
-          return;
+        } else {
+          const h = Math.floor(remaining / 3600000);
+          const m = Math.floor((remaining % 3600000) / 60000);
+          const s = Math.floor((remaining % 60000) / 1000);
+          timerElement.textContent = `الوقت المتبقي: ${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
         }
-        const h = Math.floor(remaining / (1000 * 60 * 60));
-        const m = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-        const s = Math.floor((remaining % (1000 * 60)) / 1000);
-        timerElement.textContent = `الوقت المتبقي: ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
       }, 1000);
     }
   </script>
