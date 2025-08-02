@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>إضافة سؤال</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -11,17 +11,19 @@
 </head>
 <body class="bg-gray-100 p-6">
   <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow space-y-4">
-    <h1 class="text-2xl font-bold mb-4 text-center">إضافة سؤال إلى اختبار</h1>
+    <h1 class="text-2xl font-bold text-center mb-4">إضافة سؤال لاختبار</h1>
 
-    <select id="grade" class="w-full p-2 border rounded">
-      <option value="">اختر الصف</option>
-      <option value="أول ثانوي">أول ثانوي</option>
-      <option value="ثاني ثانوي">ثاني ثانوي</option>
+    <select id="courseSelect" class="w-full p-2 border rounded">
+      <option value="">اختر الكورس</option>
     </select>
 
-    <input type="text" id="courseId" placeholder="ID الكورس" class="w-full p-2 border rounded" />
-    <input type="text" id="lectureId" placeholder="ID المحاضرة" class="w-full p-2 border rounded" />
-    <input type="text" id="quizId" placeholder="ID الاختبار" class="w-full p-2 border rounded" />
+    <select id="lectureSelect" class="w-full p-2 border rounded">
+      <option value="">اختر المحاضرة</option>
+    </select>
+
+    <select id="quizIdSelect" class="w-full p-2 border rounded">
+      <option value="">اختر ID الاختبار</option>
+    </select>
 
     <textarea id="questionText" placeholder="نص السؤال" class="w-full p-2 border rounded"></textarea>
 
@@ -29,18 +31,16 @@
     <input type="text" id="option2" placeholder="الخيار 2" class="w-full p-2 border rounded" />
     <input type="text" id="option3" placeholder="الخيار 3" class="w-full p-2 border rounded" />
     <input type="text" id="option4" placeholder="الخيار 4" class="w-full p-2 border rounded" />
-
     <input type="number" id="correctAnswer" placeholder="رقم الإجابة الصحيحة (1-4)" class="w-full p-2 border rounded" />
-
     <input type="file" id="questionImage" class="w-full p-2 border rounded" />
 
-    <button id="addQuestionBtn" class="bg-indigo-600 text-white py-2 px-4 rounded w-full">➕ إضافة السؤال</button>
+    <button id="addBtn" class="bg-indigo-600 text-white py-2 px-4 rounded w-full">➕ إضافة السؤال</button>
 
-    <p id="status" class="text-center text-green-600 font-bold mt-4 hidden">تم إضافة السؤال ✅</p>
+    <p id="status" class="text-center text-green-600 font-bold mt-4 hidden">✅ تم إضافة السؤال</p>
   </div>
 
   <script>
-    // Firebase
+    // إعداد فايربيس
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -51,35 +51,87 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    document.getElementById("addQuestionBtn").onclick = async () => {
-      const grade = document.getElementById("grade").value;
-      const courseId = document.getElementById("courseId").value.trim();
-      const lectureId = document.getElementById("lectureId").value.trim();
-      const quizId = document.getElementById("quizId").value.trim();
-      const questionText = document.getElementById("questionText").value.trim();
+    const courseSelect = document.getElementById("courseSelect");
+    const lectureSelect = document.getElementById("lectureSelect");
+    const quizIdSelect = document.getElementById("quizIdSelect");
+
+    // تحميل الكورسات من Firestore
+    async function loadCourses() {
+      const snapshot = await db.collection("courses").get();
+      snapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = doc.data().name;
+        courseSelect.appendChild(option);
+      });
+    }
+
+    // تحميل المحاضرات عند اختيار كورس
+    courseSelect.addEventListener("change", async () => {
+      lectureSelect.innerHTML = '<option value="">اختر المحاضرة</option>';
+      const courseId = courseSelect.value;
+      if (!courseId) return;
+
+      const snapshot = await db.collection("lectures")
+        .where("courseId", "==", courseId)
+        .get();
+
+      snapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = doc.data().lectureTitle;
+        lectureSelect.appendChild(option);
+      });
+    });
+
+    // تحميل الـ quizId من محتويات المحاضرة
+    lectureSelect.addEventListener("change", async () => {
+      quizIdSelect.innerHTML = '<option value="">اختر ID الاختبار</option>';
+      const lectureId = lectureSelect.value;
+      if (!lectureId) return;
+
+      const snapshot = await db.collection("lectureContent")
+        .where("lectureId", "==", lectureId)
+        .where("type", "==", "quiz")
+        .get();
+
+      snapshot.forEach(doc => {
+        const quizId = doc.data().url;
+        const option = document.createElement("option");
+        option.value = quizId;
+        option.textContent = quizId;
+        quizIdSelect.appendChild(option);
+      });
+    });
+
+    // زر الإضافة
+    document.getElementById("addBtn").onclick = async () => {
+      const courseId = courseSelect.value;
+      const lectureId = lectureSelect.value;
+      const quizId = quizIdSelect.value;
+      const questionText = document.getElementById("questionText").value;
       const options = [
-        document.getElementById("option1").value.trim(),
-        document.getElementById("option2").value.trim(),
-        document.getElementById("option3").value.trim(),
-        document.getElementById("option4").value.trim()
+        document.getElementById("option1").value,
+        document.getElementById("option2").value,
+        document.getElementById("option3").value,
+        document.getElementById("option4").value
       ];
       const correctIndex = parseInt(document.getElementById("correctAnswer").value) - 1;
       const imageFile = document.getElementById("questionImage").files[0];
 
-      if (!grade || !courseId || !lectureId || !quizId || !questionText || options.some(o => !o) || isNaN(correctIndex)) {
-        alert("❌ تأكد من إدخال كل البيانات المطلوبة بشكل صحيح.");
+      if (!courseId || !lectureId || !quizId || !questionText || options.some(o => !o) || isNaN(correctIndex)) {
+        alert("❌ برجاء ملء جميع الحقول بشكل صحيح");
         return;
       }
 
       let imageUrl = "";
       if (imageFile) {
-        const storageRef = storage.ref(`quiz-images/${Date.now()}_${imageFile.name}`);
-        await storageRef.put(imageFile);
-        imageUrl = await storageRef.getDownloadURL();
+        const ref = storage.ref("quiz-images/" + Date.now() + "_" + imageFile.name);
+        await ref.put(imageFile);
+        imageUrl = await ref.getDownloadURL();
       }
 
-      const questionData = {
-        grade,
+      const data = {
         courseId,
         lectureId,
         quizId,
@@ -90,11 +142,15 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      await db.collection("quizzes").doc(quizId).collection("questions").add(questionData);
+      await db.collection("quizzes").doc(quizId).collection("questions").add(data);
 
       document.getElementById("status").classList.remove("hidden");
     };
+
+    // بدء تحميل الكورسات عند فتح الصفحة
+    loadCourses();
   </script>
 </body>
 </html>
+
 
