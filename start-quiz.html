@@ -1,26 +1,33 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>بدء الاختبار</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>الاختبار</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Tajawal', sans-serif; padding: 20px; background-color: #f0f4f8; }
+    .question-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; margin-bottom: 20px; }
+    .choices label { display: block; margin: 10px 0; }
+    .buttons { display: flex; gap: 15px; margin-top: 20px; }
+    .btn { padding: 10px 20px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .btn:hover { background-color: #2563eb; }
+    .counter { margin-bottom: 10px; font-weight: bold; }
+  </style>
 </head>
-<body class="bg-gray-100 p-6 font-sans">
-  <div class="max-w-xl mx-auto bg-white rounded-xl shadow p-6" id="quizBox">
-    <h2 class="text-xl font-bold mb-4" id="quizTitle">تحميل...</h2>
-    <div id="timer" class="text-red-600 font-bold mb-4"></div>
-    <div id="questionBox" class="mb-4"></div>
-    <div class="flex justify-between mt-6">
-      <button onclick="prevQuestion()" class="bg-gray-300 px-4 py-2 rounded">السابق</button>
-      <button onclick="nextQuestion()" class="bg-blue-600 text-white px-4 py-2 rounded">التالي</button>
-    </div>
-    <div class="mt-6 flex justify-between">
-      <button onclick="saveForLater()" class="bg-yellow-500 text-white px-4 py-2 rounded">استكمال لاحقًا</button>
-      <button onclick="submitQuiz()" class="bg-green-600 text-white px-4 py-2 rounded">تسليم الاختبار</button>
+<body>
+
+  <div class="question-box" id="questionBox">
+    <div class="counter" id="questionCounter">السؤال 1 من X</div>
+    <div id="questionText">جارٍ تحميل السؤال...</div>
+    <div class="choices" id="choicesContainer"></div>
+    <div class="buttons">
+      <button class="btn" id="nextBtn">التالي</button>
+      <button class="btn" id="submitBtn">تسليم</button>
+      <button class="btn" onclick="saveForLater()">استكمال لاحقًا</button>
     </div>
   </div>
 
@@ -31,7 +38,6 @@
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8"
     });
-
     const auth = firebase.auth();
     const db = firebase.firestore();
 
@@ -39,128 +45,112 @@
     const quizId = params.get("id");
 
     let questions = [];
-    let current = 0;
-    let answers = {};
-    let totalTime = 3 * 60 * 60; // 3 ساعات
-    let timerInterval;
+    let currentQuestion = 0;
+    let studentAnswers = [];
 
-    const questionBox = document.getElementById("questionBox");
-    const quizTitle = document.getElementById("quizTitle");
-    const timerEl = document.getElementById("timer");
+    const questionText = document.getElementById("questionText");
+    const choicesContainer = document.getElementById("choicesContainer");
+    const questionCounter = document.getElementById("questionCounter");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
 
-    auth.onAuthStateChanged(async user => {
-      if (!user) return location.href = "login.html";
-
-      const studentDoc = await db.collection("students").doc(user.uid).get();
-      const studentData = studentDoc.data();
-
-      // تحقق من الاشتراك في الكورس
-      const quizSnap = await db.collection("lectureContent").where("url", "==", quizId).get();
-      if (quizSnap.empty) return alert("❌ لا يوجد اختبار بهذا المعرف");
-
-      const quizData = quizSnap.docs[0].data();
-      const lectureSnap = await db.collection("lectures").doc(quizData.lectureId).get();
-      const courseSnap = await db.collection("courses").doc(lectureSnap.data().courseId).get();
-
-      const isFree = courseSnap.data().isFree;
-      const enrolled = studentData.enrolledCourses.includes(lectureSnap.data().courseId);
-
-      if (!isFree && !enrolled) {
-        alert("❌ غير مشترك في هذا الكورس.");
-        return location.href = "index.html";
-      }
-
-      // تحقق من وجود محاولة سابقة
-      const attemptDoc = await db.collection("quizAttempts").doc(`${user.uid}_${quizId}`).get();
-      if (attemptDoc.exists && attemptDoc.data().status === "submitted") {
-        alert("لقد قمت بتسليم هذا الاختبار من قبل.");
-        return location.href = "index.html";
-      }
-
-      // تحميل الأسئلة
-      const qSnap = await db.collection("quizQuestions").where("quizId", "==", quizId).get();
-      questions = qSnap.docs.map(doc => doc.data());
-
-      if (questions.length === 0) {
-        alert("لا يوجد أسئلة بعد.");
+    function renderQuestion() {
+      if (currentQuestion >= questions.length) {
+        questionText.textContent = "✅ انتهت الأسئلة، اضغط تسليم.";
+        choicesContainer.innerHTML = "";
+        nextBtn.disabled = true;
         return;
       }
 
-      quizTitle.textContent = `عدد الأسئلة: ${questions.length}`;
-      startTimer();
-      showQuestion();
-    });
+      const q = questions[currentQuestion];
+      questionCounter.textContent = `السؤال ${currentQuestion + 1} من ${questions.length}`;
+      questionText.textContent = q.text;
+      choicesContainer.innerHTML = "";
 
-    function startTimer() {
-      timerInterval = setInterval(() => {
-        if (totalTime <= 0) {
-          clearInterval(timerInterval);
-          submitQuiz();
-        } else {
-          const h = Math.floor(totalTime / 3600);
-          const m = Math.floor((totalTime % 3600) / 60);
-          const s = totalTime % 60;
-          timerEl.textContent = `الوقت المتبقي: ${h}:${m}:${s}`;
-          totalTime--;
-        }
-      }, 1000);
+      q.choices.forEach((choice, index) => {
+        const label = document.createElement("label");
+        label.innerHTML = `
+          <input type="radio" name="answer" value="${index}"> ${choice}
+        `;
+        choicesContainer.appendChild(label);
+      });
     }
 
-    function showQuestion() {
-      const q = questions[current];
-      questionBox.innerHTML = `
-        <p class="font-bold mb-2">سؤال ${current + 1} من ${questions.length}</p>
-        <p class="mb-4">${q.text}</p>
-        ${q.imageUrl ? `<img src="${q.imageUrl}" class="mb-4 w-full rounded">` : ""}
-        ${q.choices.map((c, i) => `
-          <div>
-            <label class="inline-flex items-center">
-              <input type="radio" name="choice" value="${i}" ${answers[current] == i ? 'checked' : ''} class="mr-2">
-              ${c}
-            </label>
-          </div>
-        `).join('')}
-      `;
-    }
-
-    function nextQuestion() {
-      const selected = document.querySelector('input[name="choice"]:checked');
-      if (selected) answers[current] = parseInt(selected.value);
-      if (current < questions.length - 1) {
-        current++;
-        showQuestion();
+    function saveAnswer() {
+      const selected = document.querySelector('input[name="answer"]:checked');
+      if (!selected) {
+        alert("اختر إجابة قبل المتابعة.");
+        return false;
       }
+      studentAnswers[currentQuestion] = parseInt(selected.value);
+      return true;
     }
 
-    function prevQuestion() {
-      if (current > 0) {
-        current--;
-        showQuestion();
+    nextBtn.onclick = () => {
+      if (saveAnswer()) {
+        currentQuestion++;
+        renderQuestion();
       }
-    }
+    };
 
-    function saveForLater() {
-      alert("تم حفظ التقدم، يمكنك العودة لاحقًا.");
-      location.href = "index.html";
-    }
+    submitBtn.onclick = async () => {
+      if (!saveAnswer()) return;
 
-    async function submitQuiz() {
       const user = auth.currentUser;
-      const correct = questions.filter((q, i) => q.correct === answers[i]).length;
+      if (!user) return alert("يجب تسجيل الدخول");
 
-      await db.collection("quizAttempts").doc(`${user.uid}_${quizId}`).set({
-        uid: user.uid,
-        quizId,
-        answers,
-        correctCount: correct,
-        total: questions.length,
-        status: "submitted",
-        submittedAt: new Date()
+      let score = 0;
+      questions.forEach((q, i) => {
+        if (studentAnswers[i] === q.correct) score++;
       });
 
-      alert(`تم التسليم. نتيجتك: ${correct} من ${questions.length}`);
-      location.href = "index.html";
+      await db.collection("quizResults").add({
+        quizId,
+        studentId: user.uid,
+        answers: studentAnswers,
+        score,
+        total: questions.length,
+        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      alert(`تم تسليم الاختبار. نتيجتك: ${score} / ${questions.length}`);
+      window.location.href = "index.html";
+    };
+
+    function saveForLater() {
+      alert("تم حفظ التقدم. يمكنك العودة لاحقًا.");
+      window.location.href = "index.html";
     }
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) return alert("❌ يجب تسجيل الدخول أولًا");
+
+      const doc = await db.collection("students").doc(user.uid).get();
+      const student = doc.data();
+
+      const attemptDoc = await db.collection("quizResults")
+        .where("studentId", "==", user.uid)
+        .where("quizId", "==", quizId)
+        .get();
+
+      if (!attemptDoc.empty) {
+        alert("❌ لقد أكملت هذا الاختبار من قبل.");
+        window.location.href = "index.html";
+        return;
+      }
+
+      // جلب الأسئلة
+      const snap = await db.collection("quizQuestions")
+        .where("quizId", "==", quizId).get();
+
+      if (snap.empty) {
+        questionText.textContent = "❌ لا يوجد أسئلة لهذا الاختبار.";
+        return;
+      }
+
+      questions = snap.docs.map(doc => doc.data());
+      renderQuestion();
+    });
   </script>
 </body>
 </html>
