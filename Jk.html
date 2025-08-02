@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>الكورسات | منصة عبدالرحمن السقا</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { 
+      font-family: 'Tajawal', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    }
+    .course-card {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+    .course-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.2);
+    }
+    .payment-method {
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+    .payment-method:hover, .payment-method.selected {
+      border-color: #4f46e5;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white shadow-lg p-4 flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center space-x-2">
+      <div class="bg-indigo-600 p-2 rounded-lg">
+        <i class="fas fa-graduation-cap text-white text-xl"></i>
+      </div>
+      <h1 class="text-xl font-bold text-indigo-700">كورسات الصف <span id="stageName"></span></h1>
+    </div>
+
+    <div id="userSection" class="flex items-center gap-4">
+      <a id="coinBar" href="coins.html" class="bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 px-4 py-1 rounded-full text-sm flex items-center space-x-1 border border-yellow-200 hover:bg-yellow-200 transition">
+        <i class="fas fa-coins"></i>
+        <span id="coinsCount">0</span>
+        <span>كوين</span>
+      </a>
+      <button id="logoutBtn" class="text-gray-600 hover:text-gray-800 transition">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-6">
+    <div class="max-w-6xl mx-auto">
+      <!-- زر الشحن والدفع -->
+      <div class="flex justify-end mb-6">
+        <button id="showPaymentBtn" class="bg-gradient-to-r from-green-600 to-green-500 text-white px-6 py-2 rounded-lg hover:from-green-700 hover:to-green-600 transition-all duration-300 shadow-md hover:shadow-lg flex items-center space-x-2">
+          <i class="fas fa-credit-card"></i>
+          <span>شحن رصيد / دفع</span>
+        </button>
+      </div>
+
+      <!-- قائمة الكورسات -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="coursesList">
+        <!-- سيتم ملؤها بالكورسات من Firebase -->
+      </div>
+    </div>
+  </main>
+
+  <!-- نافذة الدفع -->
+  <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl w-full max-w-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-gray-800">نظام الشحن والدفع</h3>
+        <button id="closePaymentModal" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-6">
+        <!-- بطاقة الشحن -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h4 class="font-bold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-coins text-yellow-500 mr-2"></i>
+            شحن رصيد الكوينات
+          </h4>
+          
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="payment-amount bg-white p-3 rounded-lg text-center cursor-pointer border hover:border-indigo-400">
+              <div class="font-bold">50 كوين</div>
+              <div class="text-green-600">25 ج.م</div>
+            </div>
+            <div class="payment-amount bg-white p-3 rounded-lg text-center cursor-pointer border hover:border-indigo-400">
+              <div class="font-bold">100 كوين</div>
+              <div class="text-green-600">45 ج.م</div>
+            </div>
+            <div class="payment-amount bg-white p-3 rounded-lg text-center cursor-pointer border hover:border-indigo-400">
+              <div class="font-bold">200 كوين</div>
+              <div class="text-green-600">80 ج.م</div>
+            </div>
+            <div class="payment-amount bg-white p-3 rounded-lg text-center cursor-pointer border hover:border-indigo-400">
+              <div class="font-bold">500 كوين</div>
+              <div class="text-green-600">180 ج.م</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- طرق الدفع -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h4 class="font-bold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-credit-card text-blue-500 mr-2"></i>
+            اختر طريقة الدفع
+          </h4>
+          
+          <div class="space-y-3">
+            <div class="payment-method bg-white p-3 rounded-lg cursor-pointer flex items-center">
+              <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <i class="fab fa-cc-visa text-blue-600"></i>
+              </div>
+              <div>
+                <div class="font-bold">بطاقة ائتمان/خصم</div>
+                <div class="text-sm text-gray-500">فيزا, ماستركارد, أمريكان اكسبريس</div>
+              </div>
+            </div>
+            
+            <div class="payment-method bg-white p-3 rounded-lg cursor-pointer flex items-center">
+              <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <i class="fas fa-mobile-alt text-green-600"></i>
+              </div>
+              <div>
+                <div class="font-bold">محفظة إلكترونية</div>
+                <div class="text-sm text-gray-500">فودافون كاش, أورانج موني</div>
+              </div>
+            </div>
+            
+            <div class="payment-method bg-white p-3 rounded-lg cursor-pointer flex items-center">
+              <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                <i class="fas fa-university text-purple-600"></i>
+              </div>
+              <div>
+                <div class="font-bold">تحويل بنكي</div>
+                <div class="text-sm text-gray-500">تحويل مباشر عبر الإنترنت</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- تفاصيل الدفع -->
+        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+          <div class="flex justify-between mb-2">
+            <span class="text-gray-600">المبلغ المطلوب:</span>
+            <span class="font-bold" id="paymentAmount">0 ج.م</span>
+          </div>
+          <div class="flex justify-between mb-2">
+            <span class="text-gray-600">الضريبة:</span>
+            <span class="font-bold" id="paymentTax">0 ج.م</span>
+          </div>
+          <div class="flex justify-between text-lg font-bold text-indigo-700">
+            <span>الإجمالي:</span>
+            <span id="paymentTotal">0 ج.م</span>
+          </div>
+          
+          <button id="confirmPaymentBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg mt-4 transition flex items-center justify-center space-x-2">
+            <i class="fas fa-lock"></i>
+            <span>تأكيد الدفع</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة التأكيد -->
+  <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl w-full max-w-md p-6 text-center">
+      <div class="text-green-500 text-5xl mb-4">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <h3 class="text-xl font-bold text-gray-800 mb-2">تم الدفع بنجاح!</h3>
+      <p class="text-gray-600 mb-4">شكراً لك على شرائك. تمت إضافة <span id="addedCoins" class="font-bold">0</span> كوين إلى رصيدك.</p>
+      <button id="closeConfirmModal" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg">
+        تم
+      </button>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Firebase Init
+    firebase.initializeApp({
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8"
+    });
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // عناصر واجهة المستخدم
+    const stageName = document.getElementById('stageName');
+    const coursesList = document.getElementById('coursesList');
+    const coinsCount = document.getElementById('coinsCount');
+    const showPaymentBtn = document.getElementById('showPaymentBtn');
+    const paymentModal = document.getElementById('paymentModal');
+    const closePaymentModal = document.getElementById('closePaymentModal');
+    const paymentAmounts = document.querySelectorAll('.payment-amount');
+    const paymentMethods = document.querySelectorAll('.payment-method');
+    const paymentAmount = document.getElementById('paymentAmount');
+    const paymentTax = document.getElementById('paymentTax');
+    const paymentTotal = document.getElementById('paymentTotal');
+    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    const confirmModal = document.getElementById('confirmModal');
+    const closeConfirmModal = document.getElementById('closeConfirmModal');
+    const addedCoins = document.getElementById('addedCoins');
+
+    // متغيرات الدفع
+    let selectedAmount = 0;
+    let selectedCoins = 0;
+    let selectedMethod = null;
+
+    // تحميل بيانات الصفحة
+    function loadPageData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const stage = urlParams.get('stage');
+      
+      if (stage) {
+        stageName.textContent = stage;
+        loadCourses(stage);
+      } else {
+        window.location.href = "index.html";
+      }
+    }
+
+    // تحميل الكورسات من Firebase
+    async function loadCourses(stage) {
+      const snapshot = await db.collection('courses').where('stage', '==', stage).get();
+      
+      if (snapshot.empty) {
+        coursesList.innerHTML = '<div class="col-span-3 text-center text-gray-500 py-10">لا توجد كورسات متاحة لهذا الصف حالياً</div>';
+        return;
+      }
+      
+      coursesList.innerHTML = '';
+      
+      snapshot.forEach(doc => {
+        const course = doc.data();
+        const courseCard = `
+          <div class="course-card bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="h-40 bg-gray-200 bg-cover bg-center" style="background-image: url('${course.image || 'https://via.placeholder.com/400x225'}')"></div>
+            <div class="p-4">
+              <h3 class="text-lg font-bold text-gray-800">${course.name}</h3>
+              <p class="text-gray-600 text-sm mt-1">${course.teacher || 'مدرس غير معروف'}</p>
+              
+              <div class="flex justify-between items-center mt-4">
+                <div class="text-indigo-600 font-bold">${course.price || 0} ج.م</div>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1 rounded-lg text-sm">
+                  اشترك الآن
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        coursesList.innerHTML += courseCard;
+      });
+    }
+
+    // إدارة نافذة الدفع
+    showPaymentBtn.addEventListener('click', () => {
+      paymentModal.classList.remove('hidden');
+    });
+
+    closePaymentModal.addEventListener('click', () => {
+      paymentModal.classList.add('hidden');
+    });
+
+    // اختيار مبلغ الدفع
+    paymentAmounts.forEach(amount => {
+      amount.addEventListener('click', function() {
+        paymentAmounts.forEach(a => a.classList.remove('border-indigo-400', 'bg-indigo-50'));
+        this.classList.add('border-indigo-400', 'bg-indigo-50');
+        
+        const coins = parseInt(this.querySelector('div:first-child').textContent);
+        const amount = parseInt(this.querySelector('div:last-child').textContent);
+        
+        selectedCoins = coins;
+        selectedAmount = amount;
+        
+        updatePaymentSummary();
+      });
+    });
+
+    // اختيار طريقة الدفع
+    paymentMethods.forEach(method => {
+      method.addEventListener('click', function() {
+        paymentMethods.forEach(m => m.classList.remove('selected', 'bg-blue-50'));
+        this.classList.add('selected', 'bg-blue-50');
+        selectedMethod = this.querySelector('div:first-child').textContent.trim();
+      });
+    });
+
+    // تحديث ملخص الدفع
+    function updatePaymentSummary() {
+      const tax = selectedAmount * 0.14; // ضريبة 14%
+      const total = selectedAmount + tax;
+      
+      paymentAmount.textContent = `${selectedAmount} ج.م`;
+      paymentTax.textContent = `${tax.toFixed(2)} ج.م`;
+      paymentTotal.textContent = `${total.toFixed(2)} ج.م`;
+    }
+
+    // تأكيد الدفع
+    confirmPaymentBtn.addEventListener('click', async () => {
+      if (selectedAmount === 0 || !selectedMethod) {
+        alert('الرجاء اختيار مبلغ وطريقة الدفع أولاً');
+        return;
+      }
+      
+      try {
+        // هنا نضيف منطق الدفع الفعلي (يمكن استخدام Stripe أو أي بوابة دفع أخرى)
+        // لأغراض العرض، سنقوم بمحاكاة عملية الدفع
+        
+        // 1. محاكاة اتصال ببوابة الدفع
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // 2. تحديث رصيد المستخدم في Firebase
+        const user = auth.currentUser;
+        if (user) {
+          const userRef = db.collection('students').doc(user.uid);
+          const doc = await userRef.get();
+          
+          if (doc.exists) {
+            const currentCoins = doc.data().coins || 0;
+            await userRef.update({
+              coins: currentCoins + selectedCoins,
+              transactions: firebase.firestore.FieldValue.arrayUnion({
+                amount: selectedAmount,
+                coins: selectedCoins,
+                method: selectedMethod,
+                date: new Date().toISOString()
+              })
+            });
+            
+            // 3. عرض تأكيد الدفع
+            addedCoins.textContent = selectedCoins;
+            paymentModal.classList.add('hidden');
+            confirmModal.classList.remove('hidden');
+            
+            // 4. تحديث عرض الرصيد
+            coinsCount.textContent = currentCoins + selectedCoins;
+          }
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        alert('حدث خطأ أثناء عملية الدفع، الرجاء المحاولة مرة أخرى');
+      }
+    });
+
+    // إغلاق نافذة التأكيد
+    closeConfirmModal.addEventListener('click', () => {
+      confirmModal.classList.add('hidden');
+    });
+
+    // تحميل بيانات المستخدم
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const doc = await db.collection('students').doc(user.uid).get();
+        if (doc.exists) {
+          coinsCount.textContent = doc.data().coins || 0;
+        }
+        loadPageData();
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+
+    // تسجيل الخروج
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      auth.signOut().then(() => {
+        window.location.href = "index.html";
+      });
+    });
+  </script>
+</body>
+</html>
