@@ -1,81 +1,81 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>منصة عبدالرحمن السقا</title>
+  <title>الصفحة الرئيسية | منصة عبدالرحمن السقا</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Tajawal', sans-serif; }
-    .gradient { background: linear-gradient(to left, #4f46e5, #7c3aed); }
-    .hover-card:hover { transform: scale(1.03); }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 min-h-screen flex flex-col">
 
-  <!-- ✅ Header -->
-  <header class="gradient text-white p-5 flex justify-between items-center">
-    <h1 class="text-2xl font-bold">منصة عبدالرحمن السقا</h1>
-    <div class="relative">
-      <button id="loginBtn" class="bg-white text-indigo-600 px-4 py-2 rounded-lg font-bold hover:bg-indigo-100">
-        تسجيل الدخول
-      </button>
-      <div id="loginMenu" class="absolute right-0 mt-2 w-48 bg-white text-right rounded shadow-lg hidden z-50">
-        <a href="signup.html" class="block px-4 py-2 hover:bg-gray-100">حساب جديد</a>
-        <a href="login.html" class="block px-4 py-2 hover:bg-gray-100">عندي حساب</a>
+  <!-- Header -->
+  <header class="bg-white shadow p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold text-indigo-700">🎓 منصة عبدالرحمن السقا</h1>
+
+    <div id="userSection" class="flex items-center gap-4">
+      <div id="coinBar" class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm hidden">
+        💰 <span id="coinsCount">0</span> كوين
       </div>
+      <button id="loginBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">تسجيل</button>
     </div>
   </header>
 
-  <!-- ✅ كوينات الطالب -->
-  <div id="coinBar" class="bg-yellow-100 text-yellow-700 text-center py-3 font-bold hidden">
-    لديك <span id="coinsCount">0</span> كوين
-    <button onclick="window.location.href='wallet.html'" class="ml-2 bg-yellow-500 text-white px-3 py-1 rounded">
-      إدارة المحفظة
-    </button>
+  <!-- تسجيل الدخول أو التسجيل -->
+  <div id="loginOptions" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl w-80 space-y-4 text-center">
+      <h2 class="text-lg font-bold text-gray-700">تسجيل الدخول</h2>
+      <a href="login.html" class="block bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">📥 عندي حساب</a>
+      <a href="register.html" class="block bg-green-600 text-white py-2 rounded hover:bg-green-700">📝 حساب جديد</a>
+      <button onclick="closeOptions()" class="text-gray-500 mt-2 text-sm">إغلاق</button>
+    </div>
   </div>
 
-  <!-- ✅ اسم المنصة في الوسط -->
-  <section class="text-center py-16">
-    <h2 class="text-4xl font-bold text-indigo-700 mb-4">منصة عبدالرحمن السقا التعليمية</h2>
-    <p class="text-lg text-gray-600">ابدأ رحلتك التعليمية معنا بثقة واحترافية</p>
-  </section>
+  <!-- Main Content -->
+  <main class="flex-1 p-6">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl font-bold text-indigo-700">أهلاً بك في المنصة التعليمية</h2>
+      <p class="text-gray-600 mt-2">اختر الصف الدراسي لعرض الكورسات</p>
+    </div>
 
-  <!-- ✅ كورسات الثانوية -->
-  <section class="max-w-6xl mx-auto px-4 grid md:grid-cols-3 gap-6 mb-16">
-    <div onclick="window.location.href='courses-grade1.html'" class="bg-white p-6 rounded-xl shadow hover-card transition cursor-pointer text-center">
-      <h3 class="text-xl font-bold text-indigo-600 mb-2">الصف الأول الثانوي</h3>
-      <p class="text-gray-500">استعرض كورسات الصف الأول</p>
+    <!-- الصفوف الدراسية -->
+    <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <a href="courses.html?stage=الصف الأول" class="bg-white p-6 rounded-xl shadow text-center hover:bg-indigo-50 transition">
+        <h3 class="text-xl font-bold text-indigo-700">📗 الصف الأول الثانوي</h3>
+      </a>
+      <a href="courses.html?stage=الصف الثاني" class="bg-white p-6 rounded-xl shadow text-center hover:bg-indigo-50 transition">
+        <h3 class="text-xl font-bold text-indigo-700">📘 الصف الثاني الثانوي</h3>
+      </a>
+      <a href="courses.html?stage=الصف الثالث" class="bg-white p-6 rounded-xl shadow text-center hover:bg-indigo-50 transition">
+        <h3 class="text-xl font-bold text-indigo-700">📙 الصف الثالث الثانوي</h3>
+      </a>
     </div>
-    <div onclick="window.location.href='courses-grade2.html'" class="bg-white p-6 rounded-xl shadow hover-card transition cursor-pointer text-center">
-      <h3 class="text-xl font-bold text-indigo-600 mb-2">الصف الثاني الثانوي</h3>
-      <p class="text-gray-500">استعرض كورسات الصف الثاني</p>
-    </div>
-    <div onclick="window.location.href='courses-grade3.html'" class="bg-white p-6 rounded-xl shadow hover-card transition cursor-pointer text-center">
-      <h3 class="text-xl font-bold text-indigo-600 mb-2">الصف الثالث الثانوي</h3>
-      <p class="text-gray-500">استعرض كورسات الصف الثالث</p>
-    </div>
-  </section>
 
-  <!-- ✅ فيديو طريقة الاشتراك -->
-  <section class="bg-white py-10 px-6 text-center">
-    <h3 class="text-2xl font-bold text-indigo-700 mb-4">🎥 إزاي تشترك في كورس؟</h3>
-    <div class="max-w-3xl mx-auto aspect-video">
-      <iframe class="w-full h-full rounded-xl" src="https://www.youtube.com/embed/GwduwHxu6aU" frameborder="0" allowfullscreen></iframe>
+    <!-- فيديو الاشتراك -->
+    <div class="max-w-4xl mx-auto mt-16 text-center">
+      <h3 class="text-2xl font-bold text-gray-800 mb-4">🎥 ازاي تشترك في كورس؟</h3>
+      <div class="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow">
+        <iframe class="w-full h-full" src="https://www.youtube.com/embed/YOUR_VIDEO_ID" frameborder="0" allowfullscreen></iframe>
+      </div>
     </div>
-  </section>
+  </main>
 
-  <!-- ✅ Footer -->
-  <footer class="bg-gray-800 text-white text-center py-6 mt-10">
-    جميع الحقوق محفوظة © منصة عبدالرحمن السقا 2025
+  <!-- Footer -->
+  <footer class="bg-white border-t p-4 text-center text-sm text-gray-500">
+    &copy; 2025 منصة عبدالرحمن السقا - جميع الحقوق محفوظة
   </footer>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
   <script>
-    // Firebase config
+    // Firebase Init
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -85,22 +85,25 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // تسجيل الدخول زر
     const loginBtn = document.getElementById("loginBtn");
-    const loginMenu = document.getElementById("loginMenu");
+    const loginOptions = document.getElementById("loginOptions");
+    const coinBar = document.getElementById("coinBar");
+    const coinsCount = document.getElementById("coinsCount");
 
-    loginBtn.addEventListener("click", () => {
-      loginMenu.classList.toggle("hidden");
-    });
+    loginBtn.onclick = () => loginOptions.classList.remove("hidden");
+    function closeOptions() {
+      loginOptions.classList.add("hidden");
+    }
 
-    // التحقق من تسجيل الدخول
+    // تحقق من المستخدم المسجل
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         const doc = await db.collection("students").doc(user.uid).get();
-        const student = doc.data();
-        if (student && student.coins !== undefined) {
-          document.getElementById("coinBar").classList.remove("hidden");
-          document.getElementById("coinsCount").textContent = student.coins;
+        if (doc.exists) {
+          const student = doc.data();
+          coinsCount.textContent = student.coins || 0;
+          coinBar.classList.remove("hidden");
+          loginBtn.classList.add("hidden");
         }
       }
     });
