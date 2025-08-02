@@ -2,177 +2,99 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>إضافة أسئلة اختبار</title>
+  <title>إضافة سؤال</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Tajawal', sans-serif;
-      background-color: #f9fafb;
-    }
-    label {
-      font-weight: 600;
-    }
-    input, select, textarea {
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-    }
-  </style>
 </head>
-<body class="p-6">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-md space-y-6">
-    <h1 class="text-2xl font-bold text-center mb-4">إضافة سؤال لاختبار</h1>
+<body class="bg-gray-100 p-6">
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow space-y-4">
+    <h1 class="text-2xl font-bold mb-4 text-center">إضافة سؤال إلى اختبار</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label>اختر الصف:</label>
-        <select id="classSelect" class="w-full p-2 mt-1">
-          <option value="">-- اختر --</option>
-          <option value="1">الصف الأول</option>
-          <option value="2">الصف الثاني</option>
-          <option value="3">الصف الثالث</option>
-        </select>
-      </div>
+    <select id="grade" class="w-full p-2 border rounded">
+      <option value="">اختر الصف</option>
+      <option value="أول ثانوي">أول ثانوي</option>
+      <option value="ثاني ثانوي">ثاني ثانوي</option>
+    </select>
 
-      <div>
-        <label>اختر الكورس:</label>
-        <select id="courseSelect" class="w-full p-2 mt-1"></select>
-      </div>
+    <input type="text" id="courseId" placeholder="ID الكورس" class="w-full p-2 border rounded" />
+    <input type="text" id="lectureId" placeholder="ID المحاضرة" class="w-full p-2 border rounded" />
+    <input type="text" id="quizId" placeholder="ID الاختبار" class="w-full p-2 border rounded" />
 
-      <div>
-        <label>اختر المحاضرة:</label>
-        <select id="lectureSelect" class="w-full p-2 mt-1"></select>
-      </div>
+    <textarea id="questionText" placeholder="نص السؤال" class="w-full p-2 border rounded"></textarea>
 
-      <div>
-        <label>ID الاختبار:</label>
-        <input type="text" id="quizId" placeholder="مثال: QUIZ_001" class="w-full p-2 mt-1" />
-      </div>
-    </div>
+    <input type="text" id="option1" placeholder="الخيار 1" class="w-full p-2 border rounded" />
+    <input type="text" id="option2" placeholder="الخيار 2" class="w-full p-2 border rounded" />
+    <input type="text" id="option3" placeholder="الخيار 3" class="w-full p-2 border rounded" />
+    <input type="text" id="option4" placeholder="الخيار 4" class="w-full p-2 border rounded" />
 
-    <hr class="my-4" />
+    <input type="number" id="correctAnswer" placeholder="رقم الإجابة الصحيحة (1-4)" class="w-full p-2 border rounded" />
 
-    <div>
-      <label>نص السؤال:</label>
-      <textarea id="questionText" rows="3" class="w-full p-2 mt-1" placeholder="اكتب السؤال هنا..."></textarea>
-    </div>
+    <input type="file" id="questionImage" class="w-full p-2 border rounded" />
 
-    <div>
-      <label>رفع صورة (اختياري):</label>
-      <input type="file" id="imageInput" class="w-full p-2 mt-1" accept="image/*" />
-    </div>
+    <button id="addQuestionBtn" class="bg-indigo-600 text-white py-2 px-4 rounded w-full">➕ إضافة السؤال</button>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label>الاختيار الأول:</label>
-        <input type="text" id="opt1" class="w-full p-2 mt-1" />
-      </div>
-      <div>
-        <label>الاختيار الثاني:</label>
-        <input type="text" id="opt2" class="w-full p-2 mt-1" />
-      </div>
-      <div>
-        <label>الاختيار الثالث:</label>
-        <input type="text" id="opt3" class="w-full p-2 mt-1" />
-      </div>
-      <div>
-        <label>الاختيار الرابع:</label>
-        <input type="text" id="opt4" class="w-full p-2 mt-1" />
-      </div>
-    </div>
-
-    <div>
-      <label>الإجابة الصحيحة (رقم من 1 إلى 4):</label>
-      <input type="number" id="correctIndex" min="1" max="4" class="w-full p-2 mt-1" />
-    </div>
-
-    <button id="saveBtn" class="bg-green-600 text-white w-full py-3 rounded-lg font-bold hover:bg-green-700 mt-4">
-      حفظ السؤال
-    </button>
-
-    <p id="statusMessage" class="text-center text-sm mt-4"></p>
+    <p id="status" class="text-center text-green-600 font-bold mt-4 hidden">تم إضافة السؤال ✅</p>
   </div>
 
   <script>
-    const firebaseConfig = {
+    // Firebase
+    firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8",
-      storageBucket: "hhhhhh-d4fb8.appspot.com",
-    };
-    firebase.initializeApp(firebaseConfig);
+      storageBucket: "hhhhhh-d4fb8.appspot.com"
+    });
+
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    const courseSelect = document.getElementById("courseSelect");
-    const lectureSelect = document.getElementById("lectureSelect");
-    const classSelect = document.getElementById("classSelect");
-    const saveBtn = document.getElementById("saveBtn");
-    const statusMessage = document.getElementById("statusMessage");
-
-    classSelect.addEventListener("change", async () => {
-      const grade = classSelect.value;
-      if (!grade) return;
-
-      // تحميل الكورسات المرتبطة بالصف
-      const snap = await db.collection("courses").where("grade", "==", grade).get();
-      courseSelect.innerHTML = `<option value="">-- اختر الكورس --</option>`;
-      snap.forEach(doc => {
-        courseSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
-      });
-    });
-
-    courseSelect.addEventListener("change", async () => {
-      const courseId = courseSelect.value;
-      if (!courseId) return;
-
-      const snap = await db.collection("lectures").where("courseId", "==", courseId).get();
-      lectureSelect.innerHTML = `<option value="">-- اختر المحاضرة --</option>`;
-      snap.forEach(doc => {
-        lectureSelect.innerHTML += `<option value="${doc.id}">${doc.data().lectureTitle}</option>`;
-      });
-    });
-
-    saveBtn.addEventListener("click", async () => {
+    document.getElementById("addQuestionBtn").onclick = async () => {
+      const grade = document.getElementById("grade").value;
+      const courseId = document.getElementById("courseId").value.trim();
+      const lectureId = document.getElementById("lectureId").value.trim();
       const quizId = document.getElementById("quizId").value.trim();
       const questionText = document.getElementById("questionText").value.trim();
-      const opt1 = document.getElementById("opt1").value.trim();
-      const opt2 = document.getElementById("opt2").value.trim();
-      const opt3 = document.getElementById("opt3").value.trim();
-      const opt4 = document.getElementById("opt4").value.trim();
-      const correct = parseInt(document.getElementById("correctIndex").value);
-      const lectureId = lectureSelect.value;
-      const imageFile = document.getElementById("imageInput").files[0];
+      const options = [
+        document.getElementById("option1").value.trim(),
+        document.getElementById("option2").value.trim(),
+        document.getElementById("option3").value.trim(),
+        document.getElementById("option4").value.trim()
+      ];
+      const correctIndex = parseInt(document.getElementById("correctAnswer").value) - 1;
+      const imageFile = document.getElementById("questionImage").files[0];
 
-      if (!quizId || !questionText || !lectureId || ![opt1, opt2, opt3, opt4].every(Boolean) || isNaN(correct) || correct < 1 || correct > 4) {
-        statusMessage.textContent = "❌ الرجاء ملء جميع الحقول بشكل صحيح.";
-        statusMessage.style.color = "red";
+      if (!grade || !courseId || !lectureId || !quizId || !questionText || options.some(o => !o) || isNaN(correctIndex)) {
+        alert("❌ تأكد من إدخال كل البيانات المطلوبة بشكل صحيح.");
         return;
       }
 
       let imageUrl = "";
       if (imageFile) {
-        const storageRef = storage.ref(`quiz_images/${Date.now()}_${imageFile.name}`);
+        const storageRef = storage.ref(`quiz-images/${Date.now()}_${imageFile.name}`);
         await storageRef.put(imageFile);
         imageUrl = await storageRef.getDownloadURL();
       }
 
-      await db.collection("quizzes").doc(quizId).collection("questions").add({
+      const questionData = {
+        grade,
+        courseId,
+        lectureId,
+        quizId,
         questionText,
+        options,
+        correctIndex,
         imageUrl,
-        options: [opt1, opt2, opt3, opt4],
-        correctAnswerIndex: correct - 1,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        lectureId
-      });
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
 
-      statusMessage.textContent = "✅ تم حفظ السؤال بنجاح.";
-      statusMessage.style.color = "green";
-    });
+      await db.collection("quizzes").doc(quizId).collection("questions").add(questionData);
+
+      document.getElementById("status").classList.remove("hidden");
+    };
   </script>
 </body>
 </html>
+
