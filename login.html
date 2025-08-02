@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+      <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
@@ -59,45 +59,23 @@
       flex: 1;
       border-bottom: 1px solid #e5e7eb;
     }
-    .divider::before {
-      margin-left: 10px;
-    }
-    .divider::after {
-      margin-right: 10px;
-    }
-    .animate-spin {
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+    .divider::before { margin-left: 10px; }
+    .divider::after { margin-right: 10px; }
   </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
   <div class="login-card p-10 w-full max-w-md relative overflow-hidden">
-    <!-- Decorative elements -->
-    <div class="absolute -top-20 -right-20 w-40 h-40 bg-purple-100 rounded-full opacity-20"></div>
-    <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-100 rounded-full opacity-20"></div>
-    
-    <!-- Logo and title -->
     <div class="text-center mb-8">
       <div class="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl mx-auto mb-4 flex items-center justify-center shadow-lg">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13M12 6.253C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13M12 6.253C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13" />
         </svg>
       </div>
       <h1 class="text-3xl font-bold text-gray-800 mb-2">منصة عبدالرحمن السقا</h1>
       <p class="text-gray-600">سجل الدخول للوصول إلى حسابك</p>
     </div>
 
-    <!-- Instructions -->
-    <div id="loginInstructions" class="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm mb-4 hidden">
-      <p>ⓘ بعد النقر على زر التسجيل، سيظهر لك نافذة من Google للمصادقة. يرجى عدم إغلاقها حتى تكمل عملية التسجيل.</p>
-    </div>
-
-    <!-- Login buttons -->
     <div class="space-y-4">
       <button id="googleLogin" class="w-full btn-google text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
@@ -131,7 +109,6 @@
   </div>
 
   <script>
-    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -141,151 +118,53 @@
       appId: "1:24512338206:web:dfe045db59bd3434a2110f"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // DOM elements
     const loginMessage = document.getElementById("loginMessage");
-    const loginInstructions = document.getElementById("loginInstructions");
-    let isLoading = false;
 
-    // Show message with animation
     function showMessage(msg) {
       loginMessage.textContent = msg;
       loginMessage.classList.remove("hidden");
-      
-      anime({
-        targets: '#loginMessage',
-        opacity: [0, 1],
-        scale: [0.9, 1],
-        duration: 500,
-        easing: 'easeOutExpo'
-      });
     }
 
-    // Handle login result
     async function handleLoginResult(user) {
       try {
         const docRef = db.collection("students").doc(user.uid);
         const doc = await docRef.get();
-
-        if (!doc.exists) {
-          showMessage("⚠️ لم يتم العثور على حساب الطالب.");
-          return;
-        }
-
+        if (!doc.exists) return showMessage("⚠️ لم يتم العثور على حساب الطالب.");
         const data = doc.data();
+        if (data.status !== "تمت الموافقة") return showMessage("🚫 لم يتم قبول الحساب بعد. يرجى الانتظار ٤٨ ساعة.");
 
-        if (data.status !== "تمت الموافقة") {
-          showMessage("🚫 لم يتم قبول الحساب بعد. يرجى الانتظار ٤٨ ساعة.");
-          return;
-        }
-
-        // Generate new session ID
         const sessionId = "S-" + Math.random().toString(36).substring(2);
-
-        // Update database with new session ID
         await docRef.update({ session_id: sessionId });
 
-        // Save data to localStorage
-        localStorage.setItem("student", JSON.stringify({
-          id: user.uid,
-          fullName: data.fullName
-        }));
+        localStorage.setItem("student", JSON.stringify({ id: user.uid, fullName: data.fullName }));
         localStorage.setItem("session_id", sessionId);
 
-        // Redirect to dashboard
         window.location.href = "index.html";
       } catch (err) {
         showMessage("❌ حدث خطأ: " + err.message);
       }
     }
 
-    // Handle login with loading state
-    async function handleLogin(provider, type) {
-      if (isLoading) return;
-      
-      isLoading = true;
-      const btn = document.getElementById(`${type}Login`);
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `
-        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        جاري تسجيل الدخول...
-      `;
-      btn.disabled = true;
-
-      try {
-        const result = await auth.signInWithPopup(provider);
-        await handleLoginResult(result.user);
-      } catch (err) {
-        if (err.code !== 'auth/popup-closed-by-user') {
-          showMessage("❌ فشل تسجيل الدخول: " + err.message);
-        }
-      } finally {
-        isLoading = false;
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        loginInstructions.classList.add("hidden");
-      }
-    }
-
-    // Google Login
     document.getElementById("googleLogin").addEventListener("click", () => {
-      loginInstructions.classList.remove("hidden");
       const provider = new firebase.auth.GoogleAuthProvider();
-      handleLogin(provider, 'google');
+      auth.signInWithRedirect(provider);
     });
 
-    // Apple Login
     document.getElementById("appleLogin").addEventListener("click", () => {
-      loginInstructions.classList.remove("hidden");
-      const provider = new firebase.auth.OAuthProvider('apple.com');
-      handleLogin(provider, 'apple');
+      const provider = new firebase.auth.OAuthProvider("apple.com");
+      auth.signInWithRedirect(provider);
     });
 
-    // Alternative: Redirect method for popup blockers
-    document.getElementById("googleLogin").addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      if (confirm("هل تواجه مشكلة في نافذة التسجيل؟ هل تريد تجربة طريقة بديلة؟")) {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithRedirect(provider);
-      }
-    });
-
-    // Handle redirect result when page loads
-    auth.getRedirectResult().then((result) => {
-      if (result.user) {
-        handleLoginResult(result.user);
-      }
-    }).catch((err) => {
+    auth.getRedirectResult().then(result => {
+      if (result.user) handleLoginResult(result.user);
+    }).catch(err => {
       showMessage("❌ فشل تسجيل الدخول: " + err.message);
     });
-
-    // Animation on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      anime({
-        targets: '.login-card',
-        opacity: [0, 1],
-        translateY: [20, 0],
-        duration: 800,
-        easing: 'easeOutExpo'
-      });
-      
-      anime({
-        targets: 'button',
-        opacity: [0, 1],
-        translateY: [10, 0],
-        delay: anime.stagger(100),
-        duration: 600,
-        easing: 'easeOutExpo'
-      });
-    });
   </script>
-
 </body>
 </html>
+
