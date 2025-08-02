@@ -1,72 +1,253 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>الصفحة الرئيسية | منصة عبدالرحمن السقا</title>
+  <title>الصفحة الرئيسية | منصة عبدالرحمن السقا التعليمية</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { font-family: 'Tajawal', sans-serif; }
+    body { 
+      font-family: 'Tajawal', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    }
+    .gradient-text {
+      background: linear-gradient(90deg, #4f46e5, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .course-card {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(99, 102, 241, 0.1);
+    }
+    .course-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.2);
+    }
+    .footer-wave {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+    }
+    .footer-wave svg {
+      position: relative;
+      display: block;
+      width: calc(100% + 1.3px);
+      height: 50px;
+    }
+    .footer-wave .shape-fill {
+      fill: #FFFFFF;
+    }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
 
   <!-- Header -->
-  <header class="bg-white shadow p-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold text-indigo-700">🎓 منصة عبدالرحمن السقا</h1>
+  <header class="bg-white shadow-lg p-4 flex justify-between items-center sticky top-0 z-50">
+    <div class="flex items-center space-x-2">
+      <div class="bg-indigo-600 p-2 rounded-lg">
+        <i class="fas fa-graduation-cap text-white text-xl"></i>
+      </div>
+      <h1 class="text-xl font-bold text-indigo-700">منصة عبدالرحمن السقا التعليمية</h1>
+    </div>
 
     <div id="userSection" class="flex items-center gap-4">
-      <div id="coinBar" class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm hidden">
-        💰 <span id="coinsCount">0</span> كوين
+      <div id="coinBar" class="bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 px-4 py-1 rounded-full text-sm hidden items-center space-x-1 border border-yellow-200">
+        <i class="fas fa-coins"></i>
+        <span id="coinsCount">0</span>
+        <span>كوين</span>
       </div>
-      <button id="loginBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">تسجيل</button>
+      <button id="loginBtn" class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-6 py-2 rounded-lg hover:from-indigo-700 hover:to-indigo-600 transition-all duration-300 shadow-md hover:shadow-lg flex items-center space-x-2">
+        <i class="fas fa-sign-in-alt"></i>
+        <span>تسجيل الدخول</span>
+      </button>
     </div>
   </header>
 
   <!-- تسجيل الدخول أو التسجيل -->
   <div id="loginOptions" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-    <div class="bg-white p-6 rounded-xl w-80 space-y-4 text-center">
-      <h2 class="text-lg font-bold text-gray-700">تسجيل الدخول</h2>
-      <a href="login.html" class="block bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700">📥 عندي حساب</a>
-      <a href="register.html" class="block bg-green-600 text-white py-2 rounded hover:bg-green-700">📝 حساب جديد</a>
-      <button onclick="closeOptions()" class="text-gray-500 mt-2 text-sm">إغلاق</button>
+    <div class="bg-white p-8 rounded-xl w-96 space-y-6 text-center shadow-2xl">
+      <div class="bg-indigo-100 p-4 rounded-full inline-block">
+        <i class="fas fa-user-circle text-indigo-600 text-4xl"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800">مرحباً بك في المنصة</h2>
+      <p class="text-gray-600">سجل الدخول للوصول إلى جميع الكورسات والمميزات</p>
+      
+      <div class="space-y-3">
+        <a href="login.html" class="block bg-gradient-to-r from-indigo-600 to-indigo-500 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-indigo-600 transition flex items-center justify-center space-x-2">
+          <i class="fas fa-sign-in-alt"></i>
+          <span>تسجيل الدخول</span>
+        </a>
+        <a href="register.html" class="block bg-gradient-to-r from-green-500 to-green-400 text-white py-3 rounded-lg hover:from-green-600 hover:to-green-500 transition flex items-center justify-center space-x-2">
+          <i class="fas fa-user-plus"></i>
+          <span>إنشاء حساب جديد</span>
+        </a>
+      </div>
+      
+      <button onclick="closeOptions()" class="text-gray-500 mt-4 text-sm hover:text-gray-700 transition">
+        <i class="fas fa-times mr-1"></i>
+        إغلاق النافذة
+      </button>
     </div>
   </div>
 
   <!-- Main Content -->
   <main class="flex-1 p-6">
-    <div class="text-center mb-10">
-      <h2 class="text-3xl font-bold text-indigo-700">أهلاً بك في المنصة التعليمية</h2>
-      <p class="text-gray-600 mt-2">اختر الصف الدراسي لعرض الكورسات</p>
+    <div class="text-center mb-12">
+      <h2 class="text-4xl font-bold gradient-text mb-4">أهلاً بك في المنصة التعليمية</h2>
+      <p class="text-gray-600 text-lg">اختر الصف الدراسي للبدء في رحلة التعلم</p>
     </div>
 
     <!-- الصفوف الدراسية -->
-    <div class="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-      <a href="courses.html?stage=الصف الأول" class="bg-white p-6 rounded-xl shadow text-center hover:bg-indigo-50 transition">
-        <h3 class="text-xl font-bold text-indigo-700">📗 الصف الأول الثانوي</h3>
+    <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <a href="courses.html?stage=الصف الأول" class="course-card bg-white p-8 rounded-xl shadow-md text-center hover:border-indigo-300">
+        <div class="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-book-open text-indigo-600 text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-indigo-700 mb-2">الصف الأول الثانوي</h3>
+        <p class="text-gray-500 text-sm">كورسات متكاملة لطلبة الصف الأول</p>
+        <div class="mt-4 text-indigo-500 flex items-center justify-center space-x-1">
+          <span>استكشف الكورسات</span>
+          <i class="fas fa-arrow-left"></i>
+        </div>
       </a>
-      <a href="courses.html?stage=الصف الثاني" class="bg-white p-6 rounded-xl shadow text-center hover:bg-indigo-50 transition">
-        <h3 class="text-xl font-bold text-indigo-700">📘 الصف الثاني الثانوي</h3>
+      
+      <a href="courses.html?stage=الصف الثاني" class="course-card bg-white p-8 rounded-xl shadow-md text-center hover:border-indigo-300">
+        <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-book text-blue-600 text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-blue-700 mb-2">الصف الثاني الثانوي</h3>
+        <p class="text-gray-500 text-sm">تحضير مكثف لطلبة الصف الثاني</p>
+        <div class="mt-4 text-blue-500 flex items-center justify-center space-x-1">
+          <span>استكشف الكورسات</span>
+          <i class="fas fa-arrow-left"></i>
+        </div>
       </a>
-      <a href="courses.html?stage=الصف الثالث" class="bg-white p-6 rounded-xl shadow text-center hover:bg-indigo-50 transition">
-        <h3 class="text-xl font-bold text-indigo-700">📙 الصف الثالث الثانوي</h3>
+      
+      <a href="courses.html?stage=الصف الثالث" class="course-card bg-white p-8 rounded-xl shadow-md text-center hover:border-indigo-300">
+        <div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-graduation-cap text-purple-600 text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-purple-700 mb-2">الصف الثالث الثانوي</h3>
+        <p class="text-gray-500 text-sm">تحضير شامل لامتحانات الثانوية العامة</p>
+        <div class="mt-4 text-purple-500 flex items-center justify-center space-x-1">
+          <span>استكشف الكورسات</span>
+          <i class="fas fa-arrow-left"></i>
+        </div>
       </a>
     </div>
 
     <!-- فيديو الاشتراك -->
-    <div class="max-w-4xl mx-auto mt-16 text-center">
-      <h3 class="text-2xl font-bold text-gray-800 mb-4">🎥 ازاي تشترك في كورس؟</h3>
-      <div class="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow">
-        <iframe class="w-full h-full" src="https://www.youtube.com/embed/YOUR_VIDEO_ID" frameborder="0" allowfullscreen></iframe>
+    <div class="max-w-4xl mx-auto mt-20 text-center">
+      <h3 class="text-3xl font-bold text-gray-800 mb-6 flex items-center justify-center space-x-2">
+        <i class="fas fa-video text-indigo-600"></i>
+        <span>كيف تشترك في الكورسات؟</span>
+      </h3>
+      <div class="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-xl border-4 border-white">
+        <iframe class="w-full h-full" src="https://www.youtube.com/embed/YOUR_VIDEO_ID" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
     </div>
   </main>
 
   <!-- Footer -->
-  <footer class="bg-white border-t p-4 text-center text-sm text-gray-500">
-    &copy; 2025 منصة عبدالرحمن السقا - جميع الحقوق محفوظة
+  <footer class="relative bg-indigo-900 text-white mt-20">
+    <!-- Wave Design -->
+    <div class="footer-wave">
+      <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+        <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" class="shape-fill"></path>
+        <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" class="shape-fill"></path>
+        <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" class="shape-fill"></path>
+      </svg>
+    </div>
+    
+    <div class="container mx-auto px-6 py-12">
+      <div class="grid md:grid-cols-3 gap-8">
+        <!-- معلومات المشروع -->
+        <div class="space-y-4">
+          <div class="flex items-center space-x-2">
+            <div class="bg-white p-2 rounded-lg">
+              <i class="fas fa-graduation-cap text-indigo-600 text-xl"></i>
+            </div>
+            <h3 class="text-xl font-bold">منصة عبدالرحمن السقا التعليمية</h3>
+          </div>
+          <p class="text-indigo-200">
+            منصة تعليمية متكاملة تهدف إلى تقديم محتوى تعليمي متميز لطلبة المرحلة الثانوية بمختلف صفوفها الدراسية.
+          </p>
+          <div class="flex space-x-4 pt-2">
+            <span class="bg-indigo-800 px-3 py-1 rounded-full text-sm">تعليمي</span>
+            <span class="bg-indigo-800 px-3 py-1 rounded-full text-sm">تفاعلي</span>
+            <span class="bg-indigo-800 px-3 py-1 rounded-full text-sm">احترافي</span>
+          </div>
+        </div>
+        
+        <!-- تواصل مع المطور -->
+        <div class="space-y-4">
+          <h3 class="text-xl font-bold flex items-center space-x-2">
+            <i class="fas fa-user-tie"></i>
+            <span>تواصل مع المطور</span>
+          </h3>
+          <div class="space-y-3">
+            <a href="#" class="flex items-center space-x-2 text-indigo-200 hover:text-white transition">
+              <i class="fab fa-whatsapp text-green-400"></i>
+              <span>واتساب: +20 123 456 7890</span>
+            </a>
+            <a href="#" class="flex items-center space-x-2 text-indigo-200 hover:text-white transition">
+              <i class="fas fa-envelope text-yellow-400"></i>
+              <span>البريد الإلكتروني: developer@example.com</span>
+            </a>
+            <a href="#" class="flex items-center space-x-2 text-indigo-200 hover:text-white transition">
+              <i class="fas fa-phone-alt text-blue-400"></i>
+              <span>هاتف: +20 987 654 3210</span>
+            </a>
+          </div>
+        </div>
+        
+        <!-- حسابات التواصل الاجتماعي -->
+        <div class="space-y-4">
+          <h3 class="text-xl font-bold flex items-center space-x-2">
+            <i class="fas fa-hashtag"></i>
+            <span>تابعنا على</span>
+          </h3>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="#" class="bg-indigo-800 hover:bg-indigo-700 p-3 rounded-lg flex items-center justify-center space-x-2 transition">
+              <i class="fab fa-facebook-f text-blue-400"></i>
+              <span>فيسبوك</span>
+            </a>
+            <a href="#" class="bg-indigo-800 hover:bg-indigo-700 p-3 rounded-lg flex items-center justify-center space-x-2 transition">
+              <i class="fab fa-telegram text-blue-300"></i>
+              <span>تلجرام</span>
+            </a>
+            <a href="#" class="bg-indigo-800 hover:bg-indigo-700 p-3 rounded-lg flex items-center justify-center space-x-2 transition">
+              <i class="fab fa-youtube text-red-400"></i>
+              <span>يوتيوب</span>
+            </a>
+            <a href="#" class="bg-indigo-800 hover:bg-indigo-700 p-3 rounded-lg flex items-center justify-center space-x-2 transition">
+              <i class="fab fa-instagram text-pink-400"></i>
+              <span>إنستجرام</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- حقوق النشر -->
+      <div class="border-t border-indigo-800 mt-8 pt-8 text-center text-indigo-300">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+          <div>
+            <p>جميع الحقوق محفوظة &copy; <span id="year"></span> - منصة عبدالرحمن السقا التعليمية</p>
+          </div>
+          <div class="flex space-x-4 mt-4 md:mt-0">
+            <a href="#" class="hover:text-white transition">الشروط والأحكام</a>
+            <a href="#" class="hover:text-white transition">سياسة الخصوصية</a>
+            <a href="#" class="hover:text-white transition">الأسئلة الشائعة</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </footer>
 
   <!-- Firebase -->
@@ -107,6 +288,9 @@
         }
       }
     });
+
+    // إضافة السنة الحالية في الفوتر
+    document.getElementById('year').textContent = new Date().getFullYear();
   </script>
 </body>
 </html>
