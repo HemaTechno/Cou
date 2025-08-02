@@ -176,10 +176,22 @@
         const student = userDoc.data();
         
         // التحقق من اشتراك الطالب في الكورس
-        if (!courseId || !student.enrolledCourses || !student.enrolledCourses.includes(courseId)) {
-          showError("أنت غير مسجل في هذا الكورس أو الرابط غير صحيح", true);
-          return;
-        }
+        const courseDoc = await db.collection("courses").doc(courseId).get();
+
+if (!courseDoc.exists) {
+  showError("الكورس غير موجود", true);
+  return;
+}
+
+const course = courseDoc.data();
+const isFree = course.isFree === true || course.price === 0;
+const isEnrolled = student.enrolledCourses?.includes(courseId);
+
+if (!isFree && !isEnrolled) {
+  showError("أنت غير مشترك في هذا الكورس", true);
+  return;
+}
+
 
         // جلب بيانات الكورس
         await loadCourseInfo(courseId);
