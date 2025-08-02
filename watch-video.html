@@ -522,11 +522,15 @@
           <span><i class="fas fa-video" style="color: var(--accent-color)"></i> المحاضرة: ${lectureData.lectureTitle}</span>
         `;
 
-        if (!studentData.enrolledCourses.includes(lectureData.courseId)) {
-          errorBox.textContent = "❌ غير مشترك في هذا الكورس.";
-          errorBox.style.display = "block";
-          return;
-        }
+        const isFree = courseData.isFree === true || courseData.price === 0;
+const isEnrolled = studentData.enrolledCourses?.includes(lectureData.courseId);
+
+if (!isFree && !isEnrolled) {
+  errorBox.textContent = "❌ غير مشترك في هذا الكورس.";
+  errorBox.style.display = "block";
+  return;
+}
+
 
         const embedUrl = videoUrl.replace("youtu.be/", "www.youtube.com/embed/") + "?autoplay=1&enablejsapi=1&rel=0&modestbranding=1";
         iframe.src = embedUrl;
