@@ -1,168 +1,152 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>إضافة سؤال لاختبار</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>إضافة سؤال للاختبار</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-6">
-  <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow space-y-4">
-    <h1 class="text-2xl font-bold text-center mb-4">➕ إضافة سؤال لاختبار</h1>
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
+    <h1 class="text-2xl font-bold text-indigo-700">إضافة سؤال للاختبار</h1>
 
-    <select id="gradeSelect" class="w-full p-2 border rounded">
-      <option value="">اختر المرحلة</option>
-      <option value=" الصف الأول">الصف الأول </option>
-      <option value="ثانية ثانوي">الصف الثاني الثانوي</option>
-      <option value="ثالثة ثانوي">الصف الثالث الثانوي</option>
+    <select id="stageSelect" class="w-full border p-2 rounded">
+      <option value="">اختر الصف</option>
+      <option value="الصف الأول">الصف الأول</option>
+      <option value="الصف الثاني">الصف الثاني</option>
+      <option value="الصف الثالث">الصف الثالث</option>
     </select>
 
-    <select id="courseSelect" class="w-full p-2 border rounded">
+    <select id="courseSelect" class="w-full border p-2 rounded">
       <option value="">اختر الكورس</option>
     </select>
 
-    <select id="lectureSelect" class="w-full p-2 border rounded">
+    <select id="lectureSelect" class="w-full border p-2 rounded">
       <option value="">اختر المحاضرة</option>
     </select>
 
-    <select id="quizIdSelect" class="w-full p-2 border rounded">
+    <select id="quizSelect" class="w-full border p-2 rounded">
       <option value="">اختر ID الاختبار</option>
     </select>
 
-    <textarea id="questionText" placeholder="نص السؤال" class="w-full p-2 border rounded"></textarea>
+    <input id="questionText" class="w-full border p-2 rounded" placeholder="نص السؤال" />
+    <input type="file" id="questionImage" accept="image/*" class="w-full border p-2 rounded" />
 
-    <input type="text" id="option1" placeholder="الخيار 1" class="w-full p-2 border rounded" />
-    <input type="text" id="option2" placeholder="الخيار 2" class="w-full p-2 border rounded" />
-    <input type="text" id="option3" placeholder="الخيار 3" class="w-full p-2 border rounded" />
-    <input type="text" id="option4" placeholder="الخيار 4" class="w-full p-2 border rounded" />
-    <input type="number" id="correctAnswer" placeholder="رقم الصحيح (1-4)" class="w-full p-2 border rounded" />
-    <input type="file" id="questionImage" class="w-full p-2 border rounded" />
+    <input id="optionA" class="w-full border p-2 rounded" placeholder="الاختيار (أ)" />
+    <input id="optionB" class="w-full border p-2 rounded" placeholder="الاختيار (ب)" />
+    <input id="optionC" class="w-full border p-2 rounded" placeholder="الاختيار (ج)" />
+    <input id="optionD" class="w-full border p-2 rounded" placeholder="الاختيار (د)" />
 
-    <button id="addBtn" class="bg-indigo-600 text-white py-2 px-4 rounded w-full">✔️ إضافة السؤال</button>
+    <select id="correctAnswer" class="w-full border p-2 rounded">
+      <option value="">اختر الإجابة الصحيحة</option>
+      <option value="A">أ</option>
+      <option value="B">ب</option>
+      <option value="C">ج</option>
+      <option value="D">د</option>
+    </select>
 
-    <p id="status" class="text-center text-green-600 font-bold mt-4 hidden">✅ تم إضافة السؤال بنجاح</p>
+    <button onclick="addQuestion()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">➕ إضافة السؤال</button>
+    <p id="status" class="text-center text-green-600 mt-4 font-bold"></p>
   </div>
 
   <script>
-    // Firebase config
+    // Firebase init
     firebase.initializeApp({
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8",
-      storageBucket: "hhhhhh-d4fb8.appspot.com"
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
     });
 
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    const gradeSelect = document.getElementById("gradeSelect");
+    const stageSelect = document.getElementById("stageSelect");
     const courseSelect = document.getElementById("courseSelect");
     const lectureSelect = document.getElementById("lectureSelect");
-    const quizIdSelect = document.getElementById("quizIdSelect");
+    const quizSelect = document.getElementById("quizSelect");
 
-    // حمل الكورسات حسب المرحلة
-    gradeSelect.addEventListener("change", async () => {
+    stageSelect.addEventListener("change", async () => {
+      const stage = stageSelect.value;
+      courseSelect.innerHTML = `<option value="">جاري التحميل...</option>`;
+      const snap = await db.collection("courses").where("stage", "==", stage).get();
+
       courseSelect.innerHTML = `<option value="">اختر الكورس</option>`;
-      lectureSelect.innerHTML = `<option value="">اختر المحاضرة</option>`;
-      quizIdSelect.innerHTML = `<option value="">اختر ID الاختبار</option>`;
-
-      const grade = gradeSelect.value;
-      if (!grade) return;
-
-      const snapshot = await db.collection("courses").where("grade", "==", grade).get();
-      snapshot.forEach(doc => {
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = doc.data().name;
-        courseSelect.appendChild(option);
+      snap.forEach(doc => {
+        const data = doc.data();
+        courseSelect.innerHTML += `<option value="${doc.id}">${data.name}</option>`;
       });
     });
 
-    // حمل المحاضرات من الكورس
     courseSelect.addEventListener("change", async () => {
+      const courseId = courseSelect.value;
+      lectureSelect.innerHTML = `<option value="">جاري التحميل...</option>`;
+      const snap = await db.collection("lectures").where("courseId", "==", courseId).get();
+
       lectureSelect.innerHTML = `<option value="">اختر المحاضرة</option>`;
-      quizIdSelect.innerHTML = `<option value="">اختر ID الاختبار</option>`;
-
-      const courseId = courseSelect.value;
-      if (!courseId) return;
-
-      const snapshot = await db.collection("lectures").where("courseId", "==", courseId).get();
-      snapshot.forEach(doc => {
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = doc.data().lectureTitle;
-        lectureSelect.appendChild(option);
+      snap.forEach(doc => {
+        const data = doc.data();
+        lectureSelect.innerHTML += `<option value="${doc.id}">${data.lectureTitle}</option>`;
       });
     });
 
-    // حمل اختبارات المحاضرة من lectureContent
     lectureSelect.addEventListener("change", async () => {
-      quizIdSelect.innerHTML = `<option value="">اختر ID الاختبار</option>`;
       const lectureId = lectureSelect.value;
-      if (!lectureId) return;
+      quizSelect.innerHTML = `<option value="">جاري التحميل...</option>`;
+      const snap = await db.collection("lectureContent").where("lectureId", "==", lectureId).where("type", "==", "quiz").get();
 
-      const snapshot = await db.collection("lectureContent")
-        .where("lectureId", "==", lectureId)
-        .where("type", "==", "quiz")
-        .get();
-
-      snapshot.forEach(doc => {
-        const quizId = doc.data().url; // هذا هو ID
-        const option = document.createElement("option");
-        option.value = quizId;
-        option.textContent = quizId;
-        quizIdSelect.appendChild(option);
+      quizSelect.innerHTML = `<option value="">اختر ID الاختبار</option>`;
+      snap.forEach(doc => {
+        quizSelect.innerHTML += `<option value="${doc.data().url}">${doc.data().title} - ${doc.data().url}</option>`;
       });
     });
 
-    // زر الإضافة
-    document.getElementById("addBtn").onclick = async () => {
-      const grade = gradeSelect.value;
-      const courseId = courseSelect.value;
-      const lectureId = lectureSelect.value;
-      const quizId = quizIdSelect.value;
-      const questionText = document.getElementById("questionText").value;
-      const options = [
-        document.getElementById("option1").value,
-        document.getElementById("option2").value,
-        document.getElementById("option3").value,
-        document.getElementById("option4").value
-      ];
-      const correctIndex = parseInt(document.getElementById("correctAnswer").value) - 1;
-      const imageFile = document.getElementById("questionImage").files[0];
+    async function addQuestion() {
+      const quizId = quizSelect.value;
+      const question = document.getElementById("questionText").value;
+      const imgFile = document.getElementById("questionImage").files[0];
+      const A = document.getElementById("optionA").value;
+      const B = document.getElementById("optionB").value;
+      const C = document.getElementById("optionC").value;
+      const D = document.getElementById("optionD").value;
+      const correct = document.getElementById("correctAnswer").value;
+      const status = document.getElementById("status");
 
-      if (!grade || !courseId || !lectureId || !quizId || !questionText || options.some(o => !o) || isNaN(correctIndex)) {
-        alert("❌ يرجى ملء جميع البيانات بشكل صحيح");
+      if (!quizId || !question || !A || !B || !C || !D || !correct) {
+        alert("الرجاء تعبئة جميع الحقول");
         return;
       }
 
       let imageUrl = "";
-      if (imageFile) {
-        const ref = storage.ref("quiz-images/" + Date.now() + "_" + imageFile.name);
-        await ref.put(imageFile);
+      if (imgFile) {
+        const ref = storage.ref("quizImages/" + Date.now() + "_" + imgFile.name);
+        await ref.put(imgFile);
         imageUrl = await ref.getDownloadURL();
       }
 
-      const questionData = {
-        grade,
-        courseId,
-        lectureId,
-        questionText,
-        options,
-        correctIndex,
-        imageUrl,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
+      await db.collection("quizzes").add({
+        quizId: quizId,
+        question: question,
+        imageUrl: imageUrl,
+        options: { A, B, C, D },
+        correct: correct,
+        createdAt: new Date()
+      });
 
-      await db.collection("quizzes").doc(quizId).collection("questions").add(questionData);
-      document.getElementById("status").classList.remove("hidden");
-    };
+      status.textContent = "✅ تم إضافة السؤال بنجاح!";
+      document.getElementById("questionText").value = "";
+      document.getElementById("questionImage").value = "";
+      document.getElementById("optionA").value = "";
+      document.getElementById("optionB").value = "";
+      document.getElementById("optionC").value = "";
+      document.getElementById("optionD").value = "";
+      document.getElementById("correctAnswer").value = "";
+    }
   </script>
 </body>
 </html>
+
 
 
