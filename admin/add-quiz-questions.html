@@ -1,152 +1,119 @@
+
+
+
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>إضافة سؤال للاختبار</title>
+  <title>إضافة سؤال اختبار</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-6">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow space-y-6">
-    <h1 class="text-2xl font-bold text-indigo-700">إضافة سؤال للاختبار</h1>
+<body>
+  <h2>إضافة سؤال لاختبار</h2>
 
-    <select id="stageSelect" class="w-full border p-2 rounded">
-      <option value="">اختر الصف</option>
-      <option value="الصف الأول">الصف الأول</option>
-      <option value="الصف الثاني">الصف الثاني</option>
-      <option value="الصف الثالث">الصف الثالث</option>
-    </select>
+  <label>اختر الصف:</label>
+  <select id="gradeSelect">
+    <option value="">-- اختر الصف --</option>
+    <option value="الأول">الصف الأول الثانوي</option>
+    <option value="الثاني">الصف الثاني الثانوي</option>
+    <option value="الثالث">الصف الثالث الثانوي</option>
+  </select>
 
-    <select id="courseSelect" class="w-full border p-2 rounded">
-      <option value="">اختر الكورس</option>
-    </select>
+  <br><label>اختر الكورس:</label>
+  <select id="courseSelect"></select>
 
-    <select id="lectureSelect" class="w-full border p-2 rounded">
-      <option value="">اختر المحاضرة</option>
-    </select>
+  <br><label>اختر المحاضرة:</label>
+  <select id="lectureSelect"></select>
 
-    <select id="quizSelect" class="w-full border p-2 rounded">
-      <option value="">اختر ID الاختبار</option>
-    </select>
+  <br><label>ID الاختبار:</label>
+  <select id="quizIdSelect"></select>
 
-    <input id="questionText" class="w-full border p-2 rounded" placeholder="نص السؤال" />
-    <input type="file" id="questionImage" accept="image/*" class="w-full border p-2 rounded" />
+  <br><label>نص السؤال:</label>
+  <input type="text" id="questionText" />
 
-    <input id="optionA" class="w-full border p-2 rounded" placeholder="الاختيار (أ)" />
-    <input id="optionB" class="w-full border p-2 rounded" placeholder="الاختيار (ب)" />
-    <input id="optionC" class="w-full border p-2 rounded" placeholder="الاختيار (ج)" />
-    <input id="optionD" class="w-full border p-2 rounded" placeholder="الاختيار (د)" />
+  <br><label>الاختيار 1:</label><input type="text" id="option1" />
+  <br><label>الاختيار 2:</label><input type="text" id="option2" />
+  <br><label>الاختيار 3:</label><input type="text" id="option3" />
+  <br><label>الاختيار 4:</label><input type="text" id="option4" />
 
-    <select id="correctAnswer" class="w-full border p-2 rounded">
-      <option value="">اختر الإجابة الصحيحة</option>
-      <option value="A">أ</option>
-      <option value="B">ب</option>
-      <option value="C">ج</option>
-      <option value="D">د</option>
-    </select>
+  <br><label>رقم الإجابة الصحيحة (1-4):</label>
+  <input type="number" id="correctIndex" min="1" max="4" />
 
-    <button onclick="addQuestion()" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">➕ إضافة السؤال</button>
-    <p id="status" class="text-center text-green-600 mt-4 font-bold"></p>
-  </div>
+  <br><label>رفع صورة (اختياري):</label>
+  <input type="file" id="imageInput" />
+
+  <br><button onclick="addQuestion()">إضافة</button>
+
+  <div id="result"></div>
 
   <script>
-    // Firebase init
-    firebase.initializeApp({
+    const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-      projectId: "hhhhhh-d4fb8",
-      storageBucket: "hhhhhh-d4fb8.appspot.com",
-    });
-
+      projectId: "hhhhhh-d4fb8"
+    };
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const storage = firebase.storage();
 
-    const stageSelect = document.getElementById("stageSelect");
+    const gradeSelect = document.getElementById("gradeSelect");
     const courseSelect = document.getElementById("courseSelect");
     const lectureSelect = document.getElementById("lectureSelect");
-    const quizSelect = document.getElementById("quizSelect");
+    const quizIdSelect = document.getElementById("quizIdSelect");
 
-    stageSelect.addEventListener("change", async () => {
-      const stage = stageSelect.value;
-      courseSelect.innerHTML = `<option value="">جاري التحميل...</option>`;
-      const snap = await db.collection("courses").where("stage", "==", stage).get();
-
-      courseSelect.innerHTML = `<option value="">اختر الكورس</option>`;
+    gradeSelect.addEventListener("change", async () => {
+      const grade = gradeSelect.value;
+      courseSelect.innerHTML = "";
+      const snap = await db.collection("courses").where("grade", "==", grade).get();
       snap.forEach(doc => {
-        const data = doc.data();
-        courseSelect.innerHTML += `<option value="${doc.id}">${data.name}</option>`;
+        courseSelect.innerHTML += `<option value="${doc.id}">${doc.data().name}</option>`;
       });
     });
 
     courseSelect.addEventListener("change", async () => {
-      const courseId = courseSelect.value;
-      lectureSelect.innerHTML = `<option value="">جاري التحميل...</option>`;
-      const snap = await db.collection("lectures").where("courseId", "==", courseId).get();
-
-      lectureSelect.innerHTML = `<option value="">اختر المحاضرة</option>`;
+      lectureSelect.innerHTML = "";
+      const snap = await db.collection("lectures").where("courseId", "==", courseSelect.value).get();
       snap.forEach(doc => {
-        const data = doc.data();
-        lectureSelect.innerHTML += `<option value="${doc.id}">${data.lectureTitle}</option>`;
+        lectureSelect.innerHTML += `<option value="${doc.id}">${doc.data().lectureTitle}</option>`;
       });
     });
 
     lectureSelect.addEventListener("change", async () => {
-      const lectureId = lectureSelect.value;
-      quizSelect.innerHTML = `<option value="">جاري التحميل...</option>`;
-      const snap = await db.collection("lectureContent").where("lectureId", "==", lectureId).where("type", "==", "quiz").get();
-
-      quizSelect.innerHTML = `<option value="">اختر ID الاختبار</option>`;
+      quizIdSelect.innerHTML = "";
+      const snap = await db.collection("lectureContent")
+        .where("lectureId", "==", lectureSelect.value)
+        .where("type", "==", "quiz").get();
       snap.forEach(doc => {
-        quizSelect.innerHTML += `<option value="${doc.data().url}">${doc.data().title} - ${doc.data().url}</option>`;
+        quizIdSelect.innerHTML += `<option value="${doc.data().url}">${doc.data().url}</option>`;
       });
     });
 
     async function addQuestion() {
-      const quizId = quizSelect.value;
-      const question = document.getElementById("questionText").value;
-      const imgFile = document.getElementById("questionImage").files[0];
-      const A = document.getElementById("optionA").value;
-      const B = document.getElementById("optionB").value;
-      const C = document.getElementById("optionC").value;
-      const D = document.getElementById("optionD").value;
-      const correct = document.getElementById("correctAnswer").value;
-      const status = document.getElementById("status");
+      const q = {
+        question: document.getElementById("questionText").value,
+        options: [
+          document.getElementById("option1").value,
+          document.getElementById("option2").value,
+          document.getElementById("option3").value,
+          document.getElementById("option4").value
+        ],
+        correctIndex: parseInt(document.getElementById("correctIndex").value) - 1,
+        image: ""
+      };
 
-      if (!quizId || !question || !A || !B || !C || !D || !correct) {
-        alert("الرجاء تعبئة جميع الحقول");
-        return;
+      const file = document.getElementById("imageInput").files[0];
+      const quizId = quizIdSelect.value;
+
+      if (file) {
+        const storageRef = firebase.storage().ref(`quizImages/${Date.now()}_${file.name}`);
+        await storageRef.put(file);
+        q.image = await storageRef.getDownloadURL();
       }
 
-      let imageUrl = "";
-      if (imgFile) {
-        const ref = storage.ref("quizImages/" + Date.now() + "_" + imgFile.name);
-        await ref.put(imgFile);
-        imageUrl = await ref.getDownloadURL();
-      }
-
-      await db.collection("quizzes").add({
-        quizId: quizId,
-        question: question,
-        imageUrl: imageUrl,
-        options: { A, B, C, D },
-        correct: correct,
-        createdAt: new Date()
-      });
-
-      status.textContent = "✅ تم إضافة السؤال بنجاح!";
-      document.getElementById("questionText").value = "";
-      document.getElementById("questionImage").value = "";
-      document.getElementById("optionA").value = "";
-      document.getElementById("optionB").value = "";
-      document.getElementById("optionC").value = "";
-      document.getElementById("optionD").value = "";
-      document.getElementById("correctAnswer").value = "";
+      await db.collection("quizzes").doc(quizId).collection("questions").add(q);
+      document.getElementById("result").textContent = "✅ تم إضافة السؤال بنجاح.";
     }
   </script>
 </body>
 </html>
-
-
-
