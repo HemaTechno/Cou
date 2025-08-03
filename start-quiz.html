@@ -1,156 +1,110 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>الاختبار</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>حل الاختبار</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <style>
-    body { font-family: 'Tajawal', sans-serif; padding: 20px; background-color: #f0f4f8; }
-    .question-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; margin-bottom: 20px; }
-    .choices label { display: block; margin: 10px 0; }
-    .buttons { display: flex; gap: 15px; margin-top: 20px; }
-    .btn { padding: 10px 20px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    .btn:hover { background-color: #2563eb; }
-    .counter { margin-bottom: 10px; font-weight: bold; }
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 </head>
 <body>
-
-  <div class="question-box" id="questionBox">
-    <div class="counter" id="questionCounter">السؤال 1 من X</div>
-    <div id="questionText">جارٍ تحميل السؤال...</div>
-    <div class="choices" id="choicesContainer"></div>
-    <div class="buttons">
-      <button class="btn" id="nextBtn">التالي</button>
-      <button class="btn" id="submitBtn">تسليم</button>
-      <button class="btn" onclick="saveForLater()">استكمال لاحقًا</button>
-    </div>
-  </div>
+  <h2>الاختبار</h2>
+  <div id="quizContainer"></div>
+  <button onclick="nextQuestion()">التالي</button>
+  <button onclick="submitQuiz()">تسليم</button>
+  <div id="result"></div>
 
   <script>
-    // Firebase Config
-    firebase.initializeApp({
+    const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8"
-    });
-    const auth = firebase.auth();
+    };
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    const params = new URLSearchParams(location.search);
+    let current = 0, questions = [], answers = [];
+
+    const params = new URLSearchParams(window.location.search);
     const quizId = params.get("id");
 
-    let questions = [];
-    let currentQuestion = 0;
-    let studentAnswers = [];
+    auth.onAuthStateChanged(async user => {
+      if (!user) return alert("❌ سجل الدخول أولاً");
 
-    const questionText = document.getElementById("questionText");
-    const choicesContainer = document.getElementById("choicesContainer");
-    const questionCounter = document.getElementById("questionCounter");
-    const nextBtn = document.getElementById("nextBtn");
-    const submitBtn = document.getElementById("submitBtn");
+      const userData = await db.collection("students").doc(user.uid).get();
+      const enrolled = userData.data().enrolledCourses || [];
 
-    function renderQuestion() {
-      if (currentQuestion >= questions.length) {
-        questionText.textContent = "✅ انتهت الأسئلة، اضغط تسليم.";
-        choicesContainer.innerHTML = "";
-        nextBtn.disabled = true;
+      const snap = await db.collection("lectureContent").where("url", "==", quizId).get();
+      const lectureId = snap.docs[0].data().lectureId;
+      const courseDoc = await db.collection("lectures").doc(lectureId).get();
+      const courseId = courseDoc.data().courseId;
+
+      const course = await db.collection("courses").doc(courseId).get();
+      const isFree = course.data().isFree;
+
+      if (!isFree && !enrolled.includes(courseId)) {
+        return alert("❌ غير مشترك في الكورس");
+      }
+
+      const qSnap = await db.collection("quizzes").doc(quizId).collection("questions").get();
+      questions = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      if (!questions.length) {
+        document.getElementById("quizContainer").innerText = "لا يوجد أسئلة.";
         return;
       }
 
-      const q = questions[currentQuestion];
-      questionCounter.textContent = `السؤال ${currentQuestion + 1} من ${questions.length}`;
-      questionText.textContent = q.text;
-      choicesContainer.innerHTML = "";
+      showQuestion();
+    });
 
-      q.choices.forEach((choice, index) => {
-        const label = document.createElement("label");
-        label.innerHTML = `
-          <input type="radio" name="answer" value="${index}"> ${choice}
-        `;
-        choicesContainer.appendChild(label);
+    function showQuestion() {
+      const q = questions[current];
+      const container = document.getElementById("quizContainer");
+      container.innerHTML = `<h3>${q.question}</h3>`;
+      if (q.image) container.innerHTML += `<img src="${q.image}" style="max-width:200px" />`;
+      q.options.forEach((opt, i) => {
+        container.innerHTML += `
+          <div>
+            <input type="radio" name="answer" value="${i}" id="opt${i}">
+            <label for="opt${i}">${opt}</label>
+          </div>`;
       });
     }
 
-    function saveAnswer() {
-      const selected = document.querySelector('input[name="answer"]:checked');
-      if (!selected) {
-        alert("اختر إجابة قبل المتابعة.");
-        return false;
+    function nextQuestion() {
+      const selected = document.querySelector("input[name='answer']:checked");
+      if (!selected) return alert("اختر إجابة أولاً");
+
+      answers[current] = parseInt(selected.value);
+      current++;
+      if (current < questions.length) {
+        showQuestion();
+      } else {
+        alert("تم الوصول للسؤال الأخير. اضغط تسليم.");
       }
-      studentAnswers[currentQuestion] = parseInt(selected.value);
-      return true;
     }
 
-    nextBtn.onclick = () => {
-      if (saveAnswer()) {
-        currentQuestion++;
-        renderQuestion();
-      }
-    };
-
-    submitBtn.onclick = async () => {
-      if (!saveAnswer()) return;
-
-      const user = auth.currentUser;
-      if (!user) return alert("يجب تسجيل الدخول");
+    async function submitQuiz() {
+      const user = firebase.auth().currentUser;
+      if (!user) return;
 
       let score = 0;
       questions.forEach((q, i) => {
-        if (studentAnswers[i] === q.correct) score++;
+        if (answers[i] === q.correctIndex) score++;
       });
 
       await db.collection("quizResults").add({
-        quizId,
         studentId: user.uid,
-        answers: studentAnswers,
+        quizId,
+        answers,
         score,
         total: questions.length,
-        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
+        timestamp: new Date()
       });
 
-      alert(`تم تسليم الاختبار. نتيجتك: ${score} / ${questions.length}`);
-      window.location.href = "index.html";
-    };
-
-    function saveForLater() {
-      alert("تم حفظ التقدم. يمكنك العودة لاحقًا.");
-      window.location.href = "index.html";
+      document.getElementById("result").innerText = `✅ تم تسليم الاختبار. نتيجتك: ${score} من ${questions.length}`;
     }
-
-    auth.onAuthStateChanged(async user => {
-      if (!user) return alert("❌ يجب تسجيل الدخول أولًا");
-
-      const doc = await db.collection("students").doc(user.uid).get();
-      const student = doc.data();
-
-      const attemptDoc = await db.collection("quizResults")
-        .where("studentId", "==", user.uid)
-        .where("quizId", "==", quizId)
-        .get();
-
-      if (!attemptDoc.empty) {
-        alert("❌ لقد أكملت هذا الاختبار من قبل.");
-        window.location.href = "index.html";
-        return;
-      }
-
-      // جلب الأسئلة
-      const snap = await db.collection("quizzes")
-        .where("quizId", "==", quizId).get();
-
-      if (snap.empty) {
-        questionText.textContent = "❌ لا يوجد أسئلة لهذا الاختبار.";
-        return;
-      }
-
-      questions = snap.docs.map(doc => doc.data());
-      renderQuestion();
-    });
   </script>
 </body>
 </html>
+
