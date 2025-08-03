@@ -70,19 +70,11 @@
       border-color: #818cf8;
       box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
     }
-    .pulse-animation {
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-  <div class="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden pulse-animation">
+  <div class="bg-white rounded-3xl shadow-xl w-full max-w-md">
     <div class="gold-gradient p-6 text-center rounded-t-3xl">
       <div class="bg-white p-3 w-fit mx-auto rounded-full shadow-lg">
         <i class="fas fa-coins text-yellow-500 text-3xl"></i>
@@ -128,12 +120,9 @@
       </label>
       <div id="fileNameDisplay" class="text-center text-sm text-gray-500 mt-2 hidden"></div>
 
-      <div class="mt-6 relative">
-        <button onclick="submitPayment(event)" class="btn-success text-white w-full py-3 rounded-xl font-semibold">
-          تأكيد التحويل <i class="fas fa-check-circle ml-2"></i>
-        </button>
-        <div id="timer" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full hidden">120</div>
-      </div>
+      <button onclick="submitPayment(event)" class="btn-success text-white w-full py-3 rounded-xl font-semibold mt-6">
+        تأكيد التحويل <i class="fas fa-check-circle ml-2"></i>
+      </button>
 
       <div id="statusMsg" class="mt-4 p-4 rounded-xl hidden bg-blue-50 text-blue-700">
         <div class="flex items-center justify-center space-x-2">
@@ -150,88 +139,31 @@
 
   <script>
     // Firebase config
-    firebase.initializeApp({
+    const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
       projectId: "hhhhhh-d4fb8",
       storageBucket: "hhhhhh-d4fb8.appspot.com",
       messagingSenderId: "24512338206",
       appId: "1:24512338206:web:dfe045db59bd3434a2110f"
-    });
+    };
 
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const storage = firebase.storage();
     const pricePerCoin = 1;
-    const COOLDOWN_TIME = 120; // 120 ثانية = دقيقتين
 
-    // دالة للتحقق من وقت الانتظار
-    function canSubmitRequest() {
-      const lastRequestTime = localStorage.getItem('lastRequestTime');
-      if (!lastRequestTime) return true;
-      
-      const currentTime = Math.floor(Date.now() / 1000);
-      const elapsedTime = currentTime - parseInt(lastRequestTime);
-      
-      return elapsedTime >= COOLDOWN_TIME;
-    }
+    // تحميل بيانات الطالب (يمكن استبدالها ببيانات حقيقية)
+    const student = {
+      id: "test123",
+      fullName: "مستخدم تجريبي"
+    };
 
-    // دالة لبدء العد التنازلي
-    function startCooldownTimer() {
-      const timerElement = document.getElementById('timer');
-      let timeLeft = COOLDOWN_TIME;
-      
-      timerElement.classList.remove('hidden');
-      timerElement.textContent = timeLeft;
-      
-      const timerInterval = setInterval(() => {
-        timeLeft--;
-        timerElement.textContent = timeLeft;
-        
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          timerElement.classList.add('hidden');
-        }
-      }, 1000);
-    }
-
-    const student = JSON.parse(localStorage.getItem("student"));
-    if (!student || !student.id) {
-      Swal.fire({
-        icon: 'error',
-        title: 'غير مسجل دخول',
-        text: 'يجب تسجيل الدخول أولاً',
-      }).then(() => {
-        window.location.href = "login.html";
-      });
-    }
-
-    document.getElementById("receiptImage").addEventListener("change", function () {
+    document.getElementById("receiptImage").addEventListener("change", function() {
       const display = document.getElementById("fileNameDisplay");
       if (this.files.length > 0) {
-        const file = this.files[0];
-        // التحقق من نوع الملف
-        if (!file.type.startsWith("image/")) {
-          Swal.fire({
-            icon: 'error',
-            title: 'نوع ملف غير مدعوم',
-            text: 'يرجى اختيار صورة (JPG, PNG, GIF, WEBP)'
-          });
-          this.value = '';
-          return;
-        }
-        
-        // التحقق من حجم الملف (5MB كحد أقصى)
-        if (file.size > 5 * 1024 * 1024) {
-          Swal.fire({
-            icon: 'error',
-            title: 'حجم الملف كبير',
-            text: 'الحد الأقصى لحجم الصورة هو 5MB'
-          });
-          this.value = '';
-          return;
-        }
-        
-        display.textContent = 'تم اختيار: ' + file.name;
+        display.textContent = 'تم اختيار: ' + this.files[0].name;
         display.classList.remove("hidden");
       } else {
         display.classList.add("hidden");
@@ -239,22 +171,28 @@
     });
 
     function continueToPayment() {
-      const coins = parseInt(document.getElementById("coinsInput").value);
+      const coinsInput = document.getElementById("coinsInput");
+      const coins = parseInt(coinsInput.value);
+      
       if (isNaN(coins) {
         Swal.fire({
-          icon: 'warning',
-          title: 'يجب إدخال عدد الكوينات',
+          icon: 'error',
+          title: 'خطأ',
+          text: 'يجب إدخال عدد الكوينات',
           confirmButtonText: 'حسناً'
         });
+        coinsInput.focus();
         return;
       }
       
       if (coins < 10) {
         Swal.fire({
-          icon: 'warning',
-          title: 'الحد الأدنى 10 كوينات',
+          icon: 'error',
+          title: 'خطأ',
+          text: 'الحد الأدنى لعدد الكوينات هو 10',
           confirmButtonText: 'حسناً'
         });
+        coinsInput.focus();
         return;
       }
 
@@ -280,25 +218,14 @@
     }
 
     async function submitPayment(event) {
-      // التحقق من وقت الانتظار
-      if (!canSubmitRequest()) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'يجب الانتظار دقيقتين',
-          text: 'لا يمكن إرسال طلبين متتاليين، يرجى الانتظار',
-          confirmButtonText: 'حسناً'
-        });
-        startCooldownTimer();
-        return;
-      }
-
       const coins = parseInt(document.getElementById("coinsInput").value);
       const file = document.getElementById("receiptImage").files[0];
 
       if (!file) {
         Swal.fire({ 
           icon: 'error', 
-          title: 'يجب رفع صورة التحويل',
+          title: 'خطأ',
+          text: 'يجب رفع صورة التحويل أولاً',
           confirmButtonText: 'حسناً'
         });
         return;
@@ -314,24 +241,25 @@
       statusText.textContent = "جاري إرسال الطلب...";
 
       try {
-        const ref = storage.ref().child(`payments/${id}/receipt.${file.name.split('.').pop()}`);
-        await ref.put(file);
-        const url = await ref.getDownloadURL();
+        // في بيئة حقيقية، هنا سيتم رفع الملف إلى Firebase Storage
+        // const ref = storage.ref().child(`payments/${id}/receipt.${file.name.split('.').pop()}`);
+        // await ref.put(file);
+        // const url = await ref.getDownloadURL();
 
-        await db.collection("payments").doc(id).set({
-          id,
-          studentId: student.id,
-          fullName: student.fullName || "غير محدد",
-          coinsRequested: coins,
-          amountEGP: coins * pricePerCoin,
-          receiptURL: url,
-          status: "معلق",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        // لمحاكاة عملية الانتظار
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // حفظ وقت آخر طلب
-        localStorage.setItem('lastRequestTime', Math.floor(Date.now() / 1000));
-        startCooldownTimer();
+        // في بيئة حقيقية، هنا سيتم حفظ البيانات في Firestore
+        // await db.collection("payments").doc(id).set({
+        //   id,
+        //   studentId: student.id,
+        //   fullName: student.fullName,
+        //   coinsRequested: coins,
+        //   amountEGP: coins * pricePerCoin,
+        //   receiptURL: url,
+        //   status: "معلق",
+        //   createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        // });
 
         statusText.textContent = "✅ تم إرسال طلب الشحن بنجاح!";
         statusBox.classList.remove("bg-blue-50", "text-blue-700");
@@ -342,13 +270,14 @@
         setTimeout(() => {
           Swal.fire({
             icon: 'success',
-            title: 'تم إرسال الطلب',
-            text: 'سيتم مراجعة طلبك خلال 24 ساعة',
+            title: 'تم بنجاح',
+            text: 'تم إرسال طلب الشحن بنجاح وسيتم مراجعته خلال 24 ساعة',
             confirmButtonText: 'حسناً'
           }).then(() => {
+            // إعادة تحميل الصفحة لعرض نموذج جديد
             location.reload();
           });
-        }, 1500);
+        }, 1000);
       } catch (err) {
         console.error(err);
         statusText.textContent = "❌ حدث خطأ. حاول مرة أخرى.";
@@ -357,13 +286,6 @@
         btn.disabled = false;
       }
     }
-
-    // التحقق من وقت الانتظار عند تحميل الصفحة
-    document.addEventListener('DOMContentLoaded', function() {
-      if (!canSubmitRequest()) {
-        startCooldownTimer();
-      }
-    });
   </script>
 </body>
 </html>
