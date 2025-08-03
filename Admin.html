@@ -4,163 +4,438 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>لوحة تحكم الأدمن</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --primary-color: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary-color: #3f37c9;
+      --dark-color: #1a1a2e;
+      --darker-color: #16213e;
+      --light-color: #f8f9fa;
+      --danger-color: #ef233c;
+      --success-color: #4cc9f0;
+      --border-radius: 12px;
+      --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      --transition: all 0.3s ease;
+    }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Cairo', sans-serif;
+      font-family: 'Tajawal', sans-serif;
     }
 
     body {
-      background: linear-gradient(135deg, #0e0e0e, #1a1a1a);
-      color: #fff;
+      background: linear-gradient(135deg, var(--darker-color), var(--dark-color));
+      color: var(--light-color);
       height: 100vh;
       overflow: hidden;
+    }
+
+    /* صفحة تسجيل الدخول */
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
     }
 
     .login-box {
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      width: 90%;
-      max-width: 400px;
-      background: #1e1e1e;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px red;
-      margin: 100px auto;
+      gap: 20px;
+      width: 100%;
+      max-width: 450px;
+      background: rgba(26, 26, 46, 0.9);
+      padding: 40px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transform: translateY(0);
+      transition: var(--transition);
+    }
+
+    .login-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .login-header h2 {
+      color: var(--light-color);
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .login-header p {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .input-group i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.7);
     }
 
     .login-box input {
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: #333;
+      width: 100%;
+      padding: 15px 15px 15px 45px;
+      border-radius: var(--border-radius);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
       color: white;
       font-size: 16px;
+      transition: var(--transition);
+    }
+
+    .login-box input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      background: rgba(67, 97, 238, 0.1);
+    }
+
+    .login-box input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
     }
 
     .login-box button {
-      padding: 12px;
-      background: red;
+      padding: 15px;
+      background: var(--primary-color);
       color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: var(--border-radius);
       font-size: 18px;
+      font-weight: 500;
       cursor: pointer;
+      transition: var(--transition);
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .login-box button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
     }
 
     .error-msg {
-      color: red;
+      color: var(--danger-color);
       text-align: center;
       margin-top: 10px;
+      font-size: 14px;
+      font-weight: 500;
     }
 
+    /* لوحة التحكم */
     .dashboard {
       display: none;
+      height: 100vh;
+      overflow: hidden;
     }
 
+    /* الهيدر */
     header {
       height: 70px;
-      background: rgba(20, 20, 20, 0.85);
-      border-bottom: 2px solid #ff0000;
+      background: rgba(26, 26, 46, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(10px);
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 30px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     }
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--light-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo i {
+      color: var(--primary-color);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logout-btn {
+      background: rgba(239, 35, 60, 0.1);
+      color: var(--danger-color);
+      border: 1px solid var(--danger-color);
+      padding: 8px 20px;
+      border-radius: var(--border-radius);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logout-btn:hover {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    /* السايدبار */
     .sidebar {
       position: fixed;
       right: 0;
       top: 70px;
       width: 260px;
       height: calc(100% - 70px);
-      background: rgba(30, 30, 30, 0.95);
-      border-left: 2px solid red;
-      backdrop-filter: blur(8px);
+      background: rgba(26, 26, 46, 0.95);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
       padding: 25px 15px;
       z-index: 999;
+      overflow-y: auto;
+      transition: var(--transition);
     }
 
-    .sidebar h2 {
-      color: #ff3333;
-      margin-bottom: 25px;
-      text-align: center;
+    .sidebar-header {
+      margin-bottom: 30px;
+      padding: 0 10px;
+    }
+
+    .sidebar-header h2 {
+      color: var(--primary-color);
       font-size: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .sidebar ul {
+    .sidebar-menu {
       list-style: none;
     }
 
-    .sidebar li {
-      margin-bottom: 15px;
+    .menu-item {
+      margin-bottom: 10px;
     }
 
-    .sidebar a, .sidebar button {
-      display: block;
+    .menu-item a, .menu-item button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       width: 100%;
-      padding: 12px;
-      background-color: #1e1e1e;
-      color: white;
+      padding: 12px 15px;
+      background-color: transparent;
+      color: rgba(255, 255, 255, 0.8);
       text-decoration: none;
-      border: 1px solid #ff0000;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 16px;
-      transition: 0.2s;
+      border-radius: var(--border-radius);
+      font-size: 15px;
+      transition: var(--transition);
       cursor: pointer;
+      border: none;
     }
 
-    .sidebar a:hover, .sidebar button:hover {
-      background-color: #ff0000;
-      color: white;
+    .menu-item a i, .menu-item button i {
+      width: 20px;
+      text-align: center;
     }
 
-    .main {
+    .menu-item a:hover, .menu-item button:hover,
+    .menu-item a.active, .menu-item button.active {
+      background: rgba(67, 97, 238, 0.2);
+      color: var(--light-color);
+    }
+
+    .menu-item a.active, .menu-item button.active {
+      border-right: 3px solid var(--primary-color);
+    }
+
+    /* المحتوى الرئيسي */
+    .main-content {
       margin-right: 260px;
       margin-top: 70px;
       height: calc(100% - 70px);
+      overflow: hidden;
+      background: var(--dark-color);
     }
 
     iframe {
       width: 100%;
       height: 100%;
       border: none;
+      background: white;
+    }
+
+    /* تأثيرات للوحة التحكم */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dashboard {
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    /* تصميم متجاوب */
+    @media (max-width: 992px) {
+      .sidebar {
+        transform: translateX(100%);
+        width: 280px;
+      }
+      
+      .sidebar.active {
+        transform: translateX(0);
+      }
+      
+      .main-content {
+        margin-right: 0;
+      }
+      
+      .menu-toggle {
+        display: block !important;
+      }
+    }
+
+    .menu-toggle {
+      display: none;
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
   <!-- صفحة تسجيل الدخول -->
-  <div id="login-section" class="login-box">
-    <h2 style="text-align: center;">تسجيل الدخول للوحة التحكم</h2>
-    <input type="text" id="username" placeholder="اسم المستخدم">
-    <input type="password" id="password" placeholder="كلمة المرور">
-    <button onclick="checkLogin()">دخول</button>
-    <div id="error" class="error-msg"></div>
+  <div id="login-section" class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h2>مرحباً بك مرة أخرى</h2>
+        <p>الرجاء إدخال بيانات الاعتماد الخاصة بك للوصول إلى لوحة التحكم</p>
+      </div>
+      
+      <div class="input-group">
+        <i class="fas fa-user"></i>
+        <input type="text" id="username" placeholder="اسم المستخدم">
+      </div>
+      
+      <div class="input-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="password" placeholder="كلمة المرور">
+      </div>
+      
+      <button onclick="checkLogin()">
+        <i class="fas fa-sign-in-alt"></i>
+        تسجيل الدخول
+      </button>
+      
+      <div id="error" class="error-msg"></div>
+    </div>
   </div>
 
   <!-- لوحة التحكم -->
   <div id="dashboard" class="dashboard">
     <header>
-      <div>لوحة التحكم</div>
-      <button onclick="logout()" style="background:red;padding:8px 15px;border-radius:8px;">تسجيل الخروج</button>
+      <div class="header-left">
+        <button class="menu-toggle" onclick="toggleSidebar()">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="logo">
+          <i class="fas fa-cogs"></i>
+          <span>لوحة التحكم</span>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <button class="logout-btn" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i>
+          تسجيل الخروج
+        </button>
+      </div>
     </header>
 
     <div class="sidebar">
-      <h2>القائمة</h2>
-      <ul>
-        <li><a href="#" onclick="loadPage('page1.html')">📄 صفحة 1</a></li>
-        <li><a href="#" onclick="loadPage('page2.html')">📄 صفحة 2</a></li>
+      <div class="sidebar-header">
+        <h2>
+          <i class="fas fa-bars"></i>
+          القائمة الرئيسية
+        </h2>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li class="menu-item">
+          <a href="#" onclick="loadPage('page1.html')" class="active">
+            <i class="fas fa-file-alt"></i>
+            <span>الصفحة الأولى</span>
+          </a>
+        </li>
+        
+        <li class="menu-item">
+          <a href="#" onclick="loadPage('page2.html')">
+            <i class="fas fa-file-invoice"></i>
+            <span>الصفحة الثانية</span>
+          </a>
+        </li>
+        
+        <li class="menu-item">
+          <a href="#" onclick="loadPage('page3.html')">
+            <i class="fas fa-chart-line"></i>
+            <span>الإحصائيات</span>
+          </a>
+        </li>
+        
+        <li class="menu-item">
+          <a href="#" onclick="loadPage('page4.html')">
+            <i class="fas fa-users"></i>
+            <span>إدارة المستخدمين</span>
+          </a>
+        </li>
+        
+        <li class="menu-item">
+          <a href="#" onclick="loadPage('page5.html')">
+            <i class="fas fa-cog"></i>
+            <span>الإعدادات</span>
+          </a>
+        </li>
       </ul>
     </div>
 
-    <div class="main">
+    <div class="main-content">
       <iframe id="main-frame" src="page1.html"></iframe>
     </div>
   </div>
@@ -183,7 +458,8 @@
         localStorage.setItem("loggedIn", "true");
         showDashboard();
       } else {
-        error.innerText = "اسم المستخدم أو كلمة المرور غير صحيحة";
+        error.innerText = "بيانات الاعتماد غير صحيحة. الرجاء المحاولة مرة أخرى";
+        document.getElementById("password").value = "";
       }
     }
 
@@ -199,6 +475,17 @@
 
     function loadPage(page) {
       document.getElementById("main-frame").src = page;
+      
+      // إضافة كلاس active للعنصر المحدد
+      const menuItems = document.querySelectorAll('.menu-item a');
+      menuItems.forEach(item => {
+        item.classList.remove('active');
+      });
+      event.target.classList.add('active');
+    }
+    
+    function toggleSidebar() {
+      document.querySelector('.sidebar').classList.toggle('active');
     }
   </script>
 </body>
