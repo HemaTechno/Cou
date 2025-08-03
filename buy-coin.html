@@ -6,6 +6,7 @@
   <title>شحن الكوينات | منصة عبدالرحمن السقا</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
@@ -17,6 +18,7 @@
     }
     .gold-gradient {
       background: linear-gradient(135deg, #f5d78e, #e8b74c, #d9a439);
+      box-shadow: 0 4px 15px rgba(232, 183, 76, 0.3);
     }
     .receipt-label {
       border: 2px dashed #d1d5db;
@@ -24,16 +26,30 @@
       padding: 2rem;
       cursor: pointer;
       transition: all 0.3s ease;
+      background-color: #f8fafc;
     }
     .receipt-label:hover {
       border-color: #9ca3af;
       background-color: #f9fafb;
+      transform: translateY(-2px);
     }
     .btn-primary {
       background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+      transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
     }
     .btn-success {
       background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      transition: all 0.3s ease;
+    }
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
     }
     .number-badge {
       background: linear-gradient(135deg, #1e293b, #0f172a);
@@ -41,14 +57,34 @@
       padding: 0.5rem 1rem;
       border-radius: 0.5rem;
       font-family: monospace;
+      transition: all 0.3s ease;
+    }
+    .number-badge:hover {
+      transform: scale(1.02);
+    }
+    .input-field {
+      border: 2px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+    .input-field:focus {
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+    }
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
     }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-  <div class="bg-white rounded-3xl shadow-xl w-full max-w-md">
+  <div class="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden pulse-animation">
     <div class="gold-gradient p-6 text-center rounded-t-3xl">
-      <div class="bg-white p-3 w-fit mx-auto rounded-full shadow">
+      <div class="bg-white p-3 w-fit mx-auto rounded-full shadow-lg">
         <i class="fas fa-coins text-yellow-500 text-3xl"></i>
       </div>
       <h2 class="text-xl font-bold mt-2 text-gray-800">شحن الكوينات</h2>
@@ -56,41 +92,48 @@
 
     <div class="p-6" id="step1">
       <label class="block font-medium text-gray-700 mb-2">عدد الكوينات (الحد الأدنى 10)</label>
-      <input type="number" id="coinsInput" min="10" class="w-full border px-4 py-2 rounded-xl mb-4 text-center font-bold" placeholder="مثال: 20">
+      <input type="number" id="coinsInput" min="10" class="w-full border px-4 py-3 rounded-xl mb-4 text-center font-bold input-field" placeholder="مثال: 20">
       <button onclick="continueToPayment()" class="btn-primary text-white w-full py-3 rounded-xl font-semibold">
-        استمرار للدفع
+        استمرار للدفع <i class="fas fa-arrow-left ml-2"></i>
       </button>
     </div>
 
     <div class="p-6 hidden" id="step2">
       <h3 class="text-lg font-bold mb-4 text-gray-800">إتمام الدفع</h3>
-      <div class="mb-3 flex justify-between">
-        <span>المبلغ المطلوب:</span>
-        <span id="amountToPay" class="font-bold text-green-600">0 جنيه</span>
+      <div class="mb-3 flex justify-between items-center bg-gray-50 p-3 rounded-xl">
+        <span class="text-gray-600">المبلغ المطلوب:</span>
+        <span id="amountToPay" class="font-bold text-green-600 text-xl">0 جنيه</span>
       </div>
 
-      <div class="mb-4">
-        <div class="flex items-center mb-2">
+      <div class="mb-4 bg-gray-50 p-4 rounded-xl">
+        <div class="flex items-center mb-2 text-gray-700">
           <i class="fas fa-mobile-alt text-indigo-500 ml-2"></i>
           <span>قم بالتحويل إلى الرقم:</span>
         </div>
-        <div class="number-badge flex items-center gap-2">
+        <div class="number-badge flex items-center justify-between">
           <span id="paymentNumber">01012345678</span>
-          <button onclick="copyNumber()"><i class="far fa-copy"></i></button>
+          <button onclick="copyNumber()" class="text-indigo-300 hover:text-white">
+            <i class="far fa-copy"></i>
+          </button>
         </div>
+        <p class="text-xs text-gray-500 mt-2 text-center">سيتم التحقق من التحويل خلال 24 ساعة</p>
       </div>
 
       <label class="block font-medium text-gray-700 mb-2 mt-4">رفع صورة الإثبات</label>
-      <label for="receiptImage" class="receipt-label text-center">
-        <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
-        <p>اضغط لاختيار الصورة</p>
+      <label for="receiptImage" class="receipt-label text-center block">
+        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+        <p class="text-gray-600">اضغط لاختيار الصورة</p>
+        <p class="text-xs text-gray-400 mt-1">(يدعم جميع أنواع الصور: JPG, PNG, GIF, WEBP)</p>
         <input type="file" id="receiptImage" accept="image/*" class="hidden">
       </label>
       <div id="fileNameDisplay" class="text-center text-sm text-gray-500 mt-2 hidden"></div>
 
-      <button onclick="submitPayment(event)" class="btn-success text-white w-full py-3 rounded-xl font-semibold mt-6">
-        تأكيد التحويل
-      </button>
+      <div class="mt-6 relative">
+        <button onclick="submitPayment(event)" class="btn-success text-white w-full py-3 rounded-xl font-semibold">
+          تأكيد التحويل <i class="fas fa-check-circle ml-2"></i>
+        </button>
+        <div id="timer" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full hidden">120</div>
+      </div>
 
       <div id="statusMsg" class="mt-4 p-4 rounded-xl hidden bg-blue-50 text-blue-700">
         <div class="flex items-center justify-center space-x-2">
@@ -119,6 +162,37 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
     const pricePerCoin = 1;
+    const COOLDOWN_TIME = 120; // 120 ثانية = دقيقتين
+
+    // دالة للتحقق من وقت الانتظار
+    function canSubmitRequest() {
+      const lastRequestTime = localStorage.getItem('lastRequestTime');
+      if (!lastRequestTime) return true;
+      
+      const currentTime = Math.floor(Date.now() / 1000);
+      const elapsedTime = currentTime - parseInt(lastRequestTime);
+      
+      return elapsedTime >= COOLDOWN_TIME;
+    }
+
+    // دالة لبدء العد التنازلي
+    function startCooldownTimer() {
+      const timerElement = document.getElementById('timer');
+      let timeLeft = COOLDOWN_TIME;
+      
+      timerElement.classList.remove('hidden');
+      timerElement.textContent = timeLeft;
+      
+      const timerInterval = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timerElement.classList.add('hidden');
+        }
+      }, 1000);
+    }
 
     const student = JSON.parse(localStorage.getItem("student"));
     if (!student || !student.id) {
@@ -134,7 +208,30 @@
     document.getElementById("receiptImage").addEventListener("change", function () {
       const display = document.getElementById("fileNameDisplay");
       if (this.files.length > 0) {
-        display.textContent = 'تم اختيار: ' + this.files[0].name;
+        const file = this.files[0];
+        // التحقق من نوع الملف
+        if (!file.type.startsWith("image/")) {
+          Swal.fire({
+            icon: 'error',
+            title: 'نوع ملف غير مدعوم',
+            text: 'يرجى اختيار صورة (JPG, PNG, GIF, WEBP)'
+          });
+          this.value = '';
+          return;
+        }
+        
+        // التحقق من حجم الملف (5MB كحد أقصى)
+        if (file.size > 5 * 1024 * 1024) {
+          Swal.fire({
+            icon: 'error',
+            title: 'حجم الملف كبير',
+            text: 'الحد الأقصى لحجم الصورة هو 5MB'
+          });
+          this.value = '';
+          return;
+        }
+        
+        display.textContent = 'تم اختيار: ' + file.name;
         display.classList.remove("hidden");
       } else {
         display.classList.add("hidden");
@@ -143,7 +240,16 @@
 
     function continueToPayment() {
       const coins = parseInt(document.getElementById("coinsInput").value);
-      if (isNaN(coins) || coins < 10) {
+      if (isNaN(coins) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'يجب إدخال عدد الكوينات',
+          confirmButtonText: 'حسناً'
+        });
+        return;
+      }
+      
+      if (coins < 10) {
         Swal.fire({
           icon: 'warning',
           title: 'الحد الأدنى 10 كوينات',
@@ -164,29 +270,37 @@
           icon: 'success',
           title: 'تم نسخ الرقم',
           toast: true,
-          position: 'top-end',
+          position: 'top-start',
           showConfirmButton: false,
-          timer: 1500
+          timer: 1500,
+          background: '#f0fdf4',
+          iconColor: '#10b981'
         });
       });
     }
 
     async function submitPayment(event) {
+      // التحقق من وقت الانتظار
+      if (!canSubmitRequest()) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'يجب الانتظار دقيقتين',
+          text: 'لا يمكن إرسال طلبين متتاليين، يرجى الانتظار',
+          confirmButtonText: 'حسناً'
+        });
+        startCooldownTimer();
+        return;
+      }
+
       const coins = parseInt(document.getElementById("coinsInput").value);
       const file = document.getElementById("receiptImage").files[0];
 
       if (!file) {
-        Swal.fire({ icon: 'error', title: 'ارفع صورة التحويل' });
-        return;
-      }
-
-      if (!file.type.startsWith("image/")) {
-        Swal.fire({ icon: 'error', title: 'يجب رفع صورة فقط' });
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        Swal.fire({ icon: 'error', title: 'الحد الأقصى 5MB' });
+        Swal.fire({ 
+          icon: 'error', 
+          title: 'يجب رفع صورة التحويل',
+          confirmButtonText: 'حسناً'
+        });
         return;
       }
 
@@ -200,7 +314,7 @@
       statusText.textContent = "جاري إرسال الطلب...";
 
       try {
-        const ref = storage.ref().child(`payments/${id}/receipt.jpg`);
+        const ref = storage.ref().child(`payments/${id}/receipt.${file.name.split('.').pop()}`);
         await ref.put(file);
         const url = await ref.getDownloadURL();
 
@@ -215,16 +329,41 @@
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        // حفظ وقت آخر طلب
+        localStorage.setItem('lastRequestTime', Math.floor(Date.now() / 1000));
+        startCooldownTimer();
+
         statusText.textContent = "✅ تم إرسال طلب الشحن بنجاح!";
+        statusBox.classList.remove("bg-blue-50", "text-blue-700");
+        statusBox.classList.add("bg-green-50", "text-green-700");
+        
         btn.disabled = false;
 
-        setTimeout(() => location.reload(), 4000);
+        setTimeout(() => {
+          Swal.fire({
+            icon: 'success',
+            title: 'تم إرسال الطلب',
+            text: 'سيتم مراجعة طلبك خلال 24 ساعة',
+            confirmButtonText: 'حسناً'
+          }).then(() => {
+            location.reload();
+          });
+        }, 1500);
       } catch (err) {
         console.error(err);
         statusText.textContent = "❌ حدث خطأ. حاول مرة أخرى.";
+        statusBox.classList.remove("bg-blue-50", "text-blue-700");
+        statusBox.classList.add("bg-red-50", "text-red-700");
         btn.disabled = false;
       }
     }
+
+    // التحقق من وقت الانتظار عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!canSubmitRequest()) {
+        startCooldownTimer();
+      }
+    });
   </script>
 </body>
 </html>
