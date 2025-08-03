@@ -1,18 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar">
 <head>
-  <title>Admin Panel</title>
   <meta charset="UTF-8">
+  <title>لوحة التحكم</title>
   <style>
-    body { font-family: Arial; margin: 0; padding: 0; }
-    .container { padding: 20px; }
-    .auth, .dashboard { display: none; }
-    .iframe-container { margin-top: 20px; }
-    iframe { width: 100%; height: 500px; border: 1px solid #ccc; }
+    body { font-family: Tahoma, sans-serif; margin: 0; padding: 0; background: #f2f2f2; }
+    .container { max-width: 800px; margin: auto; padding: 20px; background: white; margin-top: 40px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 
-    select, button, input {
+    h2 { text-align: center; }
+
+    .auth, .dashboard { display: none; }
+
+    input, button, select {
+      width: 100%;
       padding: 10px;
-      margin: 5px;
+      margin-top: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    iframe {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+      border-radius: 6px;
+    }
+
+    .logout-btn {
+      background: crimson;
+      color: white;
+      border: none;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -20,95 +39,107 @@
 
   <div class="container">
 
-    <!-- 🔐 واجهة تسجيل الدخول -->
-    <div class="auth" id="authSection">
-      <h2>تسجيل الدخول أو إنشاء حساب</h2>
-      <input type="email" id="email" placeholder="البريد الإلكتروني"><br>
-      <input type="password" id="password" placeholder="كلمة المرور"><br>
+    <!-- ✅ واجهة الدخول والتسجيل -->
+    <div id="authSection" class="auth">
+      <h2>تسجيل الدخول / إنشاء حساب</h2>
+      <input type="email" id="email" placeholder="البريد الإلكتروني">
+      <input type="password" id="password" placeholder="كلمة المرور">
       <button onclick="login()">تسجيل الدخول</button>
-      <button onclick="register()">إنشاء حساب</button>
+      <button onclick="register()">إنشاء حساب جديد</button>
+      <p id="authMessage"></p>
     </div>
 
-    <!-- 🛠️ لوحة التحكم -->
-    <div class="dashboard" id="dashboardSection">
+    <!-- ✅ لوحة التحكم -->
+    <div id="dashboardSection" class="dashboard">
       <h2>لوحة التحكم</h2>
-      <button onclick="logout()">تسجيل الخروج</button><br><br>
-
-      <!-- قائمة الأقسام -->
-      <label for="sectionSelect">اختر القسم:</label>
       <select id="sectionSelect" onchange="loadSection()">
-        <option value="">-- اختر قسم --</option>
-        <option value="home.html">الصفحة الرئيسية</option>
-        <option value="users.html">المستخدمين</option>
-        <option value="settings.html">الإعدادات</option>
+        <option value="">-- اختر القسم --</option>
+        <option value="home.html">📄 الصفحة الرئيسية</option>
+        <option value="users.html">👥 المستخدمين</option>
+        <option value="settings.html">⚙️ الإعدادات</option>
       </select>
 
-      <div class="iframe-container">
-        <iframe id="iframe" src=""></iframe>
-      </div>
+      <iframe id="iframe" src=""></iframe>
+
+      <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
     </div>
 
   </div>
 
-  <!-- ✅ Firebase -->
+  <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js"></script>
-  <script>
-    // إعداد Firebase
-    const firebaseConfig = {
-  apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
-  authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-  databaseURL: "https://hhhhhh-d4fb8-default-rtdb.firebaseio.com",
-  projectId: "hhhhhh-d4fb8",
-  storageBucket: "hhhhhh-d4fb8.appspot.com",
-  messagingSenderId: "24512338206",
-  appId: "1:24512338206:web:dfe045db59bd3434a2110f",
-  measurementId: "G-HD4R7GNQ5H"
-};
 
+  <script>
+    // 🔥 إعداد Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      databaseURL: "https://hhhhhh-d4fb8-default-rtdb.firebaseio.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f",
+      measurementId: "G-HD4R7GNQ5H"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // التحقق من حالة المستخدم
+    const authSection = document.getElementById('authSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const authMessage = document.getElementById('authMessage');
+
+    // ✅ التحقق من حالة الدخول
     auth.onAuthStateChanged(user => {
       if (user) {
-        document.getElementById('authSection').style.display = 'none';
-        document.getElementById('dashboardSection').style.display = 'block';
+        authSection.style.display = 'none';
+        dashboardSection.style.display = 'block';
       } else {
-        document.getElementById('authSection').style.display = 'block';
-        document.getElementById('dashboardSection').style.display = 'none';
+        authSection.style.display = 'block';
+        dashboardSection.style.display = 'none';
       }
     });
 
-    // تسجيل الدخول
+    // 🔐 تسجيل الدخول
     function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+
       auth.signInWithEmailAndPassword(email, password)
-        .catch(error => alert(error.message));
+        .catch(error => {
+          authMessage.textContent = "❌ " + error.message;
+          authMessage.style.color = "red";
+        });
     }
 
-    // إنشاء حساب
+    // 🆕 إنشاء حساب
     function register() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+
       auth.createUserWithEmailAndPassword(email, password)
-        .catch(error => alert(error.message));
+        .then(() => {
+          authMessage.textContent = "✅ تم إنشاء الحساب";
+          authMessage.style.color = "green";
+        })
+        .catch(error => {
+          authMessage.textContent = "❌ " + error.message;
+          authMessage.style.color = "red";
+        });
     }
 
-    // تسجيل الخروج
+    // 🚪 تسجيل الخروج
     function logout() {
       auth.signOut();
     }
 
-    // تحميل القسم في iframe
+    // 📄 تحميل القسم المحدد
     function loadSection() {
       const selectedPage = document.getElementById('sectionSelect').value;
-      if (selectedPage) {
-        document.getElementById('iframe').src = selectedPage;
-      }
+      document.getElementById('iframe').src = selectedPage;
     }
   </script>
 </body>
 </html>
+
