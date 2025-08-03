@@ -6,19 +6,17 @@
   <title>شحن الكوينات | منصة عبدالرحمن السقا</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Firebase + auth-check -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-  <script src="js/auth-check.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
     body {
       font-family: 'Tajawal', sans-serif;
       background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
     }
     .gold-gradient {
-      background: linear-gradient(135deg, #f5d78e 0%, #e8b74c 50%, #d9a439 100%);
+      background: linear-gradient(135deg, #f5d78e, #e8b74c, #d9a439);
     }
     .receipt-label {
       border: 2px dashed #d1d5db;
@@ -31,143 +29,79 @@
       border-color: #9ca3af;
       background-color: #f9fafb;
     }
-    .payment-card {
-      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
-      border-radius: 1.5rem;
-      overflow: hidden;
-    }
     .btn-primary {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      transition: all 0.3s ease;
-    }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
     }
     .btn-success {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      transition: all 0.3s ease;
-    }
-    .btn-success:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+      background: linear-gradient(135deg, #10b981, #059669);
     }
     .number-badge {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(135deg, #1e293b, #0f172a);
       color: white;
       padding: 0.5rem 1rem;
       border-radius: 0.5rem;
       font-family: monospace;
-      display: inline-flex;
-      align-items: center;
     }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
-  <div class="payment-card bg-white w-full max-w-md">
-    <!-- Header -->
-    <div class="gold-gradient p-6 text-center">
-      <div class="flex justify-center mb-4">
-        <div class="bg-white p-3 rounded-full shadow-lg">
-          <i class="fas fa-coins text-3xl text-yellow-500"></i>
-        </div>
+
+  <div class="bg-white rounded-3xl shadow-xl w-full max-w-md">
+    <div class="gold-gradient p-6 text-center rounded-t-3xl">
+      <div class="bg-white p-3 w-fit mx-auto rounded-full shadow">
+        <i class="fas fa-coins text-yellow-500 text-3xl"></i>
       </div>
-      <h1 class="text-2xl font-bold text-gray-800">شحن الكوينات</h1>
-      <p class="text-gray-700 mt-1">منصة عبدالرحمن السقا التعليمية</p>
+      <h2 class="text-xl font-bold mt-2 text-gray-800">شحن الكوينات</h2>
     </div>
-    
-    <!-- Content -->
-    <div class="p-8">
-      <div id="step1">
-        <div class="mb-6 text-center">
-          <h2 class="text-xl font-bold text-gray-800 mb-2">إشحن رصيدك الآن</h2>
-          <p class="text-gray-600">استخدم الكوينات للوصول للمحتوى المميز</p>
-        </div>
-        
-        <div class="bg-gray-50 p-4 rounded-xl mb-6">
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-gray-700">سعر الكوين:</span>
-            <span class="font-bold text-indigo-600">1 جنيه</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-gray-700">الحد الأدنى:</span>
-            <span class="font-bold text-indigo-600">10 كوينات</span>
-          </div>
-        </div>
-        
-        <div class="mb-6">
-          <label for="coinsInput" class="block text-gray-700 font-medium mb-2">عدد الكوينات المطلوبة</label>
-          <input type="number" id="coinsInput" placeholder="أدخل عدد الكوينات" min="10" 
-                 class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-center text-lg font-bold focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition" />
-        </div>
-        
-        <button onclick="continueToPayment()" class="btn-primary w-full text-white py-3 rounded-xl font-semibold text-lg">
-          <i class="fas fa-arrow-left ml-2"></i> استمرار للدفع
-        </button>
+
+    <div class="p-6" id="step1">
+      <label class="block font-medium text-gray-700 mb-2">عدد الكوينات (الحد الأدنى 10)</label>
+      <input type="number" id="coinsInput" min="10" class="w-full border px-4 py-2 rounded-xl mb-4 text-center font-bold" placeholder="مثال: 20">
+      <button onclick="continueToPayment()" class="btn-primary text-white w-full py-3 rounded-xl font-semibold">
+        استمرار للدفع
+      </button>
+    </div>
+
+    <div class="p-6 hidden" id="step2">
+      <h3 class="text-lg font-bold mb-4 text-gray-800">إتمام الدفع</h3>
+      <div class="mb-3 flex justify-between">
+        <span>المبلغ المطلوب:</span>
+        <span id="amountToPay" class="font-bold text-green-600">0 جنيه</span>
       </div>
 
-      <div id="step2" class="hidden">
-        <div class="mb-6 text-center">
-          <h2 class="text-xl font-bold text-gray-800 mb-2">إتمام عملية الدفع</h2>
-          <p class="text-gray-600">اتبع الخطوات التالية لإكمال عملية الشحن</p>
+      <div class="mb-4">
+        <div class="flex items-center mb-2">
+          <i class="fas fa-mobile-alt text-indigo-500 ml-2"></i>
+          <span>قم بالتحويل إلى الرقم:</span>
         </div>
-        
-        <div class="bg-gray-50 p-4 rounded-xl mb-6">
-          <div class="flex justify-between items-center mb-3">
-            <span class="text-gray-700">المبلغ المطلوب:</span>
-            <span id="amountToPay" class="font-bold text-green-600 text-xl">0 جنيه</span>
-          </div>
-          
-          <div class="space-y-3">
-            <div class="flex items-center">
-              <div class="bg-indigo-100 p-2 rounded-lg mr-3">
-                <i class="fas fa-mobile-alt text-indigo-600"></i>
-              </div>
-              <span class="text-gray-700">قم بالتحويل إلى الرقم:</span>
-            </div>
-            
-            <div class="flex justify-between items-center">
-              <div class="number-badge">
-                <span id="paymentNumber">01012345678</span>
-                <button onclick="copyNumber()" class="mr-2 text-gray-300 hover:text-white">
-                  <i class="far fa-copy"></i>
-                </button>
-              </div>
-            </div>
-          </div>
+        <div class="number-badge flex items-center gap-2">
+          <span id="paymentNumber">01012345678</span>
+          <button onclick="copyNumber()"><i class="far fa-copy"></i></button>
         </div>
-        
-        <div class="mb-6">
-          <label class="block text-gray-700 font-medium mb-3">إرفاق إثبات التحويل</label>
-          <label for="receiptImage" class="receipt-label text-center block">
-            <i class="fas fa-camera text-3xl text-gray-400 mb-3"></i>
-            <p class="text-gray-500">اضغط لرفع صورة الإثبات</p>
-            <p class="text-sm text-gray-400 mt-1">JPEG, PNG - الحد الأقصى 5MB</p>
-            <input type="file" id="receiptImage" accept="image/*" class="hidden" />
-          </label>
-          <div id="fileNameDisplay" class="text-center text-sm text-gray-500 mt-2 hidden"></div>
-        </div>
-        
-        <button onclick="submitPayment()" class="btn-success w-full text-white py-3 rounded-xl font-semibold text-lg">
-          <i class="fas fa-check-circle ml-2"></i> تأكيد التحويل
-        </button>
-        
-        <div id="statusMsg" class="mt-6 p-4 rounded-xl hidden">
-          <div class="flex items-center justify-center space-x-2">
-            <div id="loadingSpinner" class="animate-spin">
-              <i class="fas fa-circle-notch text-indigo-600"></i>
-            </div>
-            <span id="statusText">جاري إرسال الطلب...</span>
-          </div>
+      </div>
+
+      <label class="block font-medium text-gray-700 mb-2 mt-4">رفع صورة الإثبات</label>
+      <label for="receiptImage" class="receipt-label text-center">
+        <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
+        <p>اضغط لاختيار الصورة</p>
+        <input type="file" id="receiptImage" accept="image/*" class="hidden">
+      </label>
+      <div id="fileNameDisplay" class="text-center text-sm text-gray-500 mt-2 hidden"></div>
+
+      <button onclick="submitPayment(event)" class="btn-success text-white w-full py-3 rounded-xl font-semibold mt-6">
+        تأكيد التحويل
+      </button>
+
+      <div id="statusMsg" class="mt-4 p-4 rounded-xl hidden bg-blue-50 text-blue-700">
+        <div class="flex items-center justify-center space-x-2">
+          <i class="fas fa-circle-notch fa-spin text-indigo-600"></i>
+          <span id="statusText">جاري إرسال الطلب...</span>
         </div>
       </div>
     </div>
-    
-    <!-- Footer -->
-    <div class="bg-gray-50 p-4 text-center border-t border-gray-200">
-      <p class="text-gray-500 text-sm">
-        <i class="far fa-clock mr-1"></i> معالجة الطلب خلال 24 ساعة
-      </p>
+
+    <div class="bg-gray-100 text-center text-sm text-gray-500 py-3 rounded-b-3xl">
+      <i class="far fa-clock ml-1"></i> يتم مراجعة الطلب خلال 24 ساعة
     </div>
   </div>
 
@@ -184,17 +118,26 @@
 
     const db = firebase.firestore();
     const storage = firebase.storage();
+    const pricePerCoin = 1;
 
     const student = JSON.parse(localStorage.getItem("student"));
+    if (!student || !student.id) {
+      Swal.fire({
+        icon: 'error',
+        title: 'غير مسجل دخول',
+        text: 'يجب تسجيل الدخول أولاً',
+      }).then(() => {
+        window.location.href = "login.html";
+      });
+    }
 
-    // Handle file input change
-    document.getElementById('receiptImage').addEventListener('change', function(e) {
-      const fileNameDisplay = document.getElementById('fileNameDisplay');
+    document.getElementById("receiptImage").addEventListener("change", function () {
+      const display = document.getElementById("fileNameDisplay");
       if (this.files.length > 0) {
-        fileNameDisplay.textContent = 'تم اختيار: ' + this.files[0].name;
-        fileNameDisplay.classList.remove('hidden');
+        display.textContent = 'تم اختيار: ' + this.files[0].name;
+        display.classList.remove("hidden");
       } else {
-        fileNameDisplay.classList.add('hidden');
+        display.classList.add("hidden");
       }
     });
 
@@ -203,113 +146,86 @@
       if (isNaN(coins) || coins < 10) {
         Swal.fire({
           icon: 'warning',
-          title: 'حد أدنى للشحن',
-          text: 'الحد الأدنى للشحن هو 10 كوينات',
-          confirmButtonColor: '#4f46e5',
+          title: 'الحد الأدنى 10 كوينات',
           confirmButtonText: 'حسناً'
         });
         return;
       }
-      
-      // Smooth transition between steps
-      document.getElementById("step1").style.opacity = 0;
-      setTimeout(() => {
-        document.getElementById("step1").classList.add("hidden");
-        document.getElementById("step2").classList.remove("hidden");
-        document.getElementById("amountToPay").textContent = coins + " جنيه";
-        document.getElementById("step2").style.opacity = 0;
-        setTimeout(() => {
-          document.getElementById("step2").style.opacity = 1;
-        }, 10);
-      }, 300);
+
+      document.getElementById("step1").classList.add("hidden");
+      document.getElementById("step2").classList.remove("hidden");
+      document.getElementById("amountToPay").textContent = (coins * pricePerCoin) + " جنيه";
     }
 
     function copyNumber() {
       const number = document.getElementById("paymentNumber").textContent;
       navigator.clipboard.writeText(number).then(() => {
         Swal.fire({
-          position: 'top-end',
           icon: 'success',
           title: 'تم نسخ الرقم',
+          toast: true,
+          position: 'top-end',
           showConfirmButton: false,
-          timer: 1500,
-          toast: true
+          timer: 1500
         });
       });
     }
 
-    async function submitPayment() {
+    async function submitPayment(event) {
       const coins = parseInt(document.getElementById("coinsInput").value);
       const file = document.getElementById("receiptImage").files[0];
-      const statusMsg = document.getElementById("statusMsg");
-      const statusText = document.getElementById("statusText");
-      const loadingSpinner = document.getElementById("loadingSpinner");
 
       if (!file) {
-        Swal.fire({
-          icon: 'error',
-          title: 'صورة الإثبات مطلوبة',
-          text: 'يرجى رفع صورة إثبات التحويل للمتابعة',
-          confirmButtonColor: '#4f46e5',
-          confirmButtonText: 'حسناً'
-        });
+        Swal.fire({ icon: 'error', title: 'ارفع صورة التحويل' });
         return;
       }
 
-      // Show loading state
-      statusMsg.classList.remove("hidden");
-      statusMsg.classList.add("bg-blue-50", "text-blue-700");
+      if (!file.type.startsWith("image/")) {
+        Swal.fire({ icon: 'error', title: 'يجب رفع صورة فقط' });
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        Swal.fire({ icon: 'error', title: 'الحد الأقصى 5MB' });
+        return;
+      }
+
+      const btn = event.target;
+      btn.disabled = true;
+
+      const id = "PAY-" + Date.now();
+      const statusBox = document.getElementById("statusMsg");
+      const statusText = document.getElementById("statusText");
+      statusBox.classList.remove("hidden");
       statusText.textContent = "جاري إرسال الطلب...";
-      loadingSpinner.classList.remove("hidden");
 
       try {
-        const id = "PAY-" + Date.now();
-        const storageRef = storage.ref().child(`payments/${id}/receipt.jpg`);
-        
-        // Upload file
-        await storageRef.put(file);
-        const receiptURL = await storageRef.getDownloadURL();
+        const ref = storage.ref().child(`payments/${id}/receipt.jpg`);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
 
-        // Save payment data
         await db.collection("payments").doc(id).set({
           id,
           studentId: student.id,
           fullName: student.fullName || "غير محدد",
           coinsRequested: coins,
-          amountEGP: coins,
-          receiptURL,
+          amountEGP: coins * pricePerCoin,
+          receiptURL: url,
           status: "معلق",
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        // Show success state
-        statusMsg.classList.remove("bg-blue-50", "text-blue-700");
-        statusMsg.classList.add("bg-green-50", "text-green-700");
-        statusText.textContent = "✅ تم إرسال طلب الشحن بنجاح! سيتم مراجعته قريبًا.";
-        loadingSpinner.classList.add("hidden");
-        
-        // Reset form after 5 seconds
-        setTimeout(() => {
-          document.getElementById("step2").classList.add("hidden");
-          document.getElementById("step1").classList.remove("hidden");
-          document.getElementById("coinsInput").value = "";
-          document.getElementById("receiptImage").value = "";
-          document.getElementById("fileNameDisplay").classList.add("hidden");
-          statusMsg.classList.add("hidden");
-          statusMsg.classList.remove("bg-green-50", "text-green-700");
-        }, 5000);
-        
-      } catch (error) {
-        console.error("Payment submission error:", error);
-        statusMsg.classList.remove("bg-blue-50", "text-blue-700");
-        statusMsg.classList.add("bg-red-50", "text-red-700");
-        statusText.textContent = "❌ حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.";
-        loadingSpinner.classList.add("hidden");
+        statusText.textContent = "✅ تم إرسال طلب الشحن بنجاح!";
+        btn.disabled = false;
+
+        setTimeout(() => location.reload(), 4000);
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = "❌ حدث خطأ. حاول مرة أخرى.";
+        btn.disabled = false;
       }
     }
   </script>
-  
-  <!-- SweetAlert for beautiful alerts -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>
+
