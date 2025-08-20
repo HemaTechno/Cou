@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>إضافة أسئلة | منصتي التعليمية</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+    <h1 class="text-2xl font-bold mb-4 text-indigo-700">إضافة أسئلة</h1>
+
+    <!-- اختيار الصف -->
+    <label class="block mb-2 font-medium">اختر الصف:</label>
+    <select id="gradeSelect" class="w-full border p-2 rounded mb-4">
+      <option value="">-- اختر الصف --</option>
+      <option value="grade1">الصف الأول</option>
+      <option value="grade2">الصف الثاني</option>
+      <option value="grade3">الصف الثالث</option>
+    </select>
+
+    <!-- اختيار أو إنشاء ID -->
+    <div class="flex items-center gap-2 mb-4">
+      <div class="flex-1">
+        <label class="block mb-2 font-medium">اختر ID:</label>
+        <select id="examSelect" class="w-full border p-2 rounded" onchange="checkNewId()">
+          <option value="">-- اختر امتحان/ID --</option>
+          <option value="new">+ ID جديد</option>
+        </select>
+      </div>
+      <button onclick="loadExamIds()" class="bg-blue-500 text-white px-3 py-2 rounded-lg mt-6">🔄 تحديث</button>
+    </div>
+
+    <input type="text" id="newExamId" placeholder="اكتب ID جديد" 
+      class="w-full border p-2 rounded mb-4 hidden"/>
+
+    <!-- إضافة الأسئلة -->
+    <div id="questionsContainer"></div>
+
+    <button onclick="addQuestion()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg mt-4">➕ إضافة سؤال</button>
+
+    <div class="mt-6">
+      <button onclick="saveQuestions()" class="bg-green-600 text-white px-6 py-2 rounded-lg">💾 حفظ جميع الأسئلة</button>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let questionCount = 0;
+
+    // تحميل قائمة الـ IDs من quizzes
+    async function loadExamIds() {
+      const select = document.getElementById("examSelect");
+      select.innerHTML = `<option value="">-- اختر امتحان/ID --</option>
+                          <option value="new">+ ID جديد</option>`;
+      const snapshot = await db.collection("quizzes").get();
+      snapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = doc.id;
+        select.appendChild(option);
+      });
+    }
+
+    loadExamIds();
+
+    // لو اختار "ID جديد" يظهر input
+    function checkNewId() {
+      const select = document.getElementById("examSelect").value;
+      const input = document.getElementById("newExamId");
+      if (select === "new") {
+        input.classList.remove("hidden");
+      } else {
+        input.classList.add("hidden");
+      }
+    }
+
+    // إضافة سؤال
+    function addQuestion() {
+      questionCount++;
+      const container = document.getElementById("questionsContainer");
+      const div = document.createElement("div");
+      div.className = "border p-4 rounded-lg mb-4 bg-gray-50";
+      div.innerHTML = `
+        <h3 class="font-bold mb-2">سؤال ${questionCount}</h3>
+        
+        <label class="block mb-1">نص السؤال:</label>
+        <textarea class="w-full border p-2 rounded mb-2" id="q_text_${questionCount}"></textarea>
+
+        <label class="block mb-1">صورة (اختياري):</label>
+        <input type="file" id="q_img_${questionCount}" class="mb-2"/>
+
+        <label class="block mb-1">نوع السؤال:</label>
+        <select id="q_type_${questionCount}" class="w-full border p-2 rounded mb-2" onchange="toggleOptions(${questionCount})">
+          <option value="essay">مقالي</option>
+          <option value="mcq">اختياري</option>
+        </select>
+
+        <div id="options_${questionCount}" class="hidden">
+          <label class="block mb-1">الاختيارات (افصلها بفاصلة):</label>
+          <input type="text" id="q_options_${questionCount}" placeholder="مثال: اختيار1, اختيار2, اختيار3" class="w-full border p-2 rounded mb-2"/>
+          <label class="block mb-1">الإجابة الصحيحة:</label>
+          <input type="text" id="q_answer_${questionCount}" placeholder="اكتب الإجابة الصحيحة" class="w-full border p-2 rounded mb-2"/>
+        </div>
+
+        <label class="block mb-1">هل مسموح رفع صورة للإجابة؟</label>
+        <select id="q_allowImg_${questionCount}" class="w-full border p-2 rounded">
+          <option value="no">لا</option>
+          <option value="yes">نعم</option>
+        </select>
+      `;
+      container.appendChild(div);
+    }
+
+    // إظهار/إخفاء الاختيارات
+    function toggleOptions(id) {
+      const type = document.getElementById(`q_type_${id}`).value;
+      const optionsDiv = document.getElementById(`options_${id}`);
+      if (type === "mcq") {
+        optionsDiv.classList.remove("hidden");
+      } else {
+        optionsDiv.classList.add("hidden");
+      }
+    }
+
+    // حفظ الأسئلة
+    async function saveQuestions() {
+      const grade = document.getElementById("gradeSelect").value;
+      let examId = document.getElementById("examSelect").value;
+
+      if (!grade || !examId) {
+        alert("⚠️ الرجاء اختيار الصف وID");
+        return;
+      }
+
+      // لو المستخدم اختار "ID جديد"
+      if (examId === "new") {
+        examId = document.getElementById("newExamId").value.trim();
+        if (!examId) {
+          alert("⚠️ الرجاء إدخال ID جديد");
+          return;
+        }
+        // إنشاء doc جديد في quizzes لو مش موجود
+        await db.collection("quizzes").doc(examId).set({ createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      }
+
+      for (let i = 1; i <= questionCount; i++) {
+        const text = document.getElementById(`q_text_${i}`).value;
+        const type = document.getElementById(`q_type_${i}`).value;
+        const allowImg = document.getElementById(`q_allowImg_${i}`).value;
+        const file = document.getElementById(`q_img_${i}`).files[0];
+
+        let imgUrl = "";
+        if (file) {
+          const storageRef = storage.ref(`questions/${examId}_${i}_${file.name}`);
+          await storageRef.put(file);
+          imgUrl = await storageRef.getDownloadURL();
+        }
+
+        let options = [];
+        let answer = "";
+        if (type === "mcq") {
+          options = document.getElementById(`q_options_${i}`).value.split(",");
+          answer = document.getElementById(`q_answer_${i}`).value;
+        }
+
+        await db.collection("quizzes").doc(examId).collection("questions").add({
+          grade,
+          text,
+          type,
+          options,
+          answer,
+          allowImg: allowImg === "yes",
+          imgUrl,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      alert("✅ تم حفظ جميع الأسئلة بنجاح");
+      document.getElementById("questionsContainer").innerHTML = "";
+      questionCount = 0;
+    }
+  </script>
+</body>
+</html>
