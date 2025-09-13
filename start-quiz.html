@@ -50,7 +50,7 @@
       }
 
       try {
-        // تحميل الأسئلة
+        // تحميل بيانات الاختبار
         const quizRef = db.collection("quizzes").doc(quizId);
         const quizDoc = await quizRef.get();
         if (!quizDoc.exists) {
@@ -94,7 +94,8 @@
       });
     }
 
-    submitBtn.addEventListener("click", () => {
+    // تسليم الإجابات + التصحيح + حفظ النتيجة
+    submitBtn.addEventListener("click", async () => {
       let score = 0;
       let wrongQuestions = [];
       questions.forEach((q, index) => {
@@ -111,6 +112,24 @@
       });
 
       const total = questions.length;
+      const user = auth.currentUser;
+      
+      // حفظ النتيجة في قاعدة البيانات
+      if (user) {
+        try {
+          await db.collection("results").doc(user.uid).collection("quizzes").doc(quizId).set({
+            score: score,
+            total: total,
+            wrongQuestions: wrongQuestions.map(w => w.question),
+            timestamp: new Date().toISOString()
+          });
+          console.log("تم حفظ النتيجة بنجاح");
+        } catch (err) {
+          console.error("خطأ في حفظ النتيجة:", err);
+        }
+      }
+
+      // عرض النتيجة للطالب
       let msg = `<p class="text-lg">درجتك: <span class="font-bold">${score}/${total}</span></p>`;
       if (wrongQuestions.length > 0) {
         msg += "<p class='mt-2 text-red-600'>الأسئلة الغلط:</p><ul class='list-disc pr-5 text-red-500'>";
@@ -128,6 +147,7 @@
   </script>
 </body>
 </html>
+
 
 
 
