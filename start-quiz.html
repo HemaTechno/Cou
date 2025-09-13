@@ -2,20 +2,29 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>الاختبار</title>
+  <title>بدء الاختبار</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Tajawal', sans-serif; background: #f9fafb; }
+    .question-card { transition: 0.3s; }
+    .question-card:hover { transform: translateY(-2px); }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex justify-center items-center">
+<body class="p-4 md:p-6">
 
-  <div id="quizBox" class="max-w-3xl w-full bg-white p-6 rounded-xl shadow-lg text-center">
-    <h1 class="text-2xl font-bold text-indigo-600 mb-4">📘 الاختبار</h1>
-    <p id="status">جارٍ التحقق...</p>
+  <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6">
+    <h1 id="quizTitle" class="text-2xl font-bold text-gray-800 mb-4">الاختبار</h1>
+    <div id="quizContainer" class="space-y-6"></div>
+    <button id="submitBtn" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">تسليم الإجابات</button>
+    <div id="result" class="mt-6 p-4 hidden rounded-lg"></div>
   </div>
 
   <script>
-    // Firebase config
+    // إعداد فايربيس
     const firebaseConfig = {
       apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
       authDomain: "hhhhhh-d4fb8.firebaseapp.com",
@@ -23,161 +32,102 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    // قراءة examId و userId من اللينك
-    const params = new URLSearchParams(window.location.search);
-    const examId = params.get("id");
-    const userId = params.get("user");
+    const urlParams = new URLSearchParams(window.location.search);
+    const quizId = urlParams.get("id");
+
+    const quizContainer = document.getElementById("quizContainer");
+    const submitBtn = document.getElementById("submitBtn");
+    const resultDiv = document.getElementById("result");
 
     let questions = [];
-    let answers = {};
-    let attempts = 0;
-    let currentIndex = 0;
-    let timerInterval;
 
-    async function checkAccess() {
-      const box = document.getElementById("quizBox");
-      const status = document.getElementById("status");
-
-      // نجيب محاولات الطالب
-      const subDoc = await db.collection("quizzes").doc(examId)
-                    .collection("submissions").doc(userId).get();
-      attempts = subDoc.exists ? (subDoc.data().attempts || 0) : 0;
-
-      if (attempts >= 2) {
-        status.innerText = "❌ استهلكت كل المحاولات (2)";
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.pathname + window.location.search);
         return;
       }
 
-      status.innerText = "";
-      box.innerHTML += `
-        <button onclick="startExam()" class="bg-green-600 text-white px-6 py-3 mt-4 rounded-lg">🚀 بدء الاختبار</button>
-      `;
-    }
+      try {
+        // تحميل الأسئلة
+        const quizRef = db.collection("quizzes").doc(quizId);
+        const quizDoc = await quizRef.get();
+        if (!quizDoc.exists) {
+          quizContainer.innerHTML = "<p class='text-red-500'>الاختبار غير موجود</p>";
+          return;
+        }
 
-    async function startExam() {
-      const box = document.getElementById("quizBox");
+        const quizData = quizDoc.data();
+        document.getElementById("quizTitle").textContent = quizData.title || "اختبار بدون عنوان";
 
-      // نجيب الأسئلة
-      const snap = await db.collection("quizzes").doc(examId).collection("questions").get();
-      questions = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        // تحميل الأسئلة
+        const qSnap = await quizRef.collection("questions").get();
+        if (qSnap.empty) {
+          quizContainer.innerHTML = "<p class='text-gray-500'>لا توجد أسئلة حالياً</p>";
+          return;
+        }
 
-      box.innerHTML = `
-        <div class="flex justify-between items-center mb-4">
-          <span id="timer" class="text-red-600 font-bold">⏳ 3:00:00</span>
-          <span>المحاولة ${attempts+1} من 2</span>
-        </div>
-        <div id="questionBox" class="p-4 border rounded bg-gray-50"></div>
-        <div class="mt-4 flex justify-between">
-          <button onclick="prevQuestion()" class="bg-gray-400 text-white px-4 py-2 rounded">⬅️ السابق</button>
-          <button onclick="nextQuestion()" class="bg-blue-600 text-white px-4 py-2 rounded">➡️ التالي</button>
-        </div>
-        <div class="mt-6 flex gap-4 justify-center">
-          <button onclick="saveProgress()" class="bg-yellow-500 text-white px-6 py-2 rounded">💾 استكمال لاحقًا</button>
-          <button onclick="submitExam()" class="bg-green-600 text-white px-6 py-2 rounded">📤 تسليم</button>
-        </div>
-      `;
-
-      renderQuestion();
-      startTimer(3 * 60 * 60);
-    }
-
-    function renderQuestion() {
-      const q = questions[currentIndex];
-      const box = document.getElementById("questionBox");
-
-      let html = `<h2 class="font-bold mb-2">سؤال ${currentIndex+1}</h2>
-                  <p class="mb-2">${q.text}</p>`;
-
-      if (q.imgUrl) {
-        html += `<img src="${q.imgUrl}" class="mb-2 max-h-40 mx-auto"/>`;
+        questions = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderQuestions();
+      } catch (err) {
+        console.error(err);
+        quizContainer.innerHTML = "<p class='text-red-500'>حدث خطأ في تحميل الأسئلة</p>";
       }
+    });
 
-      if (q.type === "mcq") {
-        html += `<div class="space-y-2">`;
-        q.options.forEach(opt => {
-          const checked = answers[q.id] === opt ? "checked" : "";
-          html += `<label class="block"><input type="radio" name="q_${q.id}" value="${opt}" ${checked} onchange="saveAnswer('${q.id}', this.value)"> ${opt}</label>`;
-        });
-        html += `</div>`;
-      } else {
-        const saved = answers[q.id] || "";
-        html += `<textarea class="w-full border p-2 rounded" rows="4" onchange="saveAnswer('${q.id}', this.value)">${saved}</textarea>`;
-      }
-
-      box.innerHTML = html;
-    }
-
-    function saveAnswer(qid, value) {
-      answers[qid] = value;
-    }
-
-    function prevQuestion() {
-      if (currentIndex > 0) {
-        currentIndex--;
-        renderQuestion();
-      }
-    }
-
-    function nextQuestion() {
-      if (currentIndex < questions.length - 1) {
-        currentIndex++;
-        renderQuestion();
-      }
-    }
-
-    async function saveProgress() {
-      await db.collection("quizzes").doc(examId).collection("submissions").doc(userId).set({
-        answers,
-        attempts,
-        status: "in-progress",
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    function renderQuestions() {
+      quizContainer.innerHTML = "";
+      questions.forEach((q, index) => {
+        const qDiv = document.createElement("div");
+        qDiv.className = "question-card p-4 bg-gray-50 rounded-lg shadow";
+        qDiv.innerHTML = `
+          <h3 class="font-semibold text-lg mb-3">س${index+1}: ${q.question}</h3>
+          ${q.options.map((opt, i) => `
+            <label class="block mb-2">
+              <input type="radio" name="q${index}" value="${i}" class="mr-2">
+              ${opt}
+            </label>
+          `).join('')}
+        `;
+        quizContainer.appendChild(qDiv);
       });
-      alert("✅ تم الحفظ، يمكنك الاستكمال لاحقًا");
     }
 
-    async function submitExam() {
-      clearInterval(timerInterval);
+    submitBtn.addEventListener("click", () => {
       let score = 0;
-      questions.forEach(q => {
-        if (q.type === "mcq" && answers[q.id] === q.answer) {
-          score++;
+      let wrongQuestions = [];
+      questions.forEach((q, index) => {
+        const selected = document.querySelector(`input[name="q${index}"]:checked`);
+        if (selected) {
+          if (parseInt(selected.value) === q.correctAnswer) {
+            score++;
+          } else {
+            wrongQuestions.push({ question: q.question, correct: q.options[q.correctAnswer] });
+          }
+        } else {
+          wrongQuestions.push({ question: q.question, correct: q.options[q.correctAnswer] });
         }
       });
 
-      await db.collection("quizzes").doc(examId).collection("submissions").doc(userId).set({
-        answers,
-        attempts: attempts+1,
-        score,
-        status: "submitted",
-        submittedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      const total = questions.length;
+      let msg = `<p class="text-lg">درجتك: <span class="font-bold">${score}/${total}</span></p>`;
+      if (wrongQuestions.length > 0) {
+        msg += "<p class='mt-2 text-red-600'>الأسئلة الغلط:</p><ul class='list-disc pr-5 text-red-500'>";
+        wrongQuestions.forEach(w => {
+          msg += `<li>${w.question} - الإجابة الصحيحة: ${w.correct}</li>`;
+        });
+        msg += "</ul>";
+      }
+      msg += `<p class='mt-4 text-sm text-gray-600'>سيتم تبليغ ولي الأمر بهذه الدرجة.</p>`;
 
-      document.getElementById("quizBox").innerHTML = `
-        <h2 class="text-xl font-bold text-green-600">✅ تم تسليم الاختبار</h2>
-        <p class="mt-2">سيتم التصحيح وإخبار ولي الأمر بالدرجة.</p>
-        <p class="mt-2">درجتك المبدئية: ${score} / ${questions.filter(q=>q.type==='mcq').length}</p>
-      `;
-    }
-
-    function startTimer(duration) {
-      let time = duration;
-      const timerEl = document.getElementById("timer");
-      timerInterval = setInterval(() => {
-        const h = String(Math.floor(time / 3600)).padStart(2, "0");
-        const m = String(Math.floor((time % 3600) / 60)).padStart(2, "0");
-        const s = String(time % 60).padStart(2, "0");
-        timerEl.innerText = `⏳ ${h}:${m}:${s}`;
-        if (--time < 0) {
-          clearInterval(timerInterval);
-          submitExam();
-        }
-      }, 1000);
-    }
-
-    checkAccess();
+      resultDiv.innerHTML = msg;
+      resultDiv.className = "mt-6 p-4 bg-gray-100 rounded-lg";
+      resultDiv.classList.remove("hidden");
+    });
   </script>
 </body>
 </html>
+
 
 
