@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>إدارة أسئلة الاختبارات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { direction: rtl; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+  <div class="max-w-5xl mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-4">نظام إضافة أسئلة - مرتبط بـ Firebase</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- قائمة المحاضرات -->
+      <div class="md:col-span-1 bg-white p-4 rounded-lg shadow">
+        <h2 class="font-semibold mb-2">المحاضرات (lectureContent)</h2>
+        <div id="lecturesList" class="space-y-2 max-h-80 overflow-auto">
+          <p id="loadingLectures" class="text-gray-500">جارٍ جلب المحاضرات...</p>
+        </div>
+      </div>
+
+      <!-- نموذج إضافة سؤال -->
+      <div class="md:col-span-2 bg-white p-6 rounded-lg shadow">
+        <h2 class="font-semibold mb-4">إضافة سؤال جديد</h2>
+        <form id="questionForm" class="space-y-4">
+          <div>
+            <label class="block text-sm">اختر محاضرة (URL):</label>
+            <select id="lectureSelect" required class="w-full mt-1 p-2 border rounded">
+              <option value="">-- اختر محاضرة --</option>
+            </select>
+            <p id="selectedLectureInfo" class="text-xs text-gray-500 mt-1"></p>
+          </div>
+
+          <div>
+            <label class="block text-sm">نص السؤال:</label>
+            <textarea id="questionText" rows="3" required class="w-full mt-1 p-2 border rounded"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm">نوع السؤال:</label>
+            <div class="mt-1 flex items-center gap-4">
+              <label class="flex items-center gap-2">
+                <input type="radio" name="qtype" value="multiple" checked> اختيار متعدد
+              </label>
+              <label class="flex items-center gap-2">
+                <input type="radio" name="qtype" value="text"> إجابة نصية
+              </label>
+            </div>
+          </div>
+
+          <!-- خيارات الاختيار المتعدد -->
+          <div id="optionsArea">
+            <label class="block text-sm">خيارات (اختيار متعدد):</label>
+            <div id="optionsList" class="space-y-2 mt-2"></div>
+          </div>
+
+          <!-- الإجابة الصحيحة أو نص الإجابة -->
+          <div id="answerArea" class="mt-2"></div>
+
+          <!-- رفع صورة -->
+          <div>
+            <label class="block text-sm">صورة (اختياري):</label>
+            <input id="imageInput" type="file" accept="image/*" class="mt-1" />
+            <div id="imagePreview" class="mt-2"></div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="submitBtn" type="submit" class="px-4 py-2 bg-green-600 text-white rounded">حفظ السؤال</button>
+            <div id="status" class="text-sm text-gray-600"></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // === إعدادات Firebase (ضع بياناتك هنا) ===
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    // ================================
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const lecturesList = document.getElementById('lecturesList');
+    const lectureSelect = document.getElementById('lectureSelect');
+    const loadingLectures = document.getElementById('loadingLectures');
+    const selectedLectureInfo = document.getElementById('selectedLectureInfo');
+    const optionsList = document.getElementById('optionsList');
+    const answerArea = document.getElementById('answerArea');
+    const imageInput = document.getElementById('imageInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const questionForm = document.getElementById('questionForm');
+    const questionText = document.getElementById('questionText');
+    const submitBtn = document.getElementById('submitBtn');
+    const status = document.getElementById('status');
+
+    let lecturesCache = [];
+
+    // جلب المحاضرات
+    async function loadLectures() {
+      const qCol = collection(db, 'lectureContent');
+      const snaps = await getDocs(qCol);
+      lecturesList.innerHTML = '';
+      lectureSelect.innerHTML = '<option value="">-- اختر محاضرة --</option>';
+      snaps.forEach(docSnap => {
+        const d = { id: docSnap.id, ...docSnap.data() };
+        lecturesCache.push(d);
+
+        const item = document.createElement('div');
+        item.className = 'p-2 border rounded hover:bg-gray-50 cursor-pointer';
+        item.innerHTML = `<div class="font-medium">${d.title || d.lectureId || d.url || d.id}</div><div class="text-xs text-gray-500">${d.url || ''}</div>`;
+        item.onclick = () => selectLecture(d.id);
+        lecturesList.appendChild(item);
+
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = (d.title ? d.title + ' — ' : '') + (d.url || d.id);
+        lectureSelect.appendChild(opt);
+      });
+
+      loadingLectures.style.display = snaps.size ? 'none' : 'block';
+      if (snaps.size === 0) loadingLectures.textContent = 'لا يوجد محاضرات.';
+    }
+
+    function selectLecture(id) {
+      lectureSelect.value = id;
+      const found = lecturesCache.find(x => x.id === id);
+      if (found) {
+        selectedLectureInfo.textContent = `العنوان: ${found.title || '-'} — url: ${found.url || '-'}`;
+      }
+    }
+
+    lectureSelect.addEventListener('change', e => selectLecture(e.target.value));
+
+    // إضافة 4 خيارات تلقائيًا
+    function initOptions() {
+      optionsList.innerHTML = '';
+      for (let i = 1; i <= 4; i++) {
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 items-center';
+        div.innerHTML = `<input type="radio" name="correctOption" value="${i-1}">
+                         <input type="text" placeholder="الخيار ${i}" class="flex-1 p-2 border rounded">`;
+        optionsList.appendChild(div);
+      }
+    }
+
+    // منطقة الإجابة
+    function renderAnswerArea() {
+      const type = document.querySelector('input[name="qtype"]:checked').value;
+      answerArea.innerHTML = '';
+      if (type === 'multiple') {
+        answerArea.innerHTML = '<p class="text-sm text-gray-700">اختر الإجابة الصحيحة من الخيارات أعلاه.</p>';
+      } else {
+        answerArea.innerHTML = '<input id="textAnswer" type="text" placeholder="الإجابة الصحيحة" class="w-full mt-1 p-2 border rounded">';
+      }
+    }
+
+    document.querySelectorAll('input[name="qtype"]').forEach(r => r.addEventListener('change', () => {
+      const type = document.querySelector('input[name="qtype"]:checked').value;
+      optionsList.parentElement.style.display = type === 'multiple' ? 'block' : 'none';
+      renderAnswerArea();
+    }));
+
+    // معاينة الصورة
+    imageInput.addEventListener('change', () => {
+      imagePreview.innerHTML = '';
+      const file = imageInput.files[0];
+      if (file) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.className = 'max-h-40 rounded shadow';
+        imagePreview.appendChild(img);
+      }
+    });
+
+    // إرسال النموذج
+    questionForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      status.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'جارٍ الحفظ...';
+
+      const lectureId = lectureSelect.value;
+      if (!lectureId) return alert('اختر محاضرة');
+
+      const lecture = lecturesCache.find(x => x.id === lectureId);
+      const lectureUrl = lecture?.url || lectureId;
+      const qText = questionText.value.trim();
+      const qType = document.querySelector('input[name="qtype"]:checked').value;
+
+      const questionDoc = {
+        questionText: qText,
+        type: qType,
+        createdAt: serverTimestamp()
+      };
+
+      try {
+        if (qType === 'multiple') {
+          const options = Array.from(optionsList.querySelectorAll('input[type="text"]')).map(i => i.value.trim());
+          if (options.some(o => !o)) throw new Error('أدخل كل الخيارات');
+
+          const correct = document.querySelector('input[name="correctOption"]:checked');
+          if (!correct) throw new Error('اختر الإجابة الصحيحة');
+
+          questionDoc.options = options;
+          questionDoc.correctAnswerIndex = Number(correct.value);
+        } else {
+          const ans = document.getElementById('textAnswer').value.trim();
+          if (!ans) throw new Error('أدخل الإجابة الصحيحة');
+          questionDoc.correctAnswerText = ans;
+        }
+
+        // رفع الصورة
+        if (imageInput.files[0]) {
+          const file = imageInput.files[0];
+          const path = `quizImages/${lectureUrl}/${Date.now()}_${file.name}`;
+          const storageRef = ref(storage, path);
+          await uploadBytes(storageRef, file);
+          questionDoc.imageUrl = await getDownloadURL(storageRef);
+        }
+
+        // الحفظ في quizQuestions/{url}/questions
+        await addDoc(collection(db, "quizQuestions", lectureUrl, "questions"), questionDoc);
+
+        status.textContent = 'تم الحفظ بنجاح';
+        questionForm.reset();
+        initOptions();
+        renderAnswerArea();
+        imagePreview.innerHTML = '';
+      } catch (err) {
+        status.textContent = 'خطأ: ' + err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'حفظ السؤال';
+      }
+    });
+
+    // تشغيل الصفحة
+    loadLectures();
+    initOptions();
+    renderAnswerArea();
+  </script>
+</body>
+</html>
