@@ -1,152 +1,124 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>بدء الاختبار</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>الاختبار</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; background: #f9fafb; }
-    .question-card { transition: 0.3s; }
-    .question-card:hover { transform: translateY(-2px); }
+    body { font-family: Arial; padding: 20px; direction: rtl; }
+    .question { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+    .wrong { background: #fdd; }
+    button { padding: 10px; border: none; border-radius: 8px; background: #4CAF50; color: white; cursor: pointer; }
   </style>
 </head>
-<body class="p-4 md:p-6">
+<body>
 
-  <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6">
-    <h1 id="quizTitle" class="text-2xl font-bold text-gray-800 mb-4">الاختبار</h1>
-    <div id="quizContainer" class="space-y-6"></div>
-    <button id="submitBtn" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">تسليم الإجابات</button>
-    <div id="result" class="mt-6 p-4 hidden rounded-lg"></div>
-  </div>
+  <h1 id="quizTitle">جاري التحميل...</h1>
+  <p id="quizDesc"></p>
+
+  <div id="questionsContainer"></div>
+  <button id="submitBtn">تسليم الإجابات</button>
 
   <script>
-    // إعداد فايربيس
+    // إعداد Firebase
     const firebaseConfig = {
-      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
-      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-      projectId: "hhhhhh-d4fb8"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+  apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+  authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+  databaseURL: "https://hhhhhh-d4fb8-default-rtdb.firebaseio.com",
+  projectId: "hhhhhh-d4fb8",
+  storageBucket: "hhhhhh-d4fb8.appspot.com",
+  messagingSenderId: "24512338206",
+  appId: "1:24512338206:web:dfe045db59bd3434a2110f",
+  measurementId: "G-HD4R7GNQ5H"
+};
 
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // جلب ID من الرابط
     const urlParams = new URLSearchParams(window.location.search);
     const quizId = urlParams.get("id");
 
-    const quizContainer = document.getElementById("quizContainer");
+    const quizTitle = document.getElementById("quizTitle");
+    const quizDesc = document.getElementById("quizDesc");
+    const questionsContainer = document.getElementById("questionsContainer");
     const submitBtn = document.getElementById("submitBtn");
-    const resultDiv = document.getElementById("result");
 
     let questions = [];
 
-    auth.onAuthStateChanged(async user => {
-      if (!user) {
-        window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.pathname + window.location.search);
+    async function loadQuiz() {
+      if (!quizId) {
+        quizTitle.innerText = "الاختبار غير موجود";
         return;
       }
 
-      try {
-        // تحميل بيانات الاختبار
-        const quizRef = db.collection("quizzes").doc(quizId);
-        const quizDoc = await quizRef.get();
-        if (!quizDoc.exists) {
-          quizContainer.innerHTML = "<p class='text-red-500'>الاختبار غير موجود</p>";
-          return;
-        }
+      // جلب بيانات الاختبار
+      const quizRef = db.collection("quizQuestions").doc(quizId);
+      const quizDoc = await quizRef.get();
 
-        const quizData = quizDoc.data();
-        document.getElementById("quizTitle").textContent = quizData.title || "اختبار بدون عنوان";
-
-        // تحميل الأسئلة
-        const qSnap = await quizRef.collection("questions").get();
-        if (qSnap.empty) {
-          quizContainer.innerHTML = "<p class='text-gray-500'>لا توجد أسئلة حالياً</p>";
-          return;
-        }
-
-        questions = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderQuestions();
-      } catch (err) {
-        console.error(err);
-        quizContainer.innerHTML = "<p class='text-red-500'>حدث خطأ في تحميل الأسئلة</p>";
+      if (!quizDoc.exists) {
+        quizTitle.innerText = "الاختبار غير موجود";
+        return;
       }
-    });
 
-    function renderQuestions() {
-      quizContainer.innerHTML = "";
+      quizTitle.innerText = quizDoc.data().title || "اختبار بدون اسم";
+      quizDesc.innerText = quizDoc.data().description || "";
+
+      // جلب الأسئلة
+      const questionsSnap = await quizRef.collection("questions").get();
+      questions = questionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      displayQuestions();
+    }
+
+    function displayQuestions() {
+      questionsContainer.innerHTML = "";
       questions.forEach((q, index) => {
-        const qDiv = document.createElement("div");
-        qDiv.className = "question-card p-4 bg-gray-50 rounded-lg shadow";
-        qDiv.innerHTML = `
-          <h3 class="font-semibold text-lg mb-3">س${index+1}: ${q.question}</h3>
+        const div = document.createElement("div");
+        div.className = "question";
+        div.innerHTML = `
+          <p>${index + 1}. ${q.question}</p>
           ${q.options.map((opt, i) => `
-            <label class="block mb-2">
-              <input type="radio" name="q${index}" value="${i}" class="mr-2">
-              ${opt}
-            </label>
-          `).join('')}
+            <label><input type="radio" name="q${index}" value="${i}"> ${opt}</label><br>
+          `).join("")}
         `;
-        quizContainer.appendChild(qDiv);
+        questionsContainer.appendChild(div);
       });
     }
 
-    // تسليم الإجابات + التصحيح + حفظ النتيجة
-    submitBtn.addEventListener("click", async () => {
+    submitBtn.addEventListener("click", () => {
       let score = 0;
       let wrongQuestions = [];
+
       questions.forEach((q, index) => {
         const selected = document.querySelector(`input[name="q${index}"]:checked`);
-        if (selected) {
-          if (parseInt(selected.value) === q.correctAnswer) {
-            score++;
-          } else {
-            wrongQuestions.push({ question: q.question, correct: q.options[q.correctAnswer] });
-          }
+        if (selected && parseInt(selected.value) === q.correct) {
+          score++;
         } else {
-          wrongQuestions.push({ question: q.question, correct: q.options[q.correctAnswer] });
+          wrongQuestions.push(index + 1);
+          questionsContainer.children[index].classList.add("wrong");
         }
       });
 
-      const total = questions.length;
-      const user = auth.currentUser;
-      
-      // حفظ النتيجة في قاعدة البيانات
-      if (user) {
-        try {
-          await db.collection("results").doc(user.uid).collection("quizzes").doc(quizId).set({
-            score: score,
-            total: total,
-            wrongQuestions: wrongQuestions.map(w => w.question),
-            timestamp: new Date().toISOString()
-          });
-          console.log("تم حفظ النتيجة بنجاح");
-        } catch (err) {
-          console.error("خطأ في حفظ النتيجة:", err);
-        }
-      }
+      alert(`درجتك: ${score} من ${questions.length}\nالأسئلة الغلط: ${wrongQuestions.join(", ") || "لا يوجد"}\nسيتم تبليغ ولي الأمر بتلك الدرجة`);
 
-      // عرض النتيجة للطالب
-      let msg = `<p class="text-lg">درجتك: <span class="font-bold">${score}/${total}</span></p>`;
-      if (wrongQuestions.length > 0) {
-        msg += "<p class='mt-2 text-red-600'>الأسئلة الغلط:</p><ul class='list-disc pr-5 text-red-500'>";
-        wrongQuestions.forEach(w => {
-          msg += `<li>${w.question} - الإجابة الصحيحة: ${w.correct}</li>`;
-        });
-        msg += "</ul>";
-      }
-      msg += `<p class='mt-4 text-sm text-gray-600'>سيتم تبليغ ولي الأمر بهذه الدرجة.</p>`;
-
-      resultDiv.innerHTML = msg;
-      resultDiv.className = "mt-6 p-4 bg-gray-100 rounded-lg";
-      resultDiv.classList.remove("hidden");
+      // حفظ النتيجة
+      db.collection("quizQuestions").doc(quizId).collection("results").add({
+        student: "طالب1",
+        score: score,
+        total: questions.length,
+        date: new Date()
+      });
     });
+
+    loadQuiz();
   </script>
 </body>
 </html>
+
 
 
 
