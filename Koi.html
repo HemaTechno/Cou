@@ -77,19 +77,17 @@
   </div>
 
   <script type="module">
-    // === إعدادات Firebase (ضع بياناتك هنا) ===
+    // إعدادات Firebase
     const firebaseConfig = {
-  apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
-  authDomain: "hhhhhh-d4fb8.firebaseapp.com",
-  databaseURL: "https://hhhhhh-d4fb8-default-rtdb.firebaseio.com",
-  projectId: "hhhhhh-d4fb8",
-  storageBucket: "hhhhhh-d4fb8.appspot.com",
-  messagingSenderId: "24512338206",
-  appId: "1:24512338206:web:dfe045db59bd3434a2110f",
-  measurementId: "G-HD4R7GNQ5H"
-};
-
-    // ================================
+      apiKey: "AIzaSyBoPJbx5v6EkOqxOJkbhzHqIJdAByh79Rg",
+      authDomain: "hhhhhh-d4fb8.firebaseapp.com",
+      databaseURL: "https://hhhhhh-d4fb8-default-rtdb.firebaseio.com",
+      projectId: "hhhhhh-d4fb8",
+      storageBucket: "hhhhhh-d4fb8.appspot.com",
+      messagingSenderId: "24512338206",
+      appId: "1:24512338206:web:dfe045db59bd3434a2110f",
+      measurementId: "G-HD4R7GNQ5H"
+    };
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -120,6 +118,8 @@
       const snaps = await getDocs(qCol);
       lecturesList.innerHTML = '';
       lectureSelect.innerHTML = '<option value="">-- اختر محاضرة --</option>';
+      lecturesCache = [];
+
       snaps.forEach(docSnap => {
         const d = { id: docSnap.id, ...docSnap.data() };
         lecturesCache.push(d);
@@ -240,11 +240,12 @@
         // الحفظ في quizQuestions/{url}/questions
         await addDoc(collection(db, "quizQuestions", lectureUrl, "questions"), questionDoc);
 
-        status.textContent = 'تم الحفظ بنجاح';
-        questionForm.reset();
+        status.textContent = 'تم الحفظ بنجاح - يمكنك إضافة سؤال جديد';
+        questionText.value = '';
         initOptions();
         renderAnswerArea();
         imagePreview.innerHTML = '';
+        imageInput.value = '';
       } catch (err) {
         status.textContent = 'خطأ: ' + err.message;
       } finally {
@@ -260,3 +261,4 @@
   </script>
 </body>
 </html>
+
